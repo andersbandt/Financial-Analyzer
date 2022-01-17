@@ -1,0 +1,15 @@
+Python Classes and Functions
+
+Classes:
+1. Transaction
+2. Category
+
+
+Things to Read In per Month
+Vanguard
+Robinhood
+Wells Fargo
+Venmo
+
+
+General Outline for statements
