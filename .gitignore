@@ -3,6 +3,13 @@ categories.xml
 sub_categories.xml
 Categories.xlsx
 
+# Databases
+databases/
+
+# Notes
+Notes.txt
+Notes.docx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

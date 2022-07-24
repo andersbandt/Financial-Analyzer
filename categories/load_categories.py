@@ -80,8 +80,8 @@ def load_categories(filename):
 	dom = xml.dom.minidom.parse(filename)
 	collection = dom.getElementsByTagName("collection")  # search for root element of tag 'collection'
 	if len(collection) != 1:
-            raise Exception("Wrong number of collections in XML document!")
-	collection = collection[0] # not sure if this is required
+		raise Exception("Wrong number of collections in XML document!")
+		collection = collection[0] # not sure if this is required
 
 	for node in collection.childNodes:
 		if node.nodeName in "category":

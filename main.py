@@ -14,7 +14,6 @@ from Analyzing import spending_analyzer
 from Statement_Classes import Statement
 
 
-
 def main():
 	#categories = load_categories.load_categories("C:/Users/ander/OneDrive - UW-Madison/Code/Python/Spending and Budgeting Analyzer/categories/categories.xml")
 	
@@ -28,11 +27,8 @@ def main():
 
 	gui_driver.main()
 
-	
 
 	return None
-
-
 
 
 

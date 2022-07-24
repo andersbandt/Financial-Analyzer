@@ -21,7 +21,8 @@ class Statement:
 		self.name = str(self.month) + "/" + str(self.year)
 
 		# initialize categories
-		self.categories = load_categories.load_categories("C:/Users/ander/OneDrive - UW-Madison/Code/Python/Spending and Budgeting Analyzer/categories/categories.xml")
+		self.categories = load_categories.load_categories("C:/Users/ander/OneDrive - UW-Madison/Code/Python/Financial Advisor"
+														  "/categories/categories.xml")
 		load_categories.check_categories(self.categories)
 
 		# load in statement filepath info
