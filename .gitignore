@@ -3,12 +3,18 @@ categories.xml
 sub_categories.xml
 Categories.xlsx
 
+# Pycharm stuff
+.idea
+
 # Databases
 databases/
 
 # Notes
 Notes.txt
 Notes.docx
+
+# Project outputs
+category_tree.PNG
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

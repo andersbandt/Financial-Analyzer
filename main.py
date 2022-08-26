@@ -2,11 +2,9 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
-
 import csv
 import lambdas
 import xml.sax
-
 import matplotlib.pyplot as plt
 
 from Finance_GUI import gui_driver
@@ -26,7 +24,6 @@ def main():
 	#spending_analyzer.piChartExpenseSummary(july)
 
 	gui_driver.main()
-
 
 	return None
 

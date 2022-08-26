@@ -1,16 +1,14 @@
 # import needed packages
 import tkinter as tk
-from tkinter import *
 from tkinter import ttk
+import sqlite3
 
-import lambdas
-import matplotlib.pyplot as plt
-
-from Finance_GUI import gui_helper
+# import tab classes
 from Finance_GUI import guiTab_mainDashboard
 from Finance_GUI import guiTab_analyzeSpendingHistory
-
-from Statement_Classes import Statement
+from Finance_GUI import guiTab_editCategory
+from Finance_GUI import guiTab_loadSpendingData
+from Finance_GUI import guiTab_5_reviewInvestments
 
 
 class MainApplication(tk.Frame):
@@ -20,10 +18,18 @@ class MainApplication(tk.Frame):
 
 		self.tab1 = 0
 		self.tab2 = 0
-
-		self.setTabs()
+		self.tab3 = 0
+		self.tab4 = 0
+		self.tab5 = 0
 
 		self.basefilepath = "C:/Users/ander/OneDrive/Documents/Financials/2021/Monthly Statements/"
+
+		try:
+			self.conn = sqlite3.connect('databases/financials.db')
+		except sqlite3.Error as er:
+			print("Uh oh, something went wrong with connecting to sqlite database: financials.db")
+
+		self.setTabs()
 
 
 	# set up tab control
@@ -31,16 +37,18 @@ class MainApplication(tk.Frame):
 		print("Creating tab nav bar and initializing tab content")
 		tab_control = ttk.Notebook(self)
 
-		self.tab1 = guiTab_mainDashboard.tabMainDashboard(self.parent)
-		self.tab2 = guiTab_analyzeSpendingHistory.tabSpendingHistory(self.parent)
-		#self.tab3 = ttk.Frame(tab_control);
-		#self.tab4 = ttk.Frame(tab_control);
-		#self.tab5 = ttk.Frame(tab_control)
+		self.tab1 = guiTab_mainDashboard.tabMainDashboard(self.parent, self.conn)
+		self.tab2 = guiTab_analyzeSpendingHistory.tabSpendingHistory(self.parent, self.conn)
+		self.tab3 = guiTab_editCategory.tabEditCategory(self.parent, self.conn)
+		self.tab4 = guiTab_loadSpendingData.tabFinanceData(self.parent, self.conn)
+		self.tab5 = guiTab_5_reviewInvestments.tabInvestments(self.parent, self.conn)
+
 		tab_control.add(self.tab1.frame, text="Run Program")
 		tab_control.add(self.tab2.frame, text="Review Spending History")
-		#tab_control.add(self.tab3, text="Budget Analysis")
-		#tab_control.add(self.tab4, text="Categorize Statements")
-		#tab_control.add(self.tab5, text="Forecasts")
+		tab_control.add(self.tab3.frame, text="Edit Categories")
+		tab_control.add(self.tab4.frame, text="Load Data")
+		tab_control.add(self.tab5.frame, text="Review Investments")
+
 		tab_control.grid(column=0, row=0)
 
 		return True
