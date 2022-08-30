@@ -8,7 +8,7 @@ import xml.sax
 import matplotlib.pyplot as plt
 
 from Finance_GUI import gui_driver
-from Analyzing import spending_analyzer
+from analyzing import analyzer_helper
 from Statement_Classes import Statement
 
 

@@ -9,7 +9,8 @@ from datetime import date  # needed to get current date
 from googlefinance import getQuotes
 import json
 
-class Investment:
+
+class Investment(Transaction):
     def __init__(self, ticker, shares, account_id, *args):
         self.ticker = ticker
         self.shares = shares

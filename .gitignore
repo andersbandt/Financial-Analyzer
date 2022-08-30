@@ -4,7 +4,7 @@ sub_categories.xml
 Categories.xlsx
 
 # Pycharm stuff
-.idea
+.idea/
 
 # Databases
 databases/
@@ -12,6 +12,7 @@ databases/
 # Notes
 Notes.txt
 Notes.docx
+Financial-Analyzer_Notes.docx
 
 # Project outputs
 category_tree.PNG

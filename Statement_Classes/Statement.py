@@ -1,11 +1,8 @@
 # import needed modules
 import tkinter as tk
 from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
 
 from functools import partial
-import csv
 import sqlite3
 
 # import user defined modules
@@ -69,7 +66,7 @@ class Statement:
 
         self.categorizeStatementAutomatic()  # run categorizeStatementAutomatic on the transactions
 
-        self.createStatementTable(6, 0)  # creates a statement table at position (6, 0) *(row, column)
+        self.createStatementTable(6, 0)  # creates a statement table at position (7, 0) *(row, column)
 
         #if self.checkNA():
         #    if gui_helper.promptYesNo("NA (category-less) entries detected in statement. Would you like to start user categorization?"):
@@ -160,27 +157,7 @@ class Statement:
     ####      ANALYSIS FUNCTIONS    ##############################################
     ##############################################################################
 
-    # sumIndividualCategory: returns the dollar ($) total of a certain category in a statement
-    # output: dollar total
-    def sumIndividualCategory(self, category):
-        total_amount = 0
-        for transaction in self.transactions:  # for every transaction in the statement
-            if transaction.category == category:
-                total_amount += transaction.amount
-        return total_amount
 
-    # sumCategories: returns the dollar ($) total of all categories in a statement
-    # output: 1D array of category strings
-    # output: 1D array of amounts
-    def sumCategories(self):
-        category_amounts = []  # form 1D array of amounts to return
-        return_categories = []  # form 1D array of categories to populate and return
-        for category in self.categories:
-            category_amounts.append(self.sumIndividualCategory(category.name))
-            return_categories.append(category.name)
-            print("Got this amount for category " + category.name + " " + str(category_amounts[-1]))
-
-        return return_categories, category_amounts
 
     # getExpenses: returns only the transactions with a negative value
     def getExpenses(self):
@@ -271,13 +248,15 @@ class Statement:
         frame_data = tk.Frame(canvas, bg="blue")
         canvas.create_window((0, 0), window=frame_data, anchor='nw')
 
+        # TODO: somehow I have to figure out the statement sizing for extra long statements. For example, the save and delete button are not accessible
+        #   at the bottom. Maybe figure out how to only display 15 or so entries at a time? HINT: LOOk at the way I do it in analyzeSpendingHistory. It works there
+
         # Populate statement data
         rows = len(self.transactions)
         columns = 5
         labels = [[tk.Label() for j in range(columns)] for i in range(rows)]
 
-        self.clicked_category = [StringVar(frame_data) for i in
-                                 range(rows)]  # initialize StringVar entries for OptionMenus
+        self.clicked_category = [StringVar(frame_data) for i in range(rows)]  # initialize StringVar entries for OptionMenus
 
         # place data for each transaction in a separate row
         for i in range(0, rows):
@@ -290,9 +269,6 @@ class Statement:
             labels[i][2] = tk.Label(frame_data, text=string_dict["amount"])
             labels[i][4] = tk.Label(frame_data, text=string_dict["source"])
 
-            # handle category dropdown
-            category = string_dict["category"]
-
             # if the transaction does not yet have a category
             if string_dict["category"] == 0:
                 self.clicked_category[i] = StringVar(frame_data)  # datatype of menu text
@@ -304,7 +280,7 @@ class Statement:
 
             # if the transaction already has a category assigned
             else:
-                labels[i][3] = tk.Label(frame_data, text=category_helper.category_id_to_name(self.conn, string_dict["category"]))
+                labels[i][3] = tk.Label(frame_data, text=category_helper.category_id_to_name(string_dict["category"]))
 
             # place all the components for the transaction we are handling
             for j in range(0, columns):
@@ -323,11 +299,11 @@ class Statement:
 
         # place button for saving
         save_statement = Button(self.frame, text="Save Statement", command=self.saveStatement)
-        save_statement.grid(row=row_num+1, column=column_num + 1)
+        save_statement.grid(row=8, column=column_num)
 
         # place button for deleting statement
         delete_statement = Button(self.frame, text="Delete Statement", command=self.delete_statement)
-        delete_statement.grid(row=row_num+2, column=column_num + 1)
+        delete_statement.grid(row=8, column=column_num+1)
 
 
     # hide_statement_gui

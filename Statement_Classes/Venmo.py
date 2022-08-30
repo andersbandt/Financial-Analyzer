@@ -8,11 +8,7 @@ from Finance_GUI import gui_helper
 
 class Venmo(Statement.Statement):
 
-    # loadWellsFargoCredit: loads data from file 'Checking1.csv' from Wells Fargo account
-    # below are the indexes (column numbers) of the source data from the CSV file
-    # 0: date
-    # 1: amount
-    # 4: description
+    # TODO: data may seem to be loading in as strings instead of floats. Dollar sign may also be in amounts
     def load_statement_data(self):
         transactions = []
         gui_helper.gui_print(self.frame, self.prompt, "Extracting raw Venmo statement at: ", self.filepath)

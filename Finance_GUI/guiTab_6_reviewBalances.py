@@ -17,8 +17,8 @@ from Finance_GUI import gui_helper
 from categories import category_helper
 
 
-class tabInvestments:
-    def __init__(self, master, conn):
+class tabBalances:
+    def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
 
@@ -35,10 +35,6 @@ class tabInvestments:
         self.frame_data = 0
         self.labels = []
         self.clicked_category = []  # holds all the user set categories
-
-        # establish SQl database properties
-        self.conn = conn
-        self.cur = self.conn.cursor()
 
         # load Category objects
         self.categories = category_helper.load_categories()

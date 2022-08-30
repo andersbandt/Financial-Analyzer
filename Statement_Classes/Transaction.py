@@ -21,7 +21,6 @@ class Transaction:
             self.sql_key = None
             pass
 
-
         if self.description is None:
             print("Uh oh, transaction created without description")
 

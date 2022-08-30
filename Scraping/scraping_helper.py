@@ -1,22 +1,31 @@
 
 
+import re
 
 
-
-# format_date_string: converts a date from the format MM/DD/YYYY to YYYY-MM-DD (which is needed for SQl database insertion!!! Very important)
+# format_date_string: converts a date from a certain format to YYYY-MM-DD (which is needed for SQl database insertion!!! Very important)
+# tested input date formats: (MM/DD/YYYY, MM/DD/YY)
 def format_date_string(date_string):
-    month = date_string[0:2]
-    date = date_string[3:5]
-    year = date_string[6:]
+    slash_indexes = [i.start() for i in re.finditer("/", date_string)]
 
-    date_formatted = year + "-" + month + "-" + date
-    return date_formatted
+    if len(slash_indexes) is not 2:
+        raise Exception("Uh oh, may have encountered an improperly formatted date for conversion")
+        return None
+    else:
+        month = date_string[0:slash_indexes[0]]
+        date = date_string[slash_indexes[0]+1:slash_indexes[1]]
+        year = date_string[slash_indexes[1]+1:]
 
+        # test for improperly sized dates (add leading 0's, change date to 4 numbers)
+        if len(month) == 1:
+            month = "0" + month
+        if len(date) == 1:
+            date = "0" + date
+        if len(year) == 2:
+            year = "20" + year
 
-
-
-
-
+        date_formatted = year + "-" + month + "-" + date
+        return date_formatted
 
 
 
