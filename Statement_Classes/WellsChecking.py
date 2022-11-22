@@ -1,9 +1,11 @@
-import csv
 
+# import needed modules
 from Statement_Classes import Statement
 from Statement_Classes import Transaction
 
 from Finance_GUI import gui_helper
+
+import csv
 
 
 class WellsChecking(Statement.Statement):

@@ -1,37 +1,11 @@
 # import needed modules
-import tkinter as tk
 from tkinter import *
 from tkinter import messagebox
 
+import math
 
-# monthToInt: converts a month string to an integer
-def month2Int(month):
-    if month == "January":
-        return 1
-    elif month == "February":
-        return 2
-    elif month == "March":
-        return 3
-    elif month == "April":
-        return 4
-    elif month == "May":
-        return 5
-    elif month == "June":
-        return 6
-    elif month == "July":
-        return 7
-    elif month == "August":
-        return 8
-    elif month == "September":
-        return 9
-    elif month == "October":
-        return 10
-    elif month == "November":
-        return 11
-    elif month == "December":
-        return 12
-    else:
-        return -1
+
+#TODO: make general console output that lives on the bottom of the application
 
 
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
@@ -78,8 +52,8 @@ def generateYearDropDown(frame):
         "2021",
         "2022"]
 
-    clicked_year= StringVar()  # datatype of menu text
-    clicked_year.set("2021")  # initial menu text
+    clicked_year = StringVar()  # datatype of menu text
+    clicked_year.set("2022")  # initial menu text
     drop = OptionMenu(frame, clicked_year, *years)  # create drop down menu of years
     return drop, clicked_year
 
@@ -117,15 +91,15 @@ def promptYesNo(message):
         return False
 
 
-# guiPrint: prints a message both on the Python terminal and a Tkinter frame
+# gui_print: prints a message both on the Python terminal and a Tkinter frame
 def gui_print(master, prompt, message, *args):
     for arg in args:
         message += str(arg)
 
-    message = ">>>" + message + "\n"
+    message = ">>>" + message
     print(message)
     if master != 0:
-        prompt.insert(INSERT, message)
+        prompt.insert(INSERT, (message+"\n"))
 
     prompt.see("end")
     return True
@@ -146,3 +120,31 @@ def convertTuple(tup):
     for item in tup:
         string = string + item
     return string
+
+
+
+##############################################################################
+####      TREE FUNCTIONS    #######################################
+##############################################################################
+
+
+def drawLine(canvas, x1, y1, x2, y2):
+    print("Drawing a line")
+    canvas.create_line(x1, y1, x2, y2, tags="line")
+
+
+def paintBranch(canvas, depth, x1, y1, length, angle):
+    if depth >= 0:
+        x2 = x1 + int(math.cos(angle) * length)
+        y2 = y1 + int(math.sin(angle) * length)
+
+        # Draw the line
+        drawLine(canvas, x1, y1, x2, y2)
+
+        angleFactor = math.pi/5
+        sizeFactor = 0.58
+
+        # Draw the left branch
+        paintBranch(canvas, depth - 1, x2, y2, length * sizeFactor, angle + angleFactor)
+        # Draw the right branch
+        paintBranch(canvas, depth - 1, x2, y2, length * sizeFactor, angle - angleFactor)

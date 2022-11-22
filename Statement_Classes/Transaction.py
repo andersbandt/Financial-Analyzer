@@ -5,7 +5,7 @@ Transaction represents a single transaction on any statement
 
 """
 
-from categories import category_helper
+from dateutil.parser import parse
 
 class Transaction:
     def __init__(self, date, account_id, category_id, amount, description, *args):
@@ -16,23 +16,44 @@ class Transaction:
         self.description = description
 
         try:
+            if self.amount[0] == '$':
+                self.amount = self.amount[1:len(self.amount)]
+        except TypeError as e:
+            pass
+
+        try:
+            self.amount = float(self.amount)
+        except ValueError as e:
+            print("ERROR: couldn't create transaction: ", description)
+            print("Something went wrong creation transaction: ", e)
+            return
+
+        # create SQL key (optional parameter)
+        try:
             self.sql_key = args[0]
         except IndexError as e:
             self.sql_key = None
             pass
 
+        # __init__ error handling
         if self.description is None:
             print("Uh oh, transaction created without description")
 
         self.check_date()
         self.check_amount()
 
-
+    #check_date: checks if a Transaction date variable is valid
     def check_date(self):
-        #print("Got this for transaction date", self.date)
-        pass
+        if self.date:
+            try:
+                parse(self.date)
+                return True
+            except:
+                print("ERROR (TRANSACTION): date might be wrong")
+                return False
+        return False
 
-
+    #check_amount: checks if a Transaction amount variable is valid
     def check_amount(self):
         if type(self.amount) is float:
             return True
@@ -82,7 +103,7 @@ class Transaction:
             print("Uh oh, description doesn't exist for this transaction. Unable to automatically categorize.")
 
         # if the category ID is blank (able to assign a new one)
-        if self.category_id is None:
+        if self.category_id is None or self.category_id == 0:
             for category in categories:  # iterate through all provided Category objects in array
                 #if category.keyword is None:
                 #   print("Weird, a category has no keywords associated with it... that shouldn't happen")
