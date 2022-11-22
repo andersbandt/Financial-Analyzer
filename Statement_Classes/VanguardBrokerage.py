@@ -16,12 +16,13 @@ class VanguardBrokerage(Statement.Statement):
         try:
             with open(self.filepath, 'rb') as f:
                 reader = PdfFileReader(f)
-                contents = reader.getPage(1).extractText().split('\n')
-                print(contents)
+                contents = reader.getPage(1).extractText().split(' ')  # used to extra by \n.. not sure why though?
+                #print(contents)
 
-                #print("Balance Info:")
-                #print(contents[22])
 
+                # add start and end date
+                for string in contents:
+                    print(string)
 
                 # add starting and ending balance
                 balances_string = contents[7]

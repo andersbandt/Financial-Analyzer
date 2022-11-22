@@ -5,10 +5,14 @@ from Statement_Classes import Transaction
 
 from Finance_GUI import gui_helper
 
+# TODO: data may seem to be loading in as strings instead of floats. Dollar sign may also be in amounts
 
+
+# @brief class description for Venmo statement
+# @desc This class parses ONLY statements that have a funding source of a Venmo balance
+#     or transactions that are deposits into Venmo
 class Venmo(Statement.Statement):
 
-    # TODO: data may seem to be loading in as strings instead of floats. Dollar sign may also be in amounts
     def load_statement_data(self):
         transactions = []
         gui_helper.gui_print(self.frame, self.prompt, "Extracting raw Venmo statement at: ", self.filepath)
@@ -16,7 +20,7 @@ class Venmo(Statement.Statement):
             with open(self.filepath) as f:
                 csv_reader = csv.reader(f, delimiter=',')
                 for line in csv_reader:
-                    print(line)
+                    #print(line)
                     # examine withdrawals (funding source for the transaction is equal to "Venmo balance")
                     if line[11] == "Venmo balance":
                         date = line[2][0:10]
