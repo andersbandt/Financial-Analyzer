@@ -2,35 +2,77 @@ import sqlite3
 from ete3 import Tree
 
 from categories import Category
-from databases import database_helper
+from db import db_helper
 
 
 ##############################################################################
-####      VARIOUS FUNCTIONS    ###############################################
+####      CATEGORY ARRAY FUNCTIONS    ########################################
 ##############################################################################
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    categories_sql = database_helper.get_category_ledger_data()
-    keywords = database_helper.get_keyword_ledger_data()
+    categories_sql = db_helper.get_category_ledger_data()  # TODO: clean this up to only get all category_id - and error checking for multiple of same id
 
     categories = []
     for category_sql in categories_sql:
-        categories.append(Category.Category(category_sql[0], category_sql[2], category_sql[1], keywords))
+        categories.append(Category.Category(category_sql[0]))
 
     return categories
 
 
+# check_categories: checks to see if a Category has no keywords
 def check_categories(categories_array):
     for category in categories_array:
         if category.keyword is None:
             print("Uh oh, category: " + category.name + " has no keywords associated with it")
 
 
+# print_categories: prints all the categories in an array of Category
 def print_categories(categories_array):
     for category in categories_array:
         category.print()
 
+
+##############################################################################
+####      CATEGORY FUNCTIONS     #############################################
+##############################################################################
+
+def get_category_children(category_id, printmode=None):
+    # debug print statements
+    if printmode == "debug":
+        print("DEBUG: category_helper.get_category_children()")
+        print("\nExamining category: ", category_id_to_name(category_id))
+
+    # init array to return and ledger data
+    category_children = []
+    cat_ledge_data = db_helper.get_category_ledger_data()
+
+    # iterate through sql data and grab categories where parent is category
+    for cat_sql in cat_ledge_data:
+        if cat_sql[1] == category_id:
+            category_children.append(cat_sql[0])
+
+    if printmode == "debug":
+        print("Got the following for children category")
+        for child_id in category_children:
+            print(category_id_to_name(child_id))
+
+    return category_children
+
+
+# category_name_to_id: converts a category name to the ID
+def category_name_to_id(category_name):
+    return db_helper.get_category_id_from_name(category_name)
+
+
+# category_id_to_name
+def category_id_to_name(category_id):
+    return db_helper.get_category_name_from_id(category_id)
+
+
+##############################################################################
+####      GETTER FUNCTIONS     ###############################################
+##############################################################################
 
 # get_category_strings: returns an array containing strings of all the category names
 def get_category_strings(categories_array):
@@ -38,32 +80,54 @@ def get_category_strings(categories_array):
     for category in categories_array:
         category_names.append(category.getName())
 
+    category_names = sorted(category_names)
+
     return category_names
 
 
-# category_name_to_id: converts a category name to the ID
-def category_name_to_id(category_name):
-    return database_helper.get_category_id_from_name(category_name)
+def get_top_level_categories():
+    top = []
+    for category in load_categories():
+        if category.parent == 1:
+            top.append(category)
+    return top
 
-# category_id_to_name
-def category_id_to_name(category_id):
-    return database_helper.get_category_name_from_id(category_id)
 
-
-def create_Tree(categories):
-    t = Tree()
-    root = t.add_child(name="root")
-
+def get_top_level_category_names(categories):
+    top = []
     for category in categories:
-        print("Examining category", category.name)
+        if category.parent == 1:
+            top.append(category.name)
+    return top
+
+
+##############################################################################
+####      CATEGORY TREE FUNCTIONS     ########################################
+##############################################################################
+
+# create_Tree: creates a Tree object of the categories
+def create_Tree(categories):
+    print("category_helper.create_Tree: Generating Tree object of categories")
+    t = Tree()
+    root = t.add_child(name="root")  # create root node
+
+    # first add all top level categories
+    for category in categories:
         if category.parent == 1:  # if it is a top level category
             root.add_child(name=category.name)
-        else:
+
+    # then populate children
+    for category in categories:
+        if category.parent != 1:
             nodes = t.search_nodes(name=category_id_to_name(category.parent))
             for node in nodes:
                 node.add_child(name=category.name)
 
-    #print(t)
-    print(t.get_ascii(show_internal=True))
+    print("    length of created tree: ", len("root"))
+
     return t
+
+
+
+
 
