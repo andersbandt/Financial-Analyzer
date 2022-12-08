@@ -7,6 +7,13 @@ from PyPDF2 import PdfFileReader
 
 
 class VanguardBrokerage(Statement.Statement):
+    def __init__(self, master, account_id, year, month, file, row_num, column_num, *args, **kwargs):
+        # call parent class __init__ method
+        #super(Statement.Statement, self).__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+        super().__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+
+        # initialize identifying statement info
+        self.title = "Vanguard Brokerage: " + str(self.account_id) + ":" + str(self.year) + "-" + str(self.month)
 
     # load_statement_data:
     def load_statement_data(self):
@@ -16,12 +23,13 @@ class VanguardBrokerage(Statement.Statement):
         try:
             with open(self.filepath, 'rb') as f:
                 reader = PdfFileReader(f)
-                contents = reader.getPage(1).extractText().split('\n')
-                print(contents)
+                contents = reader.getPage(1).extractText().split(' ')  # used to extra by \n.. not sure why though?
+                #print(contents)
 
-                #print("Balance Info:")
-                #print(contents[22])
 
+                # add start and end date
+                for string in contents:
+                    print(string)
 
                 # add starting and ending balance
                 balances_string = contents[7]

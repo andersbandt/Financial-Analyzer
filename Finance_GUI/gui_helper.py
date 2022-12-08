@@ -1,43 +1,23 @@
 # import needed modules
-import tkinter as tk
+
+# import needed modules
 from tkinter import *
 from tkinter import messagebox
 
+import math
 
-# monthToInt: converts a month string to an integer
-def month2Int(month):
-    if month == "January":
-        return 1
-    elif month == "February":
-        return 2
-    elif month == "March":
-        return 3
-    elif month == "April":
-        return 4
-    elif month == "May":
-        return 5
-    elif month == "June":
-        return 6
-    elif month == "July":
-        return 7
-    elif month == "August":
-        return 8
-    elif month == "September":
-        return 9
-    elif month == "October":
-        return 10
-    elif month == "November":
-        return 11
-    elif month == "December":
-        return 12
-    else:
-        return -1
+# import user defined modules
+from tools import date_helper
+from db import db_helper
+
+
+#TODO: make general console output that lives on the bottom of the application
 
 
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
 def get_statement_folder(base_filepath, year, month):
     if month not in range(0, 12):
-        month = month2Int(month)
+        month = date_helper.month2Int(month)
 
     if month == 1:
         month_string = "01-January/"
@@ -71,6 +51,25 @@ def get_statement_folder(base_filepath, year, month):
     return statement_folder
 
 
+##############################################################################
+####      GUI OBJECT GENERATION FUNCTIONS           ##########################
+##############################################################################
+
+# TODO: refactor to code to use this function
+
+# generate a drop down menu with all categories in SQL database
+# outputs:
+#   drop - tkinter GUI object that will need to be placed on the Frame with .grid()
+#   clicked_category - variable representing the chosen Category
+def generate_all_category_dropdown(frame):
+    categories = db_helper.get_category_names()
+
+    clicked_category = StringVar(frame)  # datatype of menu text
+    clicked_category.set(categories[0])  # initial menu text
+    drop = OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
+    return drop, clicked_category
+
+
 # generateYearDropDown: generate a year drop down menu
 def generateYearDropDown(frame):
     years = [
@@ -78,8 +77,8 @@ def generateYearDropDown(frame):
         "2021",
         "2022"]
 
-    clicked_year= StringVar()  # datatype of menu text
-    clicked_year.set("2021")  # initial menu text
+    clicked_year = StringVar()  # datatype of menu text
+    clicked_year.set("2022")  # initial menu text
     drop = OptionMenu(frame, clicked_year, *years)  # create drop down menu of years
     return drop, clicked_year
 
@@ -107,6 +106,24 @@ def generateMonthDropDown(frame):
     return drop, clicked_month
 
 
+# gui_print: prints a message both on the Python terminal and a Tkinter frame
+def gui_print(master, prompt, message, *args):
+    for arg in args:
+        message += str(arg)
+
+    message = ">>>" + message
+    print(message)
+    if master != 0:
+        prompt.insert(INSERT, (message+"\n"))
+
+    prompt.see("end")
+    return True
+
+
+##############################################################################
+####      PROMPT/ALERT FUNCTIONS           ###################################
+##############################################################################
+
 # promptYesNo: prompts the user for a yes or no response with a certain 'message' prompt
 def promptYesNo(message):
     response = messagebox.askquestion('ALERT', message)
@@ -117,21 +134,8 @@ def promptYesNo(message):
         return False
 
 
-# guiPrint: prints a message both on the Python terminal and a Tkinter frame
-def gui_print(master, prompt, message, *args):
-    for arg in args:
-        message += str(arg)
-
-    message = ">>>" + message + "\n"
-    print(message)
-    if master != 0:
-        prompt.insert(INSERT, message)
-
-    prompt.see("end")
-    return True
-
-
-# alert_user:
+# alert_user: alerts the user with a prompt that flashes on the screen
+#   kind can be of type {"error", "warning", and "info"}
 def alert_user(title, message, kind):
     if kind not in ('error', 'warning', 'info'):
         raise ValueError('Unsupported alert kind.')
@@ -146,3 +150,58 @@ def convertTuple(tup):
     for item in tup:
         string = string + item
     return string
+
+
+##############################################################################
+####      TREE FUNCTIONS           ###########################################
+##############################################################################
+
+# TODO: get this angle matrix generation function working properly
+#   has to be some component of odd/even in the for loop...
+# generate_tree_angles: generates an array of the different angles to plot children node from a parent
+def generate_tree_angles(num_children, max_angle):
+    if num_children == 0:
+        return [0]
+
+    if num_children == 1:
+        return [0]
+
+    if num_children == 2:
+        return [max_angle/2, -max_angle/2]
+
+    if num_children == 3:
+        return [max_angle, 0, -max_angle]
+
+    if num_children == 4:
+        return [max_angle, max_angle * 1/2, -max_angle * 1/2, -max_angle]
+
+    if num_children == 5:
+        return [max_angle, max_angle * 3/5, 0, -max_angle * 3/5, -max_angle]
+
+    if num_children == 6:
+        return [max_angle, max_angle * 4/5, max_angle * 2/5, -max_angle * 2/5, -max_angle * 4/5, -max_angle]
+
+    print("Uh oh, this statement shouldn't be reached! No angle matrix was found!")
+    print("ERROR: can't generate angle matrix for number of children: " + str(num_children))
+
+
+# drawLine: draws a line between coordinates (x1, y1) and (x2, y2) on 'canvas'
+def drawLine(canvas, x1, y1, x2, y2):
+    canvas.create_line(x1, y1, x2, y2, tags="line")
+
+
+def paintBranch(canvas, depth, x1, y1, length, angle):
+    if depth >= 0:
+        x2 = x1 + int(math.cos(angle) * length)
+        y2 = y1 + int(math.sin(angle) * length)
+
+        # Draw the line
+        drawLine(canvas, x1, y1, x2, y2)
+
+        angleFactor = math.pi/5
+        sizeFactor = 0.58
+
+        # Draw the left branch
+        paintBranch(canvas, depth - 1, x2, y2, length * sizeFactor, angle + angleFactor)
+        # Draw the right branch
+        paintBranch(canvas, depth - 1, x2, y2, length * sizeFactor, angle - angleFactor)
