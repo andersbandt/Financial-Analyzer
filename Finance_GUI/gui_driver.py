@@ -2,7 +2,8 @@
 # import needed packages
 import tkinter as tk
 from tkinter import ttk
-import sqlite3
+
+import sv_ttk
 
 # import tab classes
 from Finance_GUI import guiTab_1_mainDashboard
@@ -72,14 +73,20 @@ def main():
 	window.title("FINANCE AND BUDGET ANALYZER")
 	window.geometry('1250x900')
 
-	# add window Style
+	# set the theme
+	# window.tk.call("source", 'Finance_GUI/themes/azure.tcl')
+	# window.tk.call("set_theme", "dark")
+
+	sv_ttk.set_theme("dark")
+
+	### add window Style
 	# 	theme options are
 	# 	"default", "alt", "classic", "clam"
-	style = ttk.Style(window)
-	style.theme_use("clam")
+	# style = ttk.Style(window)
+	# style.theme_use("")
 
-	style.configure('TNotebook.Tab', background="green3")
-	style.map("TNotebook", background=[("selected", "green3")])
+	# style.configure('TNotebook.Tab', background="green3")
+	# style.map("TNotebook", background=[("selected", "green3")])
 
 	#style.configure('TNotebook.Tab', background="Red")
 	#style.map("TNotebook", background=[("selected", "red")])

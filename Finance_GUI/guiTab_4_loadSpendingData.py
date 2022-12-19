@@ -131,7 +131,7 @@ class tabFinanceData:
         ### create T/F table for account_ids
         account_stats = []
         for account_id in db_helper.get_all_account_ids():
-            account_stats.append([account_id, load_helper.check_account_load_status(account_id, month, year, printmode="debug")])
+            account_stats.append([account_id, load_helper.check_account_load_status(account_id, month, year, printmode=None)])
 
         ### draw red/yellow/green boxes
         # create an inner window

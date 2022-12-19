@@ -28,6 +28,7 @@ def close_connection(conn):
 ####      LEDGER TABLE FUNCTIONS    ##########################################
 ##############################################################################
 
+# TODO: refactor table and function to add a date object representing when the transaction was added
 # inserts a Transaction object into the SQL database
 def insert_transaction(transaction):
     conn = init_connection()
@@ -359,6 +360,19 @@ def get_account_names():
     return account_names
 
 
+def get_account_names_by_type(type):
+    conn = init_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT name FROM account WHERE type=?", (type,))
+        account_names = [x[0] for x in cur.fetchall()]
+    except sqlite3.Error as e:
+        print("Uh oh, something went wrong recalling account names", e)
+        return False
+    close_connection(conn)
+    return account_names
+
+
 def get_account_ledger_data():
     conn = init_connection()
     cur = conn.cursor()
@@ -463,4 +477,51 @@ def get_balances_between_date(date_start, date_end):
     return balances_data
 
 
+##############################################################################
+####      INVESTMENT TABLE FUNCTIONS    ######################################
+##############################################################################
 
+# insert_investment: insert an investment into the database
+def insert_investment(date, account_id, ticker, amount, inv_type):
+    conn = init_connection()
+    cur = conn.cursor()
+    try:
+        with conn:
+            cur.execute("INSERT INTO investment (trans_date, account_id, ticker, shares, inv_type, value, calc_type) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                        (date, account_id, ticker, amount, inv_type, 0, 1))
+    except sqlite3.Error as e:
+        print("Uh oh, something went inserting into balances: ", e)
+        return False
+    return True
+
+
+def get_inv_ledge_data():
+    conn = init_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM investment")
+        ledger_data = cur.fetchall()
+    except sqlite3.Error as e:
+        print("Uh oh, something went wrong recalling investment tickers:", e)
+        close_connection(conn)
+        return None
+
+    close_connection(conn)
+    return ledger_data
+
+
+
+# get_all_ticker: gets all the tickers in the database
+def get_all_ticker():
+    conn = init_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT ticker FROM investment")
+        tickers = cur.fetchall()
+    except sqlite3.Error as e:
+        print("Uh oh, something went wrong recalling investment tickers:", e)
+        close_connection(conn)
+        return None
+
+    close_connection(conn)
+    return tickers

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 ####      PLOTTING FUNCTIONS    ##############################################
 ##############################################################################
 
-def get_pie_plot(amounts, categories, explode=.1, title=None):
+def get_cat_pie_plot(amounts, categories, explode=.1, title=None):
     # generate labels
     labels = []
     for i in range(0, len(amounts)):
@@ -21,6 +21,25 @@ def get_pie_plot(amounts, categories, explode=.1, title=None):
 
     # add legend and title
     #plt.legend(patches, labels, loc="best")
+    plt.title(title)
+
+    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    plt.axis('equal')
+    plt.tight_layout()
+
+
+def get_pie_plot(amounts, labels, explode=.1, title=None, legend=False):
+    myexplode = []
+    for i in range(0, len(amounts)):
+        myexplode.append(explode)
+
+    plt.pie(amounts, labels=labels, explode=myexplode, shadow=False, normalize=True)
+
+    # add legend and title
+    patches = labels
+    if legend:
+        plt.legend(patches, labels, loc="best")
+
     plt.title(title)
 
     # Set aspect ratio to be equal so that pie is drawn as a circle.
