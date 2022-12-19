@@ -12,13 +12,12 @@ from datetime import date
 
 from analyzing import analyzer_helper
 from analyzing import graphing_helper
+from analyzing import inv_h
 from Finance_GUI import gui_helper
-from db import db_helper
 from tools import date_helper
-from Scraping import scraping_helper
 
 ##############################################################################
-####      PLOTTING FUNCTIONS    ##############################################
+####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
 
 # TODO: add amounts
@@ -105,6 +104,10 @@ def create_summation_vs_time(transactions, categories):
     print("create_summation_vs_time got this for expenses", exec_summary["expenses"])
     print("create_summation_vs_time got this for incomes", exec_summary["incomes"])
 
+
+##############################################################################
+####      BALANCES PLOTTING FUNCTIONS    ###################################
+##############################################################################
 
 # figure out how to carry forward A vector and only
 # https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
@@ -194,4 +197,49 @@ def create_stacked_balances(days_prev, N):
     plt.grid(axis='y', linestyle='-')
 
     return fig
+
+
+##############################################################################
+####      INVESTMENT PLOTTING FUNCTIONS    ###################################
+##############################################################################
+
+# create_asset_alloc_chart: creates a pie chart representing asset allocation
+def create_asset_alloc_chart():
+    # get list of investment dict objects
+    inv_dict = inv_h.create_investment_dicts()
+
+
+    # set up investment types to track totals
+    t_1 = 0
+    t_2 = 0
+    t_3 = 0
+    t_4 = 0
+    t_5 = 0
+
+    # iterate through list and add to totals
+    for investment in inv_dict:
+        if investment["type"] == 1:
+            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            t_1 += value
+        elif investment["type"] == 2:
+            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            t_2 += value
+        elif investment["type"] == 3:
+            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            t_3 += value
+        elif investment["type"] == 4:
+            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            t_4 += value
+        elif investment["type"] == 5:
+            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            t_5 += value
+
+    amounts = [t_1, t_2, t_3, t_4, t_5]
+    labels = ["Type 1", "Type 2", "Type 3", "Type 4", "Type 5"]
+
+    #  create and return figure
+    fig = plt.figure(1)
+    graphing_helper.get_pie_plot(amounts, labels, explode=.1, title="Asset Allocation")
+    return fig
+
 

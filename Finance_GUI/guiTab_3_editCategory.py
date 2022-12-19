@@ -154,7 +154,6 @@ class tabEditCategory:
         else:
             gui_helper.gui_print(self.frame, self.prompt, "Something went wrong adding category")
 
-
     # add_account_gui: attempts to add a category to the SQL database
     def add_account_gui(self, account_text_obj):
         account_name = account_text_obj.get("1.0", "end").strip("\n")

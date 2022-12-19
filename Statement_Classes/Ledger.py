@@ -83,8 +83,10 @@ class Ledger:
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeLedgerAutomatic(self):
+        categories = category_helper.load_categories()
         for transaction in self.transactions:
-            transaction.categorizeTransactionAutomatic(self.categories)
+
+            transaction.categorizeTransactionAutomatic(categories)
 
 
     ##############################################################################

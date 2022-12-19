@@ -65,17 +65,22 @@ print("Opened database successfully")
 # 	print("Table 'keyword' created successfully")
 
 
-# try:
-# 	conn.execute('''CREATE TABLE investment
-# 		(key            INTEGER PRIMARY KEY AUTOINCREMENT,
-# 		account_id      INT(10) PRIMARY KEY
-# 		ticker          VARCHAR(32),
-# 		shares          NUMERIC(10,2));''')
-# except sqlite3.Error as er:
-# 	print("\nUh oh, something went wrong with table creation for: investment")
-# 	print(er)
-# else:
-# 	print("Table 'investment' created successfully")
+try:
+	conn.execute('''DROP TABLE investment''')
+	conn.execute('''CREATE TABLE investment
+		(key            INTEGER PRIMARY KEY AUTOINCREMENT,
+		trans_date      DATE,
+		account_id      INT(10),
+		ticker          VARCHAR(32),
+		shares          NUMERIC(10,2),
+		value           NUMERIC(10,2),
+		calc_type       INT,
+		inv_type        INT);''')
+except sqlite3.Error as er:
+	print("\nUh oh, something went wrong with table creation for: investment")
+	print(er)
+else:
+	print("Table 'investment' created successfully")
 
 
 # try:
@@ -91,19 +96,19 @@ print("Opened database successfully")
 # 	print("Table 'balances' created successfully")
 
 
-try:
-	conn.execute('''CREATE TABLE budget(
-		category_id    INT PRIMARY KEY ,
-		lim           NUMERIC(10,2) ,
-		cd              INT(10));''')
-# (category_id   INT(10) PRIMARY KEY
-# limit          NUMERIC(10,2),
-# cd             INT(10);''')
-except sqlite3.Error as er:
-	print("\nUh oh, something went wrong with table creation for: budget")
-	print(er)
-else:
-	print("Table 'budget' created successfully")
+# try:
+# 	conn.execute('''CREATE TABLE budget(
+# 		category_id    INT PRIMARY KEY ,
+# 		lim           NUMERIC(10,2) ,
+# 		cd              INT(10));''')
+# # (category_id   INT(10) PRIMARY KEY
+# # limit          NUMERIC(10,2),
+# # cd             INT(10);''')
+# except sqlite3.Error as er:
+# 	print("\nUh oh, something went wrong with table creation for: budget")
+# 	print(er)
+# else:
+# 	print("Table 'budget' created successfully")
 
 
 conn.close()
