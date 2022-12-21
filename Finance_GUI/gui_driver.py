@@ -16,7 +16,7 @@ from Finance_GUI import guiTab_7_categorizeTransactions
 from Finance_GUI import guiTab_8_budgeting
 
 
-class MainApplication():
+class MainApplication:
 	def __init__(self, window, *args, **kwargs):
 		self.nb = ttk.Notebook(window)
 

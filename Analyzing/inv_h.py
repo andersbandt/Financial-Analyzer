@@ -1,7 +1,8 @@
 
 # import needed modules
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
-from yahoo_fin import stock_info
+import yahoo_fin.stock_info as si
+
 from db import db_helper
 import json
 
@@ -11,17 +12,32 @@ import json
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
 ##############################################################################
 
+# print_ticker_info: prints the info for a certain ticker to the console
 def print_ticker_info(ticker):
     print("printing ticker info for ticker: ", ticker)
-    price = stock_info.get_live_price(ticker)
-    print(price)
 
-    #print(json.dumps(quote, indent=2))
+    # get price and analyst info
+    price = si.get_live_price(ticker)
+    info = si.get_analysts_info(ticker)
+
+    # print to console
+    print("Price: ", price)
+    print("Info: ", info)
+    return
 
 
+# get_ticker_price: returns the current live price for a certain ticker
 def get_ticker_price(ticker):
-    price = stock_info.get_live_price(ticker)
+    price = si.get_live_price(ticker)
     return price
+
+
+# get_ticker_price_data: generates an array of historical price data
+#   input for interval: "1d", "1wk", or "1m"
+def get_ticker_price_data(ticker, start_date, end_date, interval):
+    hist_price_data = si.get_data(ticker, start_date=start_date, end_date=end_date, index_as_date=False, interval=interval)
+    print(hist_price_data)
+    return hist_price_data
 
 
 ##############################################################################

@@ -69,12 +69,16 @@ class Ledger:
 
     # del_sel_trans: deletes selected transactions DIRECTLY from the SQL database
     def del_sel_trans(self):
+        # print out what transactions we are deleting
         print("Deleting the transactions with the following sql keys: ")
         print(self.sel_trans)
 
+        gui_helper.gui_print(self.frame, self.prompt, "Deleting the transactions with the following sql keys: ")
+        gui_helper.gui_print(self.frame, self.prompt, self.sel_trans)
+
+        # go through selected Transactions and delete
         for sql_key in self.sel_trans:
             db_helper.delete_transaction(sql_key)
-            # TODO: add function to delete transaction from self.transactions based on SQL key
         return
 
     ##############################################################################
@@ -87,6 +91,7 @@ class Ledger:
         for transaction in self.transactions:
 
             transaction.categorizeTransactionAutomatic(categories)
+        return
 
 
     ##############################################################################

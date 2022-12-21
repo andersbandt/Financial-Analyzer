@@ -19,7 +19,6 @@ from categories import category_helper
 from analyzing import analyzer_helper
 from analyzing import graphing_analyzer
 from db import db_helper
-from Scraping import scraping_helper
 
 from tools import date_helper
 
@@ -158,8 +157,8 @@ class tabSpendingHistory:
             gui_helper.alert_user("Error with recalling data", "No accounts selected.", "error")
 
         # format the date strings
-        formatted_start = scraping_helper.format_date_string(date_start)
-        formatted_end = scraping_helper.format_date_string(date_end)
+        formatted_start = date_helper.conv_two_digit_date(date_start)
+        formatted_end = date_helper.conv_two_digit_date(date_end)
 
         # check for if start date is earlier than end date
         if not date_helper.date_order(formatted_start, formatted_end):
@@ -178,8 +177,7 @@ class tabSpendingHistory:
         print("Got this for ledger statistics")
         print(ledger_stats)
 
-        # TODO: deleting the statement deletes the calendar date select
-        self.fr_date_select.grid_forget()  # hide the date selection Frame
+        # init Ledger and display on page
         ledge = Ledger.Ledger(self.frame, "Recalled Data", 3, 0)
         ledge.set_statement_data(self.transactions)
         ledge.createStatementTable()

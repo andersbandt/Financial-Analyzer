@@ -4,10 +4,11 @@ import tkinter as tk
 from tkinter import *
 from tkcalendar import DateEntry
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+import requests
 
 # import user defined modules
 from categories import category_helper
+from Finance_GUI import gui_helper
 from db import db_helper
 from analyzing import inv_h
 from analyzing import graphing_analyzer
@@ -84,12 +85,12 @@ class tabInvestments:
         transaction_amount = Text(self.fr_add_inv_data, height=3, width=12)
         transaction_amount.grid(row=2, column=3, pady=10, padx=10)
 
-
         # investment type
         # create dropdown for 1 through 5
         Label(self.fr_add_inv_data, text="Investment Type").grid(row=1, column=4)
         inv_type = Text(self.fr_add_inv_data, height=3, width=12)
         inv_type.grid(row=2, column=4, pady=10, padx=10)
+        Label(self.fr_add_inv_data, text="1: pure stock\n2: mutual fund\n3: bonds\n4: crypto\n5: cash").grid(row=2, column=5)
 
 
         # add button to execute addition of investment information
@@ -107,7 +108,7 @@ class tabInvestments:
         # add dropdown for investment type accounts (type III)
 
         # set up button to start examining investment account
-        start_analyzing = Button(self.fr_rev_inv_data, text="Review Investment Account", command=lambda: self.review_inv_acc())
+        start_analyzing = Button(self.fr_rev_inv_data, text="Print Current Position Data", command=lambda: self.review_inv_acc())
         start_analyzing.grid(row=1, column=3)  # place 'Start Categorizing' button
 
 
@@ -122,10 +123,15 @@ class tabInvestments:
             pady=10)
 
         # set up button to show asset allocation
-        start_analyzing = Button(fr_title_button, text="Show Asset Allocation", command=lambda: self.show_asset_alloc())
-        start_analyzing.grid(row=0, column=1)  # place 'Start Categorizing' button
+        b_asset_alloc = Button(fr_title_button, text="Show Asset Allocation", command=lambda: self.show_asset_alloc())
+        b_asset_alloc.grid(row=0, column=1, padx=5)  # place 'Start Categorizing' button
 
-# TODO: refactor this to add account_id instead of acccount name
+        # set up button to print historical price history of accounts
+        b_hist_price = Button(fr_title_button, text="Show Historical Price", command=lambda: self.show_hist_price_data())
+        b_hist_price.grid(row=0, column=2, padx=5)  # place 'Start Categorizing' button
+
+
+# TODO: refactor this to add account_id instead of account name
     # add_investment_data: adds investment data to the SQL database
     def add_investment_data(self, date, account_id, ticker_obj, amount_obj, inv_type_obj):
         # get values from text entries
@@ -161,7 +167,22 @@ class tabInvestments:
 
     def show_asset_alloc(self):
         # get pyplot figure
-        figure = graphing_analyzer.create_asset_alloc_chart()
+        try:
+            figure = graphing_analyzer.create_asset_alloc_chart()
+        except requests.exceptions.ConnectionError as e:
+            print("Connection error:", e)
+            gui_helper.alert_user("Error generating graph", "Connection error. Please check connection and try again.", kind="error")
+
+        canvas = FigureCanvasTkAgg(figure, self.fr_gr_inv)
+        canvas.get_tk_widget().grid(row=2, column=0)
+
+        # Update buttons frames idle tasks to let tkinter calculate sizes
+        self.frame.update_idletasks()
+
+
+    def show_hist_price_data(self):
+        # get pyplot figure
+        figure = graphing_analyzer.create_hist_price_data_line_chart()
         canvas = FigureCanvasTkAgg(figure, self.fr_gr_inv)
         canvas.get_tk_widget().grid(row=2, column=0)
 

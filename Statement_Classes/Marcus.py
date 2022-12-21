@@ -4,7 +4,7 @@ from Statement_Classes import Statement
 from Statement_Classes import Transaction
 
 from Finance_GUI import gui_helper
-from Scraping import scraping_helper
+from tools import date_helper
 
 from PyPDF2 import PdfFileReader
 
@@ -92,7 +92,7 @@ class Marcus(Statement.Statement):
                 withdrawal_amount = withdrawal_string[whitespace_index + 2:]  # plus 2 to move past the first whitespace and the dollar sign
                 withdrawal_date = end_date
 
-                print("Withdrawal date:", scraping_helper.format_date_string(withdrawal_date))
+                print("Withdrawal date:", date_helper.conv_two_digit_date(withdrawal_date))
                 print("Withdrawal amount:", withdrawal_amount)
                 transactions.append(
                     Transaction.Transaction(withdrawal_date, self.account_id, None, withdrawal_amount,
