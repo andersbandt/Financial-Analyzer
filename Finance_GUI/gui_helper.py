@@ -1,8 +1,14 @@
 # import needed modules
+
+# import needed modules
 from tkinter import *
 from tkinter import messagebox
 
 import math
+
+# import user defined modules
+from tools import date_helper
+from db import db_helper
 
 
 #TODO: make general console output that lives on the bottom of the application
@@ -11,7 +17,7 @@ import math
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
 def get_statement_folder(base_filepath, year, month):
     if month not in range(0, 12):
-        month = month2Int(month)
+        month = date_helper.month2Int(month)
 
     if month == 1:
         month_string = "01-January/"
@@ -43,6 +49,25 @@ def get_statement_folder(base_filepath, year, month):
 
     statement_folder = base_filepath + "/" + str(year) + "/Monthly Statements/" + month_string
     return statement_folder
+
+
+##############################################################################
+####      GUI OBJECT GENERATION FUNCTIONS           ##########################
+##############################################################################
+
+# TODO: refactor to code to use this function
+
+# generate a drop down menu with all categories in SQL database
+# outputs:
+#   drop - tkinter GUI object that will need to be placed on the Frame with .grid()
+#   clicked_category - variable representing the chosen Category
+def generate_all_category_dropdown(frame):
+    categories = db_helper.get_category_names()
+
+    clicked_category = StringVar(frame)  # datatype of menu text
+    clicked_category.set(categories[0])  # initial menu text
+    drop = OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
+    return drop, clicked_category
 
 
 # generateYearDropDown: generate a year drop down menu
@@ -81,16 +106,6 @@ def generateMonthDropDown(frame):
     return drop, clicked_month
 
 
-# promptYesNo: prompts the user for a yes or no response with a certain 'message' prompt
-def promptYesNo(message):
-    response = messagebox.askquestion('ALERT', message)
-
-    if response == "yes":
-        return True
-    else:
-        return False
-
-
 # gui_print: prints a message both on the Python terminal and a Tkinter frame
 def gui_print(master, prompt, message, *args):
     for arg in args:
@@ -105,7 +120,22 @@ def gui_print(master, prompt, message, *args):
     return True
 
 
-# alert_user:
+##############################################################################
+####      PROMPT/ALERT FUNCTIONS           ###################################
+##############################################################################
+
+# promptYesNo: prompts the user for a yes or no response with a certain 'message' prompt
+def promptYesNo(message):
+    response = messagebox.askquestion('ALERT', message)
+
+    if response == "yes":
+        return True
+    else:
+        return False
+
+
+# alert_user: alerts the user with a prompt that flashes on the screen
+#   kind can be of type {"error", "warning", and "info"}
 def alert_user(title, message, kind):
     if kind not in ('error', 'warning', 'info'):
         raise ValueError('Unsupported alert kind.')
@@ -122,14 +152,41 @@ def convertTuple(tup):
     return string
 
 
-
 ##############################################################################
-####      TREE FUNCTIONS    #######################################
+####      TREE FUNCTIONS           ###########################################
 ##############################################################################
 
+# TODO: get this angle matrix generation function working properly
+#   has to be some component of odd/even in the for loop...
+# generate_tree_angles: generates an array of the different angles to plot children node from a parent
+def generate_tree_angles(num_children, max_angle):
+    if num_children == 0:
+        return [0]
 
+    if num_children == 1:
+        return [0]
+
+    if num_children == 2:
+        return [max_angle/2, -max_angle/2]
+
+    if num_children == 3:
+        return [max_angle, 0, -max_angle]
+
+    if num_children == 4:
+        return [max_angle, max_angle * 1/2, -max_angle * 1/2, -max_angle]
+
+    if num_children == 5:
+        return [max_angle, max_angle * 3/5, 0, -max_angle * 3/5, -max_angle]
+
+    if num_children == 6:
+        return [max_angle, max_angle * 4/5, max_angle * 2/5, -max_angle * 2/5, -max_angle * 4/5, -max_angle]
+
+    print("Uh oh, this statement shouldn't be reached! No angle matrix was found!")
+    print("ERROR: can't generate angle matrix for number of children: " + str(num_children))
+
+
+# drawLine: draws a line between coordinates (x1, y1) and (x2, y2) on 'canvas'
 def drawLine(canvas, x1, y1, x2, y2):
-    print("Drawing a line")
     canvas.create_line(x1, y1, x2, y2, tags="line")
 
 

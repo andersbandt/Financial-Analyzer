@@ -107,16 +107,20 @@ class Transaction:
             for category in categories:  # iterate through all provided Category objects in array
                 #if category.keyword is None:
                 #   print("Weird, a category has no keywords associated with it... that shouldn't happen")
-                if any(keyword in self.description for keyword in category.keyword):
-                    self.category_id = category.category_id
+                try:
+                    if any(keyword in self.description for keyword in category.keyword):
+                        self.category_id = category.id
+                except Exception as e:
+                    print("ERROR: couldn't automatically categorize transaction:", e)
 
         # if there is already a category ID
         else:
             print("Uh oh, transaction already has category assigned.")
             return
 
-        # if no category got assigned
-        if self.category_id is None: self.category_id = 0
+        # if no category got assigned set as NA category (0)
+        if self.category_id is None:
+            self.category_id = 0
 
 
     # categorizeTransactionManual: manually categorizes a transaction using input description
@@ -158,6 +162,7 @@ class Transaction:
     # getStringDict: returns a string of transaction content contained in a dictionary
     def getStringDict(self):
         string_dict = {
+            "sql_key": self.sql_key,
             "date": self.date,
             "amount": str(self.amount),
             "description": str(self.description),

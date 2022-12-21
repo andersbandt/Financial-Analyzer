@@ -11,13 +11,10 @@ from db import db_helper
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    categories_sql = db_helper.get_category_ledger_data()
-    keywords = db_helper.get_keyword_ledger_data()
-
+    all_category_id = db_helper.get_all_category_id()
     categories = []
-    for category_sql in categories_sql:
-        categories.append(Category.Category(category_sql[0], category_sql[2], category_sql[1], keywords))
-
+    for category_id in all_category_id:
+        categories.append(Category.Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
     return categories
 
 
@@ -38,13 +35,25 @@ def print_categories(categories_array):
 ####      CATEGORY FUNCTIONS     #############################################
 ##############################################################################
 
-def get_category_children(category_id):
+def get_category_children(category_id, printmode=None):
+    # debug print statements
+    if printmode == "debug":
+        print("DEBUG: category_helper.get_category_children()")
+        print("\nExamining category: ", category_id_to_name(category_id))
+
+    # init array to return and ledger data
     category_children = []
     cat_ledge_data = db_helper.get_category_ledger_data()
 
+    # iterate through sql data and grab categories where parent is category
     for cat_sql in cat_ledge_data:
         if cat_sql[1] == category_id:
             category_children.append(cat_sql[0])
+
+    if printmode == "debug":
+        print("Got the following for children category")
+        for child_id in category_children:
+            print(category_id_to_name(child_id))
 
     return category_children
 
@@ -52,6 +61,7 @@ def get_category_children(category_id):
 # category_name_to_id: converts a category name to the ID
 def category_name_to_id(category_name):
     return db_helper.get_category_id_from_name(category_name)
+
 
 # category_id_to_name
 def category_id_to_name(category_id):

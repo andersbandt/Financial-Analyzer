@@ -11,33 +11,41 @@ from categories import category_helper
 from db import db_helper
 
 
+# TODO: make the 'update' button say 'save' for the Statement
 class Statement(Ledger.Ledger):
     def __init__(self, master, account_id, year, month, file, row_num, column_num, *args, **kwargs):
+        title = str(account_id) + ":" + str(year) + "-" + str(month)
+
+        # call parent class __init__ method
+        #super(Ledger.Ledger, self).__init__(master, title, row_num, column_num, *args, **kwargs)
+        super().__init__(master, title, row_num, column_num, *args, **kwargs)
+
         # initialize identifying statement info
         self.account_id = account_id
         self.year = year
         self.month = month
-        self.title = str(self.account_id) + ":" + str(self.year) + "-" + str(self.month)
 
-        # load in statement filepath info
+
+
+        # # load in statement filepath info
         self.base_filepath = "C:/Users/ander/OneDrive/Documents/Financials"
         self.filepath = gui_helper.get_statement_folder(self.base_filepath, year, month) + file  # generate filepath of .csv file to download
+        #
+        # # initialize statement data content
+        # self.transactions = []
+        # self.clicked_category = []  # holds all the user set categories
+        #
+        # # initialize general GUI variables
+        # self.master = master
+        # self.frame = tk.Frame(self.master, bg="#194d33")
+        # self.frame.grid(row=row_num, column=column_num)
+        # self.prompt = Text(self.frame, padx=10, pady=10, height=5)
+        # self.prompt.grid(row=2, column=0, rowspan=4)
+        #
+        # # get categories
+        # self.categories = category_helper.load_categories()
 
-        # initialize statement data content
-        self.transactions = []
-        self.clicked_category = []  # holds all the user set categories
-
-        # initialize gui content
-        self.master = master
-        self.frame = tk.Frame(self.master)
-        self.frame.grid(row=row_num, column=column_num)
-        self.prompt = Text(self.frame, padx=5, pady=5, height=10)
-        self.prompt.grid(row=4, column=0)
-
-        # get categories
-        self.categories = category_helper.load_categories()
-
-        # photo filepath
+        # # photo filepath
         self.photo_filepath = ""
 
 
@@ -65,6 +73,8 @@ class Statement(Ledger.Ledger):
         gui_helper.gui_print(self.master, self.prompt, "Loaded in raw transaction data, running categorizeStatementAutomatic() now!")
 
         self.categorizeStatementAutomatic()  # run categorizeStatementAutomatic on the transactions
+        gui_helper.gui_print(self.master, self.prompt,
+                             "Statement should be loaded and displayed")
 
     # load_statement_data: this function should be defined per account's Statement class
     # DO NOT DELETE
@@ -100,8 +110,38 @@ class Statement(Ledger.Ledger):
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeStatementAutomatic(self):
+        categories = category_helper.load_categories()
         for transaction in self.transactions:
-            transaction.categorizeTransactionAutomatic(self.categories)
+            transaction.categorizeTransactionAutomatic(categories)
+
+
+    ##############################################################################
+    ####      DATA SAVING FUNCTIONS    ###########################################
+    ##############################################################################
+
+    # TODO: make green/red checkmarks update upon completion of this (for Statement only)
+    #   also - make Category dropdowns on transactions lines change into written text that can be double clicked
+    # save_statement: saves a categorized statement as a csv
+    def save_statement(self):
+        gui_helper.gui_print(self.frame, self.prompt, "Attempting to save statement...")
+        if self.check_statement_status(self.transactions):
+            response = gui_helper.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
+            if response is False:
+                gui_helper.gui_print(self.frame, self.prompt, "Ok, not saving statement")
+                return False
+
+        error_status = 0
+        for transaction in self.transactions:
+            success = db_helper.insert_transaction(transaction)
+            if success == 0:
+                error_status = 1
+
+        if error_status == 1:
+            gui_helper.alert_user("Error in ledger adding!", "At least 1 thing went wrong adding to ledger")
+            return False
+        else:
+            gui_helper.gui_print(self.frame, self.prompt, "Saved statement")
+        return True
 
 
 

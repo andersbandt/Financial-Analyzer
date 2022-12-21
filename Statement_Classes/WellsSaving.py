@@ -7,6 +7,13 @@ from Finance_GUI import gui_helper
 
 
 class WellsSaving(Statement.Statement):
+    def __init__(self, master, account_id, year, month, file, row_num, column_num, *args, **kwargs):
+        # call parent class __init__ method
+        #super(Statement.Statement, self).__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+        super().__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+
+        # initialize identifying statement info
+        self.title = "Wells Saving: " + str(self.account_id) + ":" + str(self.year) + "-" + str(self.month)
 
     # loadWellsFargoCredit: loads data from file 'Checking1.csv' from Wells Fargo account
     # below are the indexes (column numbers) of the source data from the CSV file

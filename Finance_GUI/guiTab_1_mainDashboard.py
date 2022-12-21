@@ -12,11 +12,15 @@ class tabMainDashboard:
         self.master = master
         self.frame = tk.Frame(self.master)
 
+        self.frame.grid(row=0, column=0)
+
         self.initTabContent()
 
 
     def initTabContent(self):
         print("Initializing tab 1 content")
-        l1 = ttk.Label(text="Welcome to the Finance Manager!", style="BW.TLabel")
 
+        # print welcome text
+        l1 = ttk.Label(self.frame, text="Welcome to the Finance Manager!", style="BW.TLabel", font=("Arial", 16))
+        #l1 = Label(self.frame, text="Welcome to the Financial Analyzer!", font=("Arial", 16))
         l1.grid(column=0, row=0)

@@ -1,18 +1,9 @@
-# Personal categories files
-categories.xml
-sub_categories.xml
-Categories.xlsx
 
 # Pycharm stuff
 .idea/
 
 # Databases
-databases/
-
-# Notes
-Notes.txt
-Notes.docx
-Financial Analyzer Notes.docx
+#.db
 
 # Project outputs
 category_tree.PNG

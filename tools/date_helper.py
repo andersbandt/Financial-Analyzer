@@ -1,9 +1,8 @@
 
 # import needed modules
 import datetime
+import re
 
-# import user defined modules
-from Finance_GUI import gui_helper
 
 
 ##############################################################################
@@ -63,8 +62,6 @@ def month2Int(month):
         return -1
 
 
-
-
 # conv_two_digit_date: converts a two digit date representation with separators (MM/DD/YY) into
 #   the format needed for SQL storage (YYYY-MM-DD)
 def conv_two_digit_date(date):
@@ -96,8 +93,9 @@ def conv_two_digit_date(date):
 
 # month_year_to_date_range: converts a string representation of a month and int of year
 #   into the format needed for SQL storage (YYYY-MM-DD)
+#   EXAMPLE: (10, 2022) --> ["2022-10-01", "2022-10-31"]
 def month_year_to_date_range(month, year):
-    month = gui_helper.month2Int(month)
+    month = month2Int(month)
 
     month_28 = [2]
     month_30 = [4, 6, 9, 11]
@@ -125,10 +123,27 @@ def month_year_to_date_range(month, year):
 
     return date_start, date_end
 
+
+# get_date_int_array: returns the current date
+#     output: array format of [year, month, day]
+def get_date_int_array():
+    # using now() to get current time
+    current_time = datetime.datetime.now()
+
+    return [current_time.year, current_time.month, current_time.day]
+
+
+# get_edge_code_dates:
 def get_edge_code_dates(date_start, days_prev, N):
     edge_code_date = []  # length = N - 1
     for i in range(1, N):
         d_prev = round(days_prev * i / N)
-        d_y = datetime.timedelta(days=d_prev)  # this variable can only be named d. No exceptions. Ever.
+        d_y = datetime.timedelta(days=d_prev)  # this variable can only be named d_y - No exceptions ever.
         edge_code_date.insert(0, date_start - d_y)
     return edge_code_date
+
+
+def get_date_days_prev(date_start, days_prev):
+    d_y = datetime.timedelta(days=days_prev)
+    date_prev = date_start - d_y
+    return date_prev

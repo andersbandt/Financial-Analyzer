@@ -1,9 +1,10 @@
 
 # import needed modules
-import re
+
 
 # import user created modules
 from db import db_helper
+from tools import date_helper
 
 ##############################################################################
 ####      VARIOUS FUNCTIONS    ###############################################
@@ -17,10 +18,10 @@ from db import db_helper
 #   for example: [[200000001, 1], 2000000002, 0]]
 def check_account_load_status(account_id, month, year, printmode=None):
     # first check if any transaction data exists at all
-    if not month_year_to_date_range(month, year):
+    if not date_helper.month_year_to_date_range(month, year):
         raise Exception("Uh oh, something went wrong getting date range for status indicators")
     else:
-        date_start, date_end = month_year_to_date_range(month, year)
+        date_start, date_end = date_helper.month_year_to_date_range(month, year)
 
     account_ledger_data = db_helper.get_account_transactions_between_date(account_id, date_start, date_end, printmode)
 
@@ -42,4 +43,8 @@ def check_account_load_status(account_id, month, year, printmode=None):
         return 2
     else:
         return 0
+
+
+def check_transaction_load_status(transaction):
+    pass
 

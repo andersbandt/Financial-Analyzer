@@ -1,13 +1,22 @@
+
+# import needed modules
 from Statement_Classes import Statement
 from Statement_Classes import Transaction
-
 from Finance_GUI import gui_helper
-from Scraping import scraping_helper
-
 from PyPDF2 import PdfFileReader
 
 
 class VanguardRoth(Statement.Statement):
+    def __init__(self, master, account_id, year, month, file, row_num, column_num, *args, **kwargs):
+        # call parent class __init__ method
+        #super(Statement.Statement, self).__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+        super().__init__(master, account_id, year, month, file, row_num, column_num, *args, **kwargs)
+
+        # initialize identifying statement info
+        self.title = "Vanguard Roth: " + str(self.account_id) + ":" + str(self.year) + "-" + str(self.month)
+
+
+
 
     # load_statement_data:
     def load_statement_data(self):

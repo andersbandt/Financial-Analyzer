@@ -1,3 +1,4 @@
+
 # import needed packages
 import tkinter as tk
 from tkinter import *
@@ -16,7 +17,7 @@ from Statement_Classes import Transaction
 
 from Finance_GUI import gui_helper
 from db import db_helper
-from tools import load_helper
+from tools import date_helper
 from categories import category_helper
 from analyzing import graphing_analyzer
 from analyzing import analyzer_helper
@@ -95,7 +96,7 @@ class tabBalances:
         date_entry.grid(row=2, column=2)
 
         # set up button to insert account balance update
-        ins_bal_but = Button(self.fr_ins_bal, text="Insert Balance",
+        ins_bal_but = ttk.Button(self.fr_ins_bal, text="Insert Balance",
                                  command=lambda: self.ins_acc_bal(clicked_account.get(),
                                                                   bal_amount.get("1.0", "end").strip("\n"),
                                                                   date_entry.get()))
@@ -110,25 +111,34 @@ class tabBalances:
         Label(self.fr_rev_bal, text="Review Balance History", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to insert account balance update
-        start_reviewing = Button(self.fr_rev_bal, text="Review Balances",
-                                 command=lambda: self.show_balances_graph())
-        start_reviewing.grid(row=1, column=0)  # place 'Start Categorizing' button
+        show_st_liq_inv = ttk.Radiobutton(self.fr_rev_bal, text="Show Stacked Liquid/Investment Chart",
+                                          command=lambda: self.show_stacked_liquid_investment())
+        show_st_liq_inv.grid(row=1, column=0)
+
+        show_liq_bal = ttk.Radiobutton(self.fr_rev_bal, text="Show Liquid Balance",
+                                          command=lambda: self.show_stacked_liquid_investment())
+        show_liq_bal.grid(row=1, column=1)
 
 
     # ins_acc_bal: inserts data for an account balance record into the SQL database
     # TODO: add error checking for multiple balances per account on SAME day
     def ins_acc_bal(self, account, amount, date):
-        account_id = db_helper.get_account_id_from_name(account)
-        formatted_date = load_helper.conv_two_digit_date(date)
+        try:
+            account_id = db_helper.get_account_id_from_name(account)
+            formatted_date = date_helper.conv_two_digit_date(date)
 
-        db_helper.insert_account_balance(account_id, amount, formatted_date)
-        gui_helper.gui_print(self.frame, self.prompt, "Inserted balance of " + str(amount) + " for account " + account + " on date " + formatted_date)
+            db_helper.insert_account_balance(account_id, amount, formatted_date)
+            gui_helper.gui_print(self.frame, self.prompt, "Inserted balance of " + str(amount) + " for account " + account + " on date " + formatted_date)
+        except Exception as e:
+            gui_helper.gui_print(self.frame, self.prompt, "Something went wrong inserting balance")
+            gui_helper.gui_print(self.frame, self.prompt, e)
+            gui_helper.gui_print(self.frame, self.prompt, "Try again when your code is fixed")
 
 
     # this function will be interesting to write.
     # I think I should keep a cumulative total of two balances - checkings/savings and investments
     # Then as I iterate across dates everytime there is a new entry I update that total and make a new record
-    def show_balances_graph(self):
+    def show_stacked_liquid_investment(self):
         print("INFO: show_balances_graph running")
 
         # create Frame
@@ -162,7 +172,6 @@ class tabBalances:
         canvas = FigureCanvasTkAgg(figure, fr)
         canvas.get_tk_widget().grid(row=3, column=1, columnspan=2)
 
-
         # get data for displaying balances in tabular form
         spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
         recent_Bx = spl_Bx[-1]
@@ -174,6 +183,31 @@ class tabBalances:
         #self.frame.update_idletasks()
 
 
+    def show_liquid_over_time(self):
+        print("INFO: show_liquid_over_time running")
+
+        # create Frame
+        fr = tk.Frame(self.fr_rev_bal)
+        fr.grid(row=2, column=0, columnspan=3, rowspan=3)
+
+        # set params
+        days_previous = 180  # half a year maybe?
+        N = 5
+
+        # get pyplot figure
+        figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
+        canvas = FigureCanvasTkAgg(figure, fr)
+        canvas.get_tk_widget().grid(row=3, column=1, columnspan=2)
+
+        # get data for displaying balances in tabular form
+        spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
+        recent_Bx = spl_Bx[-1]
+
+        print("Working with this for tabulated data conversion")
+        print(recent_Bx)
+
+        # Update buttons frames idle tasks to let tkinter calculate sizes
+        #self.frame.update_idletasks()
 
     def set_acc_show_settings(self, var):
         print("Got this for var:", var)
