@@ -3,7 +3,7 @@
 .idea/
 
 # Databases
-db/
+#.db
 
 # Project outputs
 category_tree.PNG

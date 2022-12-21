@@ -121,7 +121,7 @@ class Statement(Ledger.Ledger):
 
     # TODO: make green/red checkmarks update upon completion of this (for Statement only)
     #   also - make Category dropdowns on transactions lines change into written text that can be double clicked
-    # saveStatement: saves a categorized statement as a csv
+    # save_statement: saves a categorized statement as a csv
     def save_statement(self):
         gui_helper.gui_print(self.frame, self.prompt, "Attempting to save statement...")
         if self.check_statement_status(self.transactions):
@@ -129,19 +129,19 @@ class Statement(Ledger.Ledger):
             if response is False:
                 gui_helper.gui_print(self.frame, self.prompt, "Ok, not saving statement")
                 return False
-        else:
-            error_status = 0
-            for transaction in self.transactions:
-                success = db_helper.insert_transaction(transaction)
-                if success == 0:
-                    error_status = 1
 
-            if error_status == 1:
-                gui_helper.alert_user("Error in ledger adding!", "At least 1 thing went wrong adding to ledger")
-                return False
-            else:
-                gui_helper.gui_print(self.frame, self.prompt, "Saved statement")
-            return True
+        error_status = 0
+        for transaction in self.transactions:
+            success = db_helper.insert_transaction(transaction)
+            if success == 0:
+                error_status = 1
+
+        if error_status == 1:
+            gui_helper.alert_user("Error in ledger adding!", "At least 1 thing went wrong adding to ledger")
+            return False
+        else:
+            gui_helper.gui_print(self.frame, self.prompt, "Saved statement")
+        return True
 
 
 

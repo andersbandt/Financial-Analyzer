@@ -7,7 +7,6 @@ matplotlib.use('TkAgg')
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-import datetime
 from datetime import date
 
 from analyzing import analyzer_helper
@@ -20,11 +19,9 @@ from tools import date_helper
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
 
-# TODO: add amounts
-# TODO: feature idea. Figure out how to create list of final items that you can click "on" or "off" to toggle visibility.
 # piChartExpenseSummary: plots a pie chart of expenses
-# input: statement
-# output: none (plots pie chart)
+#    input: statement
+#    output: none (plots pie chart)
 def create_pie_chart(transactions, categories, printmode=None):
     print("Running graphing_analyzer: create_pie_chart")
 
@@ -109,33 +106,12 @@ def create_summation_vs_time(transactions, categories):
 ####      BALANCES PLOTTING FUNCTIONS    ###################################
 ##############################################################################
 
-# figure out how to carry forward A vector and only
-# https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
+# create_stacked_balances: creates a 'stacked' balances graph showing different asset types
+#     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
 def create_stacked_balances(days_prev, N):
 
+    # generate matrix of Bx values
     spl_Bx = analyzer_helper.gen_Bx_matrix(days_prev, N)
-
-#     # init today date object
-#     today = date.today()
-#
-#     # init date object 'days_prev' less
-#     d = datetime.timedelta(days=days_prev)  # this variable can only be named d. No exceptions. Ever.
-#     a = today - d  # compute the date (today - timedelta)
-#
-#     # FORMATING IS NOT NEEDED WITH ABOVE METHOD TODO: FIGURE OUT WHY the below methods need formatting?
-#     #formatted_today = scraping_helper.format_date_string(today)
-#     #formatted_end = scraping_helper.format_date_string(a)
-#
-#     B = db_helper.get_balances_between_date(a, today)  # balance data
-#
-#
-# # TODO: this function needs to 'carry foward' the dominant A vector and replace values (regardless of up/down status)
-# #   if there is a new account id info
-#     # init A vector
-#     a_A = {}
-#     for account_id in db_helper.get_all_account_ids():
-#         a_A[account_id] = 0
-#
 
     ##################################################################################
     ### SET WHICH ACCOUNT_IDS CORRESPOND TO WHAT TYPE OF ACCOUNT
@@ -154,49 +130,34 @@ def create_stacked_balances(days_prev, N):
 
     investment, liquid = analyzer_helper.gen_bin_A_matrix(spl_Bx, inv_acc, liquid_acc)
 
-    ### create the stacked bar plt objects ##
-    # set params
+
+    # set graph params
     ind = np.arange(N)
     width = 0.5
     scale_factor = 1000
 
-    inv_color = "#20774c"  # dark green
-    liq_color = "#202377"  # dark blue
+    # set graph title and x labels
+    title = "Total of Balances for previous " + str(days_prev) + " days"
+
+    date_ticks = []  # this array should be of length N
+    for edge in date_helper.get_edge_code_dates(date.today(), days_prev, N):
+        date_ticks.append(edge.strftime("%Y-%m-%d"))
+    date_ticks.append(date.today().strftime("%Y-%m-%d"))  # add today
 
     # resize investment data based on scale factor
     for i in range(0, len(investment)):
         investment[i] = investment[i]/scale_factor
         liquid[i] = liquid[i]/scale_factor
 
-    # create the objects
+    # create the stacked bar chart figure
     fig = plt.figure(1)
-
-    p1 = plt.bar(ind, investment, width, color=inv_color)
-    p2 = plt.bar(ind, liquid, width, color=liq_color, bottom=investment)
-
-    # set general plot info
-    plt.title('Total of Balances for previous ' + str(days_prev) + " days")
-    plt.legend((p1[0], p2[0]), ('Investment', 'Liquid'), loc=2, frameon='false')
-
-    # set X axis (date) info
-    date_ticks = []  # this array should be of length N
-    for edge in date_helper.get_edge_code_dates(date.today(), days_prev, N):
-        date_ticks.append(edge.strftime("%Y-%m-%d"))
-    date_ticks.append(date.today().strftime("%Y-%m-%d"))  # add today
-    plt.xticks(ind + width / 2., date_ticks)
-
-    # set Y axis (balance $) info
-    max_val = 200000
-    max_val_s = max_val/scale_factor
-    ticks = 10
-
-    plt.ylabel('Amount (k dollaz $)')
-    plt.yticks(np.arange(0, max_val_s, max_val_s/ticks))  # sets the y axis scaling and step size
-    plt.tick_params(top='off', bottom='off', right='off')
-
-    plt.grid(axis='y', linestyle='-')
-
+    graphing_helper.get_stacked_bar_chart(ind, investment, liquid, title, width, scale_factor, x_ticks=date_ticks)
     return fig
+
+
+# TODO: can't figure out this function until I get a good way to SET WHICH ACCOUNT_IDS CORRESPOND TO WHAT TYPE OF ACCOUNT
+def create_liquid_over_time(days_prev, N):
+    pass
 
 
 ##############################################################################
@@ -242,4 +203,33 @@ def create_asset_alloc_chart():
     graphing_helper.get_pie_plot(amounts, labels, explode=.1, title="Asset Allocation")
     return fig
 
+
+# create_asset_alloc_chart: creates a pie chart representing asset allocation
+def create_hist_price_data_line_chart(days_prev=180):
+    # get list of investment dict objects
+    inv_dict = inv_h.create_investment_dicts()
+
+    # set up array to handle historical price data
+    total = []
+
+    # set up date based on days_prev
+    end_date = date.today()
+    start_date = date_helper.get_date_days_prev(end_date, days_prev)
+
+    # populate array holding dates (x-axis of chart)
+    dates = list(range(days_prev))
+
+    # iterate through list and add to totals
+    for investment in inv_dict:
+        print("INFO: retrieving historical stock price data for portfolio")
+        print("Starting date: ", start_date)
+        print("Ending date: ", end_date)
+        hist_data = inv_h.get_ticker_price_data(investment["ticker"], start_date, end_date, interval="1d")
+
+    totals = list(range(days_prev))
+
+    #  create and return figure
+    fig = plt.figure(1)
+    graphing_helper.get_line_chart(dates, totals, title="Historical Portfolio Performance")
+    return fig
 

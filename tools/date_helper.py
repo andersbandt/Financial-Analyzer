@@ -124,7 +124,8 @@ def month_year_to_date_range(month, year):
     return date_start, date_end
 
 
-# get_date_int_array:
+# get_date_int_array: returns the current date
+#     output: array format of [year, month, day]
 def get_date_int_array():
     # using now() to get current time
     current_time = datetime.datetime.now()
@@ -137,6 +138,12 @@ def get_edge_code_dates(date_start, days_prev, N):
     edge_code_date = []  # length = N - 1
     for i in range(1, N):
         d_prev = round(days_prev * i / N)
-        d_y = datetime.timedelta(days=d_prev)  # this variable can only be named d. No exceptions. Ever.
+        d_y = datetime.timedelta(days=d_prev)  # this variable can only be named d_y - No exceptions ever.
         edge_code_date.insert(0, date_start - d_y)
     return edge_code_date
+
+
+def get_date_days_prev(date_start, days_prev):
+    d_y = datetime.timedelta(days=days_prev)
+    date_prev = date_start - d_y
+    return date_prev

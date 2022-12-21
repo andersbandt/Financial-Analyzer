@@ -11,12 +11,10 @@ from db import db_helper
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    categories_sql = db_helper.get_category_ledger_data()  # TODO: clean this up to only get all category_id - and error checking for multiple of same id
-
+    all_category_id = db_helper.get_all_category_id()
     categories = []
-    for category_sql in categories_sql:
-        categories.append(Category.Category(category_sql[0]))
-
+    for category_id in all_category_id:
+        categories.append(Category.Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
     return categories
 
 

@@ -1,9 +1,11 @@
 
 # import needed modules
 import sqlite3
+import datetime
 
 # set up database path
 database_path = "db/financials.db"
+
 
 # init_connection: creates a sqlite3 connection object with the database path and returns it
 def init_connection():
@@ -28,16 +30,29 @@ def close_connection(conn):
 ####      LEDGER TABLE FUNCTIONS    ##########################################
 ##############################################################################
 
-# TODO: refactor table and function to add a date object representing when the transaction was added
-# inserts a Transaction object into the SQL database
+
+# insert_transaction: inserts a Transaction object into the SQL database
 def insert_transaction(transaction):
+    # init connection
     conn = init_connection()
     cur = conn.cursor()
+
+    # get current datetime
+    cur_datetime = datetime.datetime.now()
+
+    # attempt to add Transaction data
     try:
         with conn:
-            cur.execute("INSERT INTO ledger (trans_date, account_id, category_id, amount, description) VALUES(?, ?, ?, ?, ?)",
-                (transaction.date, transaction.account_id, transaction.category_id, transaction.amount,
-                transaction.description))
+            conn.set_trace_callback(print)
+            cur.execute(
+                "INSERT INTO ledger_new (trans_date, account_id, category_id, amount, description, date_added) VALUES(?, ?, ?, ?, ?)",
+                (transaction.date,
+                 transaction.account_id,
+                 transaction.category_id,
+                 transaction.amount,
+                 transaction.description,
+                 cur_datetime))
+            conn.set_trace_callback(None)
     except sqlite3.Error as e:
         print("Uh oh, something went wrong with inserting into the ledger:", e)
         close_connection(conn)
@@ -50,12 +65,12 @@ def insert_transaction(transaction):
 def update_transaction(transaction):
     conn = init_connection()
     cur = conn.cursor()
-    #print("Updating a transaction")
+    # print("Updating a transaction")
     try:
         with conn:
-            #conn.set_trace_callback(print)
+            # conn.set_trace_callback(print)
             cur.execute("UPDATE ledger SET category_id=? WHERE key=?", (transaction.category_id, transaction.sql_key))
-            #conn.set_trace_callback(None)
+            # conn.set_trace_callback(None)
     except sqlite3.Error as e:
         print("Uh oh, something went wrong with updating the ledger: ", e)
         close_connection(conn)
@@ -78,6 +93,7 @@ def delete_transaction(sql_key):
     close_connection(conn)
     return True
 
+
 # gets ledger data for ALL the transactions in a certain date range
 #   note: date must be in the format of year-month-date
 def get_transactions_between_date(date_start, date_end):
@@ -85,7 +101,8 @@ def get_transactions_between_date(date_start, date_end):
     cur = conn.cursor()
     try:
         conn.set_trace_callback(print)
-        cur.execute("SELECT * FROM ledger WHERE trans_date BETWEEN ? AND ? ORDER BY trans_date ASC", (date_start, date_end))
+        cur.execute("SELECT * FROM ledger WHERE trans_date BETWEEN ? AND ? ORDER BY trans_date ASC",
+                    (date_start, date_end))
         ledger_data = cur.fetchall()
         conn.set_trace_callback(None)
     except sqlite3.Error as e:
@@ -123,7 +140,8 @@ def get_account_transactions_between_date(account_id, date_start, date_end, prin
         if printmode is not None:
             if printmode == "debug":
                 conn.set_trace_callback(print)
-        cur.execute("SELECT * FROM ledger WHERE account_id=? AND trans_date BETWEEN ? AND ? ORDER BY trans_date ASC", (account_id, date_start, date_end))
+        cur.execute("SELECT * FROM ledger WHERE account_id=? AND trans_date BETWEEN ? AND ? ORDER BY trans_date ASC",
+                    (account_id, date_start, date_end))
         ledger_data = cur.fetchall()
         conn.set_trace_callback(None)
     except sqlite3.Error as e:
@@ -161,13 +179,24 @@ def get_category_ledger_data():
     return cur.fetchall()
 
 
+def get_all_category_id():
+    conn = init_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT category_id FROM category")
+    except sqlite3.Error as e:
+        print("Uh oh, something went wrong recalling category IDs", e)
+        return None
+    return cur.fetchall()
+
+
 def get_category_names():
     conn = init_connection()
     cur = conn.cursor()
     try:
         cur.execute("SELECT name FROM category")
     except sqlite3.Error as e:
-        print("Uh oh, something went wrong recalling accounts", e)
+        print("Uh oh, something went wrong recalling category names", e)
         return None
     return cur.fetchall()
 
@@ -207,8 +236,7 @@ def get_category_name_from_id(category_id):
     return category_name
 
 
-# TODO: this function is not working
-#insert_category: inserts a category into the SQL database
+# insert_category: inserts a category into the SQL database
 def insert_category(parent, category_name):
     conn = init_connection()
     cur = conn.cursor()
@@ -233,10 +261,11 @@ def insert_category(parent, category_name):
             return True
 
 
-###  BUDGET CATEGORY TABLE FUNCTIONS
+##############################################################################
+####      BUDGET CATEGORY  FUNCTIONS    ######################################
+##############################################################################
 
-
-#insert_bcat: inserts information for a BudgetCategory into the SQL database
+# insert_bcat: inserts information for a BudgetCategory into the SQL database
 def insert_bcat(category_id, limit, cd):
     conn = init_connection()
     cur = conn.cursor()
@@ -270,6 +299,7 @@ def get_bcat_cd(category_id):
         else:
             return True
 
+
 ##############################################################################
 ####      ACCOUNT TABLE FUNCTIONS    #########################################
 ##############################################################################
@@ -288,7 +318,6 @@ def insert_account(account_name):
             print("Uh oh, something went wrong with adding to category table: ", e)
             raise Exception("Couldn't properly insert account into database")
     return new_account_id
-
 
 
 def get_account_id_from_name(account_name):
@@ -326,15 +355,16 @@ def get_account_name_from_id(account_id):
     close_connection(conn)
     return account_name
 
+
 # get_all_account_ids: return array of account ID's
 def get_all_account_ids():
     conn = init_connection()
     cur = conn.cursor()
     try:
-        #conn.set_trace_callback(print)
+        # conn.set_trace_callback(print)
         cur.execute("SELECT * FROM account")
         ledger_data = cur.fetchall()
-        #conn.set_trace_callback(None)
+        # conn.set_trace_callback(None)
     except sqlite3.Error as e:
         print("Uh oh, something went wrong recalling accounts", e)
         return False
@@ -402,6 +432,7 @@ def get_account_type(account_id):
     close_connection(conn)
     return account_type
 
+
 ##############################################################################
 ####      KEYWORDS TABLE FUNCTIONS    ########################################
 ##############################################################################
@@ -420,6 +451,7 @@ def insert_keyword(keyword, category_id):
             return False
     close_connection(conn)
     return True
+
 
 def get_keyword_ledger_data():
     conn = init_connection()
@@ -466,7 +498,8 @@ def get_balances_between_date(date_start, date_end):
     conn = init_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM balances WHERE bal_date BETWEEN ? AND ? ORDER BY bal_date ASC", (date_start, date_end))
+        cur.execute("SELECT * FROM balances WHERE bal_date BETWEEN ? AND ? ORDER BY bal_date ASC",
+                    (date_start, date_end))
         balances_data = cur.fetchall()
     except sqlite3.Error as e:
         print("Uh oh, something went wrong recalling balances data:", e)
@@ -487,8 +520,9 @@ def insert_investment(date, account_id, ticker, amount, inv_type):
     cur = conn.cursor()
     try:
         with conn:
-            cur.execute("INSERT INTO investment (trans_date, account_id, ticker, shares, inv_type, value, calc_type) VALUES(?, ?, ?, ?, ?, ?, ?)",
-                        (date, account_id, ticker, amount, inv_type, 0, 1))
+            cur.execute(
+                "INSERT INTO investment (trans_date, account_id, ticker, shares, inv_type, value, calc_type) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                (date, account_id, ticker, amount, inv_type, 0, 1))
     except sqlite3.Error as e:
         print("Uh oh, something went inserting into balances: ", e)
         return False
@@ -508,7 +542,6 @@ def get_inv_ledge_data():
 
     close_connection(conn)
     return ledger_data
-
 
 
 # get_all_ticker: gets all the tickers in the database

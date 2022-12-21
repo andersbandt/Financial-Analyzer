@@ -131,7 +131,6 @@ class tabEditCategory:
     ####      ADDING FUNCTIONS        ############################################
     ##############################################################################
 
-    # TODO: adding a category no longer works
     # add_category_gui: attempts to add a category to the SQL database
     def add_category_gui(self, category_name_obj, parent_status, parent):
         # set new category parent status
@@ -155,6 +154,7 @@ class tabEditCategory:
             gui_helper.gui_print(self.frame, self.prompt, "Something went wrong adding category")
 
     # add_account_gui: attempts to add a category to the SQL database
+    # TODO: refactor to add account 'type' support
     def add_account_gui(self, account_text_obj):
         account_name = account_text_obj.get("1.0", "end").strip("\n")
         if account_name == "":

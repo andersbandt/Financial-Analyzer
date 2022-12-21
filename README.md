@@ -41,6 +41,8 @@ auto incrementing.
 - **category_id** *INT(10)* 10 digits representing category that the transaction belongs to
 - **amount** *NUMERIC(10,2)* Float value with max 2 decimal points for transaction value.
 - **trans_description** *VARCHAR(200)* String for representing a description of the transaction.
+- **trans_note** *VARCHAR(200)* String for any transaction notes (optional)
+- **date_added** *DATETIME* Date + time that the transaction was added to the ledger
 
 ### Table: budget
 - **category_id**: *INT(10)* 10 digits representing category that the transaction belongs to
@@ -107,6 +109,19 @@ This helper contains a lot of critical functions working with dates.
 ### scraping_helper.py (Scraping)
 NEEDS TO BE DEPRECATED OFFICIALLY
 
+## Class Descriptions
+
+### Transaction
+A class representing a single transaction. Has some properties like categorization
+and retrieving information. Variables are pretty much the SQL columns.
+
+### Ledger
+This is the basic class for a list of Transaction objects
+
+### Statement - inherits from Ledger
+This is for loading in new data from an account statement. I have basically created
+a class that inherits from Statement for each account with only the *load_statement_data*
+method overriden depending on the format that the account data comes in
 
 ## Budget Analysis Workings
 
@@ -115,7 +130,7 @@ Budget analysis will be based on the Category objects created in the Tree.
 There will have to be some error handling to determine if the sum of all children is greater than the 
 cap of the parent budget.
 
-For software implementation, might want to make Budget a subcategory of Category?
+IDEA: For software implementation, might want to make Budget a subcategory of Category?
 
 ## Investments
 
@@ -123,7 +138,28 @@ For software implementation, might want to make Budget a subcategory of Category
 There is a number that sets what type of investment each is. This should be set in a document.
 
 
-## How to load in data
+## Raw financial data structure
+
+On my computer I have a folder where I store all the statements for each account. Each month
+I go to the accounts and download a file representing all the account information for each
+month. Typically this is .csv format. The file structure for the data looks like:
+
+
+- 2020
+  - Monthly Statements
+    - 01-January
+    - 02-February
+    - ...
+    - 12-December
+- 2021
+  - Monthly Statements
+    - 01-January
+    - ...
+    - 12-December
+
+And so on for as many years as you want to create.
+
+## How to load in data in ap
 
 1.	Select year and month, then select file from dropdown of that menu
 2.	Then select account from another dropdown
@@ -137,13 +173,13 @@ Features, ideas, and things that need improvement.
 
 ### Code Cleanup
 
-One thing to add to make the code prettier is to create a general class for data adding. Notice that I use a very similar 
-layout for adding a Category, keyword, budget category. I could create a general class for that.
-
-Another thing could be creating an InvestmentTransaction object based on the Transaction
-
-Make a general tab object that all tabs inherit from. Could add some
+- One thing to add to make the code prettier is to create a general class for data adding. Notice that I use a very similar 
+layout for adding a Category, keyword, budget category. I could create a general class for that. 
+- Another thing could be creating an InvestmentTransaction object based on the Transaction 
+- Make a general tab object that all tabs inherit from. Could add some
 properties like hide tab or some shit
+- Have GUI elements like dropdowns auto regenerate when an event like a new account
+gets added
 
 ## Resources
 

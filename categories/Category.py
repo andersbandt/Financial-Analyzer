@@ -9,7 +9,6 @@ from categories import category_helper
 from db import db_helper
 
 
-# TODO: refactor 'category_id' to 'id'. Might be tedious
 class Category:
     def __init__(self, category_id):
         self.id = int(category_id)
@@ -26,8 +25,6 @@ class Category:
         self.description = None
 
         # populate keywords
-        # TODO: do I need to populate the keywords for each transaction Object? Kinda slwo probably?
-        #   only load if requeste
         self.keyword = []
         keywords = db_helper.get_keyword_for_category_id(self.id)
         for keyword in keywords:
