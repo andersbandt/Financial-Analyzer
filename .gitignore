@@ -2,8 +2,8 @@
 # Pycharm stuff
 .idea/
 
-# Databases
-#.db
+# Databases - to prevent personal financial information from being online!
+.db
 
 # Project outputs
 category_tree.PNG
