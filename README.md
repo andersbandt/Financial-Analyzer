@@ -30,7 +30,7 @@ Discord server [here](https://discord.gg/qRKYKUzy)
 
 4. Run the application:
     ```bash
-    python3 main.py
+    python3 src/main.py
     ```
     
 ### Financial Data File Structure
