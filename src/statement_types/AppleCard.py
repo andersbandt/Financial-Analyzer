@@ -1,10 +1,9 @@
 
 # import needed moodules
-from Statement_Classes import Statement
-from Statement_Classes import Transaction
+import statement_types.Statement as Statement
+import statement_types.Transaction as Transaction
 
-from Finance_GUI import gui_helper
-
+from gui import gui_helper
 import csv
 
 

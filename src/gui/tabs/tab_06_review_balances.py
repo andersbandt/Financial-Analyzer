@@ -12,15 +12,15 @@ import lambdas
 import sqlite3
 
 # import user defined modules
-from Statement_Classes import Statement
-from Statement_Classes import Transaction
+from statement_types import Statement
+from statement_types import Transaction
 
-from Finance_GUI import gui_helper
+from gui import gui_helper
 from db import db_helper
 from tools import date_helper
-from src.categories import helper
-from analyzing import graphing_analyzer
-from analyzing import analyzer_helper
+from categories import categories_helper
+from analysis import graphing_analyzer
+from analysis import analyzer_helper
 
 # TODO: add some slots for tabular data
 #   for example:
@@ -52,7 +52,7 @@ class tabBalances:
         self.clicked_category = []  # holds all the user set categories
 
         # load Category objects
-        self.categories = helper.load_categories()
+        self.categories = categories_helper.load_categories()
 
         self.initTabContent()
 

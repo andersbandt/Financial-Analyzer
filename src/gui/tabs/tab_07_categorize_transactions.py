@@ -6,8 +6,8 @@ from tkinter import *
 from db import db_helper as db_helper
 
 # import Statement classes
-from Statement_Classes import Ledger
-from Statement_Classes import Transaction
+from statement_types import Ledger
+from statement_types import Transaction
 
 
 class tabCategorizeTransactions:

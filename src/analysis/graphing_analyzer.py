@@ -9,10 +9,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from datetime import date
 
-from analyzing import analyzer_helper
-from analyzing import graphing_helper
-from analyzing import inv_h
-from Finance_GUI import gui_helper
+import analysis.analyzer_helper as analyzer_helper
+import analysis.graphing_helper as graphing_helper
+import analysis.inv_h as inv_h
+from gui import gui_helper
 from tools import date_helper
 
 ##############################################################################

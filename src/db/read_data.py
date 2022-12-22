@@ -1,5 +1,4 @@
 import sqlite3
-import os
 
 # insertReading: insert a value into the readings database
 # inputs: sensor - sensor from which the reading is coming from, should take the form

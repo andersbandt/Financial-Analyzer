@@ -6,21 +6,22 @@ from tkinter import *
 import os  # needed to examine filesystem
 
 # import user defined helper modules
-from Finance_GUI import gui_helper
-from db import db_helper as db_helper
+from gui import gui_helper
+from db import db_helper
 from tools import load_helper
 from tools import date_helper
 
 # import Statement classes
-from Statement_Classes import AppleCard
-from Statement_Classes import Marcus
-from Statement_Classes import Robinhood
-from Statement_Classes import WellsCredit
-from Statement_Classes import WellsChecking
-from Statement_Classes import WellsSaving
-from Statement_Classes import VanguardBrokerage
-from Statement_Classes import VanguardRoth
-from Statement_Classes import Venmo
+from statement_types import AppleCard
+from statement_types import Marcus
+from statement_types import Robinhood
+from statement_types import WellsCredit
+from statement_types import WellsChecking
+from statement_types import WellsSaving
+from statement_types import VanguardBrokerage
+from statement_types import VanguardRoth
+from statement_types import Venmo
+
 
 
 # TODO:

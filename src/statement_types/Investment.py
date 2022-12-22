@@ -4,7 +4,7 @@ Class: Investment
 Investment represents a single investment in an asset
 
 """
-
+from statement_types.Transaction import Transaction
 from datetime import date  # needed to get current date
 from googlefinance import getQuotes
 import json

@@ -1,14 +1,12 @@
-
 # import needed modules
 import numpy as np
 from datetime import date
 import datetime
 
 # import user defined modules
-from Statement_Classes import Transaction
-from Finance_GUI import gui_helper
-from src.categories import helper
-from Finance_GUI import gui_helper
+from statement_types import Transaction
+from categories import categories_helper
+from gui.gui_helper import alert_user
 from db import db_helper
 from tools import date_helper
 
@@ -39,8 +37,8 @@ def create_category_amounts_array(transactions, categories):
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
 def create_top_category_amounts_array(transactions, categories):
-    tree = helper.create_Tree(categories)
-    top_categories = helper.get_top_level_category_names(categories)
+    tree = categories_helper.create_Tree(categories)
+    top_categories = categories_helper.get_top_level_category_names(categories)
 
     category_names = []
     print("\nGot this for length of top categories: ", len(top_categories))
@@ -50,7 +48,7 @@ def create_top_category_amounts_array(transactions, categories):
     for category in top_categories:
         node = tree.search_nodes(name=category)[0]
         for leaf in node:
-            category_amounts[i] += sum_individual_category(transactions, helper.category_name_to_id(leaf.name))
+            category_amounts[i] += sum_individual_category(transactions, categories_helper.category_name_to_id(leaf.name))
         i += 1
     return top_categories, category_amounts
 
@@ -67,7 +65,7 @@ def return_ledger_exec_dict(transactions):
     not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
 
     for transaction in transactions:
-        trans_category = helper.category_id_to_name(transaction.category_id)
+        trans_category = categories_helper.category_id_to_name(transaction.category_id)
 
         if trans_category not in not_counted:
             trans_amount = transaction.getAmount()
@@ -99,7 +97,7 @@ def recall_transaction_data(date_start, date_end, accounts):
             transactions.append(Transaction.Transaction(item[1], item[2], item[3], item[4], item[5], item[0]))
 
     if len(transactions) == 0:
-        gui_helper.alert_user("No results found", "Uh oh, search for data produced no results", "error")
+        alert_user("No results found", "Uh oh, search for data produced no results", "error")
         raise Exception("Uh oh, analyzer_helper.recall_transaction_data produced no results.")
         return None
 

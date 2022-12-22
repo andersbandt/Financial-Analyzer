@@ -1,7 +1,6 @@
-from Statement_Classes import Statement
-from Statement_Classes import Transaction
-
-from Finance_GUI import gui_helper
+import statement_types.Statement as Statement
+import statement_types.Transaction as Transaction
+from gui import gui_helper
 
 from PyPDF2 import PdfFileReader
 

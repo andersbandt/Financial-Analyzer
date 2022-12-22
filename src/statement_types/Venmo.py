@@ -1,9 +1,8 @@
+import statement_types.Statement as Statement
+import statement_types.Transaction as Transaction
+from gui import gui_helper
+
 import csv
-
-from Statement_Classes import Statement
-from Statement_Classes import Transaction
-
-from Finance_GUI import gui_helper
 
 # TODO: need to figure out how to tack on person of interest
 #   the "FROM" column is always the person who initiated the request, not just where the money is going

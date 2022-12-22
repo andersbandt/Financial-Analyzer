@@ -6,14 +6,14 @@ from tkinter import ttk
 import sv_ttk
 
 # import tab classes
-from Finance_GUI import guiTab_1_mainDashboard
-from Finance_GUI import guiTab_2_analyzeSpendingHistory
-from Finance_GUI import guiTab_3_editCategory
-from Finance_GUI import guiTab_4_loadSpendingData
-from Finance_GUI import guiTab_5_reviewInvestments
-from Finance_GUI import guiTab_6_reviewBalances
-from Finance_GUI import guiTab_7_categorizeTransactions
-from Finance_GUI import guiTab_8_budgeting
+from gui.tabs import tab_01_dashboard 
+from gui.tabs import tab_02_analyze_history 
+from gui.tabs import tab_03_edit_category
+from gui.tabs import tab_04_load_data 
+from gui.tabs import tab_05_review_investments
+from gui.tabs import tab_06_review_balances
+from gui.tabs import tab_07_categorize_transactions
+from gui.tabs import tab_08_budgetting
 
 
 class MainApplication:
@@ -36,14 +36,14 @@ class MainApplication:
 	# set up tab control
 	def setTabs(self):
 		print("Creating tab nav bar and initializing tab content")
-		self.tab1 = guiTab_1_mainDashboard.tabMainDashboard(self.nb)
-		self.tab2 = guiTab_2_analyzeSpendingHistory.tabSpendingHistory(self.nb)
-		self.tab3 = guiTab_3_editCategory.tabEditCategory(self.nb)
-		self.tab4 = guiTab_4_loadSpendingData.tabFinanceData(self.nb)
-		self.tab5 = guiTab_5_reviewInvestments.tabInvestments(self.nb)
-		self.tab6 = guiTab_6_reviewBalances.tabBalances(self.nb)
-		self.tab7 = guiTab_7_categorizeTransactions.tabCategorizeTransactions(self.nb)
-		self.tab8 = guiTab_8_budgeting.tabBudgeting(self.nb)
+		self.tab1 = tab_01_dashboard.tabMainDashboard(self.nb)
+		self.tab2 = tab_02_analyze_history.tabSpendingHistory(self.nb)
+		self.tab3 = tab_03_edit_category.tabEditCategory(self.nb)
+		self.tab4 = tab_04_load_data.tabFinanceData(self.nb)
+		self.tab5 = tab_05_review_investments.tabInvestments(self.nb)
+		self.tab6 = tab_06_review_balances.tabBalances(self.nb)
+		self.tab7 = tab_07_categorize_transactions.tabCategorizeTransactions(self.nb)
+		self.tab8 = tab_08_budgetting.tabBudgeting(self.nb)
 
 		self.nb.add(self.tab1.frame, text="Run Program")
 		self.nb.add(self.tab2.frameX, text="Review Spending History")

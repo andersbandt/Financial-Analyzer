@@ -1,7 +1,6 @@
-
 # import needed modules
-from src import categories
 from db import db_helper
+import categories
 
 
 class BudgetCategory(categories.Category):

@@ -1,10 +1,9 @@
-
 # import needed modules
 import sqlite3
 import datetime
 
 # set up database path
-database_path = "db/financials.db"
+database_path = "src/db/financials.db"
 
 
 # init_connection: creates a sqlite3 connection object with the database path and returns it
