@@ -1,15 +1,15 @@
 # import needed modules
 import sqlite3
 import datetime
+from db import DATABASE_DIRECTORY
 
 # set up database path
-database_path = "src/db/financials.db"
 
 
 # init_connection: creates a sqlite3 connection object with the database path and returns it
-def init_connection():
+def init_connection(database_directory: str = DATABASE_DIRECTORY):
     try:
-        conn = sqlite3.connect(database_path)
+        conn = sqlite3.connect(database_directory)
     except sqlite3.Error as er:
         print("Uh oh, something went wrong with connecting to sqlite database:", er)
     return conn
