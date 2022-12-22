@@ -4,12 +4,14 @@ Analyzes spending, budget, and investment data in a GUI
 **TO ANYONE JOINING RECENTLY**
 Discord server [here](https://discord.gg/qRKYKUzy)
 
-## Requirements
+## Setup Information
+
+### Requirements
 - Python3
 - python3-virtualenv
 - python3-pip
 
-## Local Setup
+### Local Setup
 1. Clone the repo:
     ```bash
     git clone https://github.com/andersbandt/Financial-Analyzer
@@ -30,14 +32,28 @@ Discord server [here](https://discord.gg/qRKYKUzy)
     ```bash
     python3 main.py
     ```
+    
+### Financial Data File Structure
 
-## Tab Organization
+On my computer I have a folder where I store all the statements for each account. Each month
+I go to the accounts and download a file representing all the account information for each
+month. Typically this is .csv format. The file structure for the data looks like:
 
-### Investment Tab
+For example - all under "C:\Users\ander\Documents\Financials"
 
-- Need section for displaying every active investment with ticker, latest price, and value
-- Provide a broad overview of portfolio allocation across accounts
-- Have section for displaying total per account_id (of type III only)
+- 2020
+  - Monthly Statements
+    - 01-January
+    - 02-February
+    - ...
+    - 12-December
+- 2021
+  - Monthly Statements
+    - 01-January
+    - ...
+    - 12-December
+
+And so on for as many years as you want to create.
 
 
 ## SQL Organization
@@ -106,39 +122,6 @@ A cd of **1** means that we are counting upwards (savings goal).
   - 5 for cash
 
 
-## Description of MAIN functions
-
-### graphing_analyzer.py (analyzing)
-
-THIS FUNCTION SETS WHICH ACCOUNT_ID CORRESPONDS TO WHAT ACCOUNT TYPE
-
-## Description of HELPER functions
-
-### analyzer_helper.py (analyzing)
-Very general helper module for more of the mathematical analysis side of the analyzing
-
-### graphing_helper.py (analyzing)
-Very good module for turning Transaction and Category data into formats needed for graphing. 
-
-### gui_helper.py (Finance_GUI)
-Assists in a lot of GUI functions (alerts, errors, printing to prompts). Also contains some methods
-for drawing content on the screen
-
-### db_helper.py (db)
-Module for performing financial database operations. Things such as adding, editing, and recalling data
-from all the various parts of the financial app.
-
-### load_helper.py (tools)
-Modules for assisting with loading data from raw source material. Raw source material mainly is .csv
-files, so functions assist with manipulating data in many different formats. Also handles checking
-status of loaded in data.
-
-### date_helper.py (tools)
-This helper contains a lot of critical functions working with dates.
-
-### scraping_helper.py (Scraping)
-NEEDS TO BE DEPRECATED OFFICIALLY
-
 ## Class Descriptions
 
 ### Transaction
@@ -153,43 +136,8 @@ This is for loading in new data from an account statement. I have basically crea
 a class that inherits from Statement for each account with only the *load_statement_data*
 method overriden depending on the format that the account data comes in
 
-## Budget Analysis Workings
 
-Budget analysis will be based on the Category objects created in the Tree.
-
-There will have to be some error handling to determine if the sum of all children is greater than the 
-cap of the parent budget.
-
-IDEA: For software implementation, might want to make Budget a subcategory of Category?
-
-## Investments
-
-### Investment Type
-There is a number that sets what type of investment each is. This should be set in a document.
-
-
-## Raw financial data structure
-
-On my computer I have a folder where I store all the statements for each account. Each month
-I go to the accounts and download a file representing all the account information for each
-month. Typically this is .csv format. The file structure for the data looks like:
-
-
-- 2020
-  - Monthly Statements
-    - 01-January
-    - 02-February
-    - ...
-    - 12-December
-- 2021
-  - Monthly Statements
-    - 01-January
-    - ...
-    - 12-December
-
-And so on for as many years as you want to create.
-
-## How to load in data in ap
+## How to load in data in application
 
 1.	Select year and month, then select file from dropdown of that menu
 2.	Then select account from another dropdown
@@ -197,19 +145,6 @@ And so on for as many years as you want to create.
 4.	A statement object will be created on the GUI depending on what type of account it is
 5.	All transaction data will be loaded
 
-
-## Things to Work On
-Features, ideas, and things that need improvement.
-
-### Code Cleanup
-
-- One thing to add to make the code prettier is to create a general class for data adding. Notice that I use a very similar 
-layout for adding a Category, keyword, budget category. I could create a general class for that. 
-- Another thing could be creating an InvestmentTransaction object based on the Transaction 
-- Make a general tab object that all tabs inherit from. Could add some
-properties like hide tab or some shit
-- Have GUI elements like dropdowns auto regenerate when an event like a new account
-gets added
 
 ## Resources
 
