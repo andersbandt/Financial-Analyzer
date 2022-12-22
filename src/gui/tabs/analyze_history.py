@@ -1,9 +1,9 @@
 # import needed packages
 import tkinter as tk
-from tkinter import *
-from tkcalendar import *
 from tkinter import ttk
 
+import tkinter as tk
+from tkcalendar import Calendar
 from functools import partial
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -37,10 +37,10 @@ class tabSpendingHistory:
         self.frameX = tk.Frame(self.master, width=1200, height=850)
 
         ### create a canvas and scrollbar
-        self.canvas = Canvas(self.frameX, width=1200, height=800)  # for some reason increasing the height breaks the scrollbar?
+        self.canvas = tk.Canvas(self.frameX, width=1200, height=800)  # for some reason increasing the height breaks the scrollbar?
 
         # add scrollbar
-        scroll = Scrollbar(self.frameX, command=self.canvas.yview, orient="vertical")
+        scroll = tk.Scrollbar(self.frameX, command=self.canvas.yview, orient="vertical")
         scroll.grid(row=0, column=1, sticky="ns")
 
         # configure canvas
@@ -82,12 +82,12 @@ class tabSpendingHistory:
 # init_date_account_selection: initializes the calendar widgets and account selection checkbox
     def init_date_account_selection(self):
         # print frame title
-        Label(self.fr_date_select, text="Select Date Range", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_date_select, text="Select Date Range", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up top row of text labels
-        Label(self.fr_date_select, text="Select Start Date").grid(row=1, column=0)
-        Label(self.fr_date_select, text="Select End Date").grid(row=1, column=1)
-        Label(self.fr_date_select, text="Select Accounts").grid(row=1, column=3)
+        tk.Label(self.fr_date_select, text="Select Start Date").grid(row=1, column=0)
+        tk.Label(self.fr_date_select, text="Select End Date").grid(row=1, column=1)
+        tk.Label(self.fr_date_select, text="Select Accounts").grid(row=1, column=3)
 
         # set up calendar pick for start search date
         cur_date = date_helper.get_date_int_array()
@@ -100,7 +100,7 @@ class tabSpendingHistory:
 
         ### create checkbox list for accounts
         # add Frame to store checkboxes
-        account_checkbox_frame = Frame(self.fr_date_select)
+        account_checkbox_frame = tk.Frame(self.fr_date_select)
         account_checkbox_frame.grid(row=2, column=3)
 
         # function for updating current accounts in checkbox
@@ -138,7 +138,7 @@ class tabSpendingHistory:
         # add title and buttons in their own frame
         fr_title_button = tk.Frame(self.fr_graph_proc)
         fr_title_button.grid(row=0, column=0, pady=10, padx=10, sticky="")
-        Label(fr_title_button, text="Graph Processing", font=("Arial", 16)).grid(
+        tk.Label(fr_title_button, text="Graph Processing", font=("Arial", 16)).grid(
             row=0,
             column=0,
             columnspan=3,
@@ -233,7 +233,7 @@ class tabSpendingHistory:
         ### populate data table for Frame fr_g_info
         w = 400
         h = 600
-        canvas = Canvas(fr_g_info, width=w, height=h, bg="white")
+        canvas = tk.Canvas(fr_g_info, width=w, height=h, bg="white")
         canvas.grid(row=0, column=0, padx=20, pady=10)
 
         # set table params
