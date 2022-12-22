@@ -4,6 +4,33 @@ Analyzes spending, budget, and investment data in a GUI
 **TO ANYONE JOINING RECENTLY**
 Discord server [here](https://discord.gg/qRKYKUzy)
 
+## Requirements
+- Python3
+- python3-virtualenv
+- python3-pip
+
+## Local Setup
+1. Clone the repo:
+    ```bash
+    git clone https://github.com/andersbandt/Financial-Analyzer
+    cd Financial-Analyzer
+    ```
+2. Initialize and activate a virtual environment:
+    ```bash
+    virtualenv env
+    source env/bin/activate
+    ```
+
+3. Install dependencies:
+    ```bash
+    pip3 install -r requirements.txt
+    ```
+
+4. Run the application:
+    ```bash
+    python3 main.py
+    ```
+
 ## Tab Organization
 
 ### Investment Tab
