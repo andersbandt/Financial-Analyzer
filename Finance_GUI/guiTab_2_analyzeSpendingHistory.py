@@ -16,8 +16,8 @@ from Statement_Classes import Ledger
 # import user defined helper modules
 from Finance_GUI import gui_helper
 from categories import category_helper
-from analyzing import analyzer_helper
-from analyzing import graphing_analyzer
+from Analyzing import analyzer_helper
+from Analyzing import graphing_analyzer
 from db import db_helper
 
 from tools import date_helper

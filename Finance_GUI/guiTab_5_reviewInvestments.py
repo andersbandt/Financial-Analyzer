@@ -10,8 +10,8 @@ import requests
 from categories import category_helper
 from Finance_GUI import gui_helper
 from db import db_helper
-from analyzing import inv_h
-from analyzing import graphing_analyzer
+from Analyzing import inv_h
+from Analyzing import graphing_analyzer
 
 
 class tabInvestments:
