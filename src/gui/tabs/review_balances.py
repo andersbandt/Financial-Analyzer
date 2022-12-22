@@ -1,7 +1,6 @@
 
 # import needed packages
 import tkinter as tk
-from tkinter import *
 from tkcalendar import Calendar, DateEntry
 from tkinter import ttk
 
@@ -40,7 +39,7 @@ class tabBalances:
         self.fr_rev_bal.grid(row=1, column=0, padx=10, pady=10)
 
         # create prompt for console output
-        self.prompt = Text(self.frame, padx=5, pady=5, height=5)
+        self.prompt = tk.Text(self.frame, padx=5, pady=5, height=5)
         self.prompt.grid(row=0, column=1)
 
         # current transaction for analyzing
@@ -70,25 +69,25 @@ class tabBalances:
         print("Initializing balance info insert frame")
 
         # add a frame title
-        Label(self.fr_ins_bal, text="Insert Account Balance", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_ins_bal, text="Insert Account Balance", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up top row of text labels
-        Label(self.fr_ins_bal, text="Select Account").grid(row=1, column=0)
-        Label(self.fr_ins_bal, text="Enter Amount").grid(row=1, column=1)
-        Label(self.fr_ins_bal, text="Enter Date (MM/DD/YY)").grid(row=1, column=2)
+        tk.Label(self.fr_ins_bal, text="Select Account").grid(row=1, column=0)
+        tk.Label(self.fr_ins_bal, text="Enter Amount").grid(row=1, column=1)
+        tk.Label(self.fr_ins_bal, text="Enter Date (MM/DD/YY)").grid(row=1, column=2)
 
 
         ### set up user inputs for account balance
         # account
         accounts = db_helper.get_account_names()
 
-        clicked_account = StringVar()  # datatype of menu text
+        clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
-        account_drop = OptionMenu(self.fr_ins_bal, clicked_account, *accounts)  # create drop down menu of accounts
+        account_drop = tk.OptionMenu(self.fr_ins_bal, clicked_account, *accounts)  # create drop down menu of accounts
         account_drop.grid(row=2, column=0)
 
         # amount
-        bal_amount = Text(self.fr_ins_bal, padx=5, pady=5, height=5, width=20)
+        bal_amount = tk.Text(self.fr_ins_bal, padx=5, pady=5, height=5, width=20)
         bal_amount.grid(row=2, column=1)
 
         # date entry
@@ -108,7 +107,7 @@ class tabBalances:
         print("Initializing balance review frame")
 
         # add a frame title
-        Label(self.fr_rev_bal, text="Review Balance History", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_rev_bal, text="Review Balance History", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to insert account balance update
         show_st_liq_inv = ttk.Radiobutton(self.fr_rev_bal, text="Show Stacked Liquid/Investment Chart",

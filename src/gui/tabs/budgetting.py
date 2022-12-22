@@ -1,7 +1,6 @@
 
 # import needed modules
 import tkinter as tk
-from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Style
 
@@ -37,8 +36,8 @@ class tabBudgeting:
         self.times_analyze_ran = 0
 
         # set up text box for user communication
-        Label(self.fr_prompt, text="Console Output").grid(row=0, column=0, pady=10)
-        self.prompt = Text(self.fr_prompt, padx=10, pady=10, height=5, width=50)
+        tk.Label(self.fr_prompt, text="Console Output").grid(row=0, column=0, pady=10)
+        self.prompt = tk.Text(self.fr_prompt, padx=10, pady=10, height=5, width=50)
         self.prompt.grid(row=1, column=0, padx=10, pady=10)
 
         # run function to initialize the GUI tab content
@@ -55,7 +54,7 @@ class tabBudgeting:
 
     def init_fr_add_bud(self):
         # print frame title
-        Label(self.fr_add_bud, text="Add Budget Amount", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_add_bud, text="Add Budget Amount", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # KEYWORD ADDING
         # add drop down for keyword
@@ -63,7 +62,7 @@ class tabBudgeting:
         budget_category_drop.grid(row=9, column=0, padx=10, pady=5)
 
         # text input for user to add keyword
-        Label(self.fr_add_bud, text="Budget Amount").grid(row=8, column=1, pady=5)
+        tk.Label(self.fr_add_bud, text="Budget Amount").grid(row=8, column=1, pady=5)
 
         ### add amount for user to input budget limit
         # validation function for input below
@@ -76,18 +75,18 @@ class tabBudgeting:
         vcmd = (self.fr_add_bud.register(MoneyValidation), '%S')  # register function
 
         # add budget amount entry
-        b_amount = Entry(self.fr_add_bud, bg='white', validate='key', vcmd=vcmd)
+        b_amount = tk.Entry(self.fr_add_bud, bg='white', validate='key', vcmd=vcmd)
         b_amount.grid(row=9, column=1)
 
         # set up button to add a budget limit for a Category
-        add_b_amount = Button(self.fr_add_bud, text="Add Budget Amount", command=lambda: self.add_budget_gui(budget_category_option.get(), b_amount.get()))
+        add_b_amount = tk.Button(self.fr_add_bud, text="Add Budget Amount", command=lambda: self.add_budget_gui(budget_category_option.get(), b_amount.get()))
         add_b_amount.grid(row=10, column=3, padx=7, pady=5)  # place 'Start Categorizing' button
 
 
     # init_fr_view_bud: inits Frame for viewing budgeting
     def init_fr_view_bud(self):
         # print frame title
-        Label(self.fr_view_bud, text="View Budget", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_view_bud, text="View Budget", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to display categories flow chart
         style = Style()
@@ -155,7 +154,7 @@ class tabBudgeting:
         # set up Canvas
         w = 525
         h = 625
-        canvas = Canvas(self.fr_view_cat, width=w, height=h, bg="white")
+        canvas = tk.Canvas(self.fr_view_cat, width=w, height=h, bg="white")
         #canvas.grid(row=1, column=0, rowspan=3)
         canvas.grid(row=1, column=0, padx=25, pady=25)
 

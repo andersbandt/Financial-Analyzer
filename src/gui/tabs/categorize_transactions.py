@@ -1,6 +1,5 @@
 # import needed packages
 import tkinter as tk
-from tkinter import *
 
 # import user defined helper modules
 from db import db_helper as db_helper
@@ -17,7 +16,7 @@ class tabCategorizeTransactions:
         self.frame = tk.Frame(self.master)
         self.fr_categorize = tk.Frame(self.frame, highlightcolor="green", height=200, width=100, cursor="dot")
 
-        self.prompt = Text(self.frame, padx=5, pady=5, height=5)
+        self.prompt = tk.Text(self.frame, padx=5, pady=5, height=5)
 
         self.load_yes = 0  # yes button to loading statement data
         self.load_no = 0  # no button for loading statement data
@@ -37,12 +36,12 @@ class tabCategorizeTransactions:
 
 
     def init_categorization_content(self):
-        label = Label(self.fr_categorize, text="In this section you can categorize already loaded in transactions" \
+        label = tk.Label(self.fr_categorize, text="In this section you can categorize already loaded in transactions" \
                                                  "that don't have categories")
         label.grid(row=0, column=0)
 
         # set up button to start loading in file data
-        categorize_transactions = Button(self.fr_categorize, text="Start Categorization", command=lambda: self.start_categorization())
+        categorize_transactions = tk.Button(self.fr_categorize, text="Start Categorization", command=lambda: self.start_categorization())
         categorize_transactions.grid(row=0, column=1)
 
 

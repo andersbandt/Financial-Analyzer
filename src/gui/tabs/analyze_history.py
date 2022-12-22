@@ -1,4 +1,3 @@
-
 # import needed packages
 import tkinter as tk
 from tkinter import *
@@ -15,7 +14,7 @@ from statement_types import Ledger
 
 # import user defined helper modules
 from gui import gui_helper
-from categories import categories_helper
+import categories.categories_helper as category_helper
 from analysis import analyzer_helper
 from analysis import graphing_analyzer
 from db import db_helper
@@ -224,7 +223,7 @@ class tabSpendingHistory:
         fr_g_ledger.grid(row=1, column=2)
 
         ### get pyplot figure, patches, and texts
-        figure, categories, amounts = graphing_analyzer.create_pie_chart(self.transactions, gui_helper.load_categories(), printmode="debug")
+        figure, categories, amounts = graphing_analyzer.create_pie_chart(self.transactions, category_helper.load_categories(), printmode="debug")
 
         # add figure to FigureCanvas
         canvas = FigureCanvasTkAgg(figure, fr_graph)
@@ -267,7 +266,7 @@ class tabSpendingHistory:
         self.check_data_load_status()
 
         # get pyplot figure
-        figure = graphing_analyzer.create_top_pie_chart(self.transactions, gui_helper.load_categories())
+        figure = graphing_analyzer.create_top_pie_chart(self.transactions, category_helper.load_categories())
         canvas = FigureCanvasTkAgg(figure, self.fr_graph_proc)
         canvas.get_tk_widget().grid(row=2, column=0)
 
@@ -280,7 +279,7 @@ class tabSpendingHistory:
         self.check_data_load_status()
 
         # get pyplot figure
-        figure = graphing_analyzer.create_top_pie_chart(self.transactions, gui_helper.load_categories())
+        figure = graphing_analyzer.create_top_pie_chart(self.transactions, category_helper.load_categories())
         canvas = FigureCanvasTkAgg(figure, self.fr_graph_proc)
         canvas.get_tk_widget().grid(row=2, column=0)
 
@@ -296,5 +295,3 @@ class tabSpendingHistory:
         if not self.data_loaded:
             gui_helper.alert_user("WARNING", "No ledger data is loaded in yet.", "warning")
         return
-
-

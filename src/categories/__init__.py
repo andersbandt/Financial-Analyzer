@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import *
 from tkinter.ttk import *
 
+
 # import user defined packages
 from categories import categories_helper
 from db import db_helper
