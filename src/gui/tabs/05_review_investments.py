@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import requests
 
 # import user defined modules
-from categories import category_helper
+from src.categories import helper
 from Finance_GUI import gui_helper
 from db import db_helper
 from analyzing import inv_h
@@ -44,7 +44,7 @@ class tabInvestments:
         self.clicked_category = []  # holds all the user set categories
 
         # load Category objects
-        self.categories = category_helper.load_categories()
+        self.categories = helper.load_categories()
 
         self.initTabContent()
 

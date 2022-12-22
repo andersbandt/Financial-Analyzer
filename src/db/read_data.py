@@ -5,11 +5,11 @@ import os
 # inputs: sensor - sensor from which the reading is coming from, should take the form
 # 	of a string with the same name as the desired table name
 def insertReading(sensor, value, date_string):
-	conn = lite.connect('databases/readings.db')
+	conn = sqlite3.connect('databases/readings.db')
 	cur = conn.cursor()
 
 	with conn:
-		cur = con.cursor()
+		cur = conn.cursor()
 		cur.execute('INSERT INTO ? (DATETIME, VALUE) \
 			VALUES(?, ?)', (sensor, value, date_string))
 

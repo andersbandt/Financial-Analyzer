@@ -18,7 +18,7 @@ from Statement_Classes import Transaction
 from Finance_GUI import gui_helper
 from db import db_helper
 from tools import date_helper
-from categories import category_helper
+from src.categories import helper
 from analyzing import graphing_analyzer
 from analyzing import analyzer_helper
 
@@ -52,7 +52,7 @@ class tabBalances:
         self.clicked_category = []  # holds all the user set categories
 
         # load Category objects
-        self.categories = category_helper.load_categories()
+        self.categories = helper.load_categories()
 
         self.initTabContent()
 
