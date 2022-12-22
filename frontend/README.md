@@ -12,19 +12,24 @@ See [Vite Configuration Reference](https://vitejs.dev/config/).
 
 ## Project Setup
 
-First make sure you have [Node.js](https://nodejs.org/en/download/) installed
+First make sure you have [Node.js](https://nodejs.org/en/download/) installed. Once installed properly, navigate to this directory on
+your machine and type
 
 ```sh
 npm install
 ```
+in order to install.
 
 ### Compile and Hot-Reload for Development
+
+To compile and hot-reload and run a local server for development
 
 ```sh
 npm run dev
 ```
 
 ### Compile and Minify for Production
+To compile and minify for production
 
 ```sh
 npm run build
