@@ -17,7 +17,7 @@ from gui import gui_helper
 import categories.categories_helper as category_helper
 from analysis import analyzer_helper
 from analysis import graphing_analyzer
-from db import db_helper
+import db.helpers as dbh
 
 from tools import date_helper
 
@@ -111,7 +111,7 @@ class tabSpendingHistory:
                 self.accounts.append(account_id)
 
         # populate checkboxes with account data
-        account_data = db_helper.get_account_ledger_data()
+        account_data = dbh.account.get_account_ledger_data()
         checkboxes = []
         checkbox_vars = []
         x = 0

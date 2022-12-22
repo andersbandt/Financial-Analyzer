@@ -2,7 +2,7 @@
 import tkinter as tk
 
 # import user defined helper modules
-from db import db_helper as db_helper
+import db.helpers as dbh
 
 # import Statement classes
 from statement_types import Ledger
@@ -49,7 +49,7 @@ class tabCategorizeTransactions:
         self.fr_categorize.grid_forget()
 
         # get list of transactions without categories and form transactions
-        ledger_data = db_helper.get_uncategorized_transactions()
+        ledger_data = dbh.ledger.get_uncategorized_transactions()
 
         transactions = []
         for data in ledger_data:

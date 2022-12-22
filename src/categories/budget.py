@@ -1,6 +1,6 @@
 # import needed modules
-from db import db_helper
 import categories
+import db.helpers as dbh
 
 
 class BudgetCategory(categories.Category):
@@ -9,6 +9,6 @@ class BudgetCategory(categories.Category):
         #self.category_id = category_id
 
 
-        self.cd = db_helper.get_bcat_cd()
+        self.cd = dbh.budget.get_bcat_cd()
 
 

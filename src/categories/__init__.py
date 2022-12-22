@@ -6,7 +6,7 @@ from tkinter.ttk import *
 
 # import user defined packages
 from categories import categories_helper
-from db import db_helper
+import db.helpers as dbh
 
 
 class Category:
@@ -14,7 +14,7 @@ class Category:
         self.id = int(category_id)
 
         # grab sql data
-        cat_sql_data = db_helper.get_category_info(category_id)
+        cat_sql_data = dbh.category.get_category_info(category_id)
         self.name = cat_sql_data[0][2]
         self.parent = cat_sql_data[0][1]
 
@@ -26,7 +26,7 @@ class Category:
 
         # populate keywords
         self.keyword = []
-        keywords = db_helper.get_keyword_for_category_id(self.id)
+        keywords = dbh.keywords.get_keyword_for_category_id(self.id)
         for keyword in keywords:
             self.keyword.append(keyword[2])  # keyword string is third column of sql data structure
 

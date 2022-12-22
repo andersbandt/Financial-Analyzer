@@ -8,7 +8,7 @@ from functools import partial  # needed adding callback functions with correct v
 # import user defined modules
 from gui import gui_helper
 from categories import categories_helper
-from db import db_helper
+import db.helpers as dbh
 
 
 class Ledger:
@@ -77,7 +77,7 @@ class Ledger:
 
         # go through selected Transactions and delete
         for sql_key in self.sel_trans:
-            db_helper.delete_transaction(sql_key)
+            dbh.ledger.delete_transaction(sql_key)
         return
 
     ##############################################################################
@@ -284,7 +284,7 @@ class Ledger:
             labels[i][3] = tk.Label(self.frame_data, text=string_dict["amount"])  # amount
 
             # account info
-            account_name = db_helper.get_account_name_from_id(string_dict["source"])
+            account_name = dbh.account.get_account_name_from_id(string_dict["source"])
             labels[i][5] = tk.Label(self.frame_data, text=account_name)
 
             ### if the transaction does not yet have a category
@@ -336,7 +336,7 @@ class Ledger:
         else:
             error_status = 0
             for transaction in self.transactions:
-                success = db_helper.update_transaction(transaction)
+                success = dbh.ledger.update_transaction(transaction)
                 if success == 0:
                     error_status = 1
 

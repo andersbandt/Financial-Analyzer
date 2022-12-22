@@ -7,8 +7,12 @@ import datetime
 from statement_types import Transaction
 from categories import categories_helper
 from gui.gui_helper import alert_user
-from db import db_helper
 from tools import date_helper
+
+import db.helpers as dbh
+
+
+
 
 
 # sum_individual_category: returns the dollar ($) total of a certain category in a statement
@@ -82,13 +86,12 @@ def return_ledger_exec_dict(transactions):
 
     return exec_summary
 
-
 # recall_transaction_data: loads up an array of Transaction objects based on date range and accounts
 #     @param date_start - the starting date for search
 #     @param date_end - the ending date for search
 #     @param accounts - array of which accounts to search
 def recall_transaction_data(date_start, date_end, accounts):
-    ledger_data = db_helper.get_transactions_between_date(date_start, date_end)
+    ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
 
     # create an array of Transaction objects with the database data
     transactions = []  # clear transactions
@@ -120,7 +123,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
     a = today - d  # compute the date (today - timedelta)
 
     # get balance data
-    B = db_helper.get_balances_between_date(a, today)
+    B = dbh.balances.get_balances_between_date(a, today)
 
     # populate arrays for displaying data. All of length N
     spl_Bx = []  # this is also the length of N
@@ -130,14 +133,14 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
 
     # init A vector
     a_A = {}
-    for account_id in db_helper.get_all_account_ids():
+    for account_id in dbh.account.get_all_account_ids():
         a_A[account_id] = 0
 
     # search through edge code limits to add first (N-1) bin A vectors
     for i in range(0, N-1):
         # add T/F checker for if value has been updated
         bal_added = {}
-        for account_id in db_helper.get_all_account_ids():
+        for account_id in dbh.account.get_all_account_ids():
             bal_added[account_id] = False
 
         # iterate through all balances data
@@ -203,7 +206,7 @@ def gen_bin_A_matrix(spl_Bx, *args):
     for Bx in spl_Bx:
         invest_total = 0
         liquid_total = 0
-        for account_id in db_helper.get_all_account_ids():
+        for account_id in dbh.account.get_all_account_ids():
             acc_type = get_account_type(account_id)
 
             i = 0
@@ -243,7 +246,7 @@ def gen_bin_A_matrix(spl_Bx, *args):
 
 
 def get_account_type(account_id):
-    acc_type = db_helper.get_account_type(account_id)
+    acc_type = dbh.account.get_account_type(account_id)
     return acc_type
 
 

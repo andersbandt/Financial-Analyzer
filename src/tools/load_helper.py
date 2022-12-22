@@ -3,8 +3,8 @@
 
 
 # import user created modules
-from db import db_helper
 from tools import date_helper
+import db.helpers as dbh
 
 ##############################################################################
 ####      VARIOUS FUNCTIONS    ###############################################
@@ -23,10 +23,10 @@ def check_account_load_status(account_id, month, year, printmode=None):
     else:
         date_start, date_end = date_helper.month_year_to_date_range(month, year)
 
-    account_ledger_data = db_helper.get_account_transactions_between_date(account_id, date_start, date_end, printmode)
+    account_ledger_data = dbh.ledger.get_account_transactions_between_date(account_id, date_start, date_end, printmode)
 
     if printmode is not None:
-        print("\nExamining account:", db_helper.get_account_name_from_id(account_id))
+        print("\nExamining account:", dbh.account.get_account_name_from_id(account_id))
         print("Got this many transactions for account in date range: ", len(account_ledger_data))
 
         print("Transactions below: ")
