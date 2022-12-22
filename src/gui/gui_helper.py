@@ -8,7 +8,7 @@ import math
 
 # import user defined modules
 from tools import date_helper
-from db import db_helper
+import db.helpers as dbh
 
 
 #TODO: make general console output that lives on the bottom of the application
@@ -62,7 +62,7 @@ def get_statement_folder(base_filepath, year, month):
 #   drop - tkinter GUI object that will need to be placed on the Frame with .grid()
 #   clicked_category - variable representing the chosen Category
 def generate_all_category_dropdown(frame):
-    categories = db_helper.get_category_names()
+    categories = dbh.category.get_category_names()
 
     clicked_category = tk.StringVar(frame)  # datatype of menu text
     clicked_category.set(categories[0])  # initial menu text

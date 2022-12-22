@@ -7,7 +7,7 @@ from functools import partial
 import statement_types.Ledger as Ledger
 from gui import gui_helper
 from categories import categories_helper
-from db import db_helper
+import db.helpers as dbh
 
 
 # TODO: make the 'update' button say 'save' for the Statement
@@ -91,7 +91,7 @@ class Statement(Ledger.Ledger):
             month_start = str(self.year) + "-" + "0" + str(self.month) + "-" + "01"
             month_end = str(self.year) + "-" + "0" + str(self.month) + "-" + "31"
 
-        loaded_transactions = db_helper.get_account_transactions_between_date(self.account_id, month_start, month_end)
+        loaded_transactions = dbh.ledger.get_account_transactions_between_date(self.account_id, month_start, month_end)
 
         # compare to loaded length of transactions
         if len(loaded_transactions) == len(current_transactions):
@@ -131,7 +131,7 @@ class Statement(Ledger.Ledger):
 
         error_status = 0
         for transaction in self.transactions:
-            success = db_helper.insert_transaction(transaction)
+            success = dbh.ledger.insert_transaction(transaction)
             if success == 0:
                 error_status = 1
 
