@@ -37,21 +37,19 @@ Discord server [here](https://discord.gg/qRKYKUzy)
 
 On my computer I have a folder where I store all the statements for each account. Each month
 I go to the accounts and download a file representing all the account information for each
-month. Typically this is .csv format. The file structure for the data looks like:
+month. Typically, this is .csv format. The file structure for the data looks like:
 
-For example - all under "C:\Users\ander\Documents\Financials"
+For example - all under "C:\Users\ander\Documents\Financials\"
 
-- 2020
-  - Monthly Statements
-    - 01-January
-    - 02-February
+- Monthly Statement\2020\
+    - 01-January\
+    - 02-February\
     - ...
     - 12-December
-- 2021
-  - Monthly Statements
-    - 01-January
+- Monthly Statements\2021\
+    - 01-January\
     - ...
-    - 12-December
+    - 12-December\
 
 And so on for as many years as you want to create.
 
