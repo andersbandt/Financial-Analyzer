@@ -18,7 +18,7 @@ def db_init():
 
 # thing that's gotta be here
 if __name__ == "__main__":
-    db_init()
+    # db_init() # only init the db if it doesn't have tables
     main()
 
 
