@@ -1,10 +1,10 @@
 
 # import needed modules
-from Finance_GUI import gui_driver
+import gui
 
 # main: main function of the program. Really just calls gui_driver
 def main():
-	gui_driver.main()
+	gui.main()
 	return None
 
 # thing that's gotta be here

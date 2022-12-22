@@ -1,7 +1,4 @@
-import sqlite3
 from ete3 import Tree
-
-from src import categories
 from db import db_helper
 
 
@@ -11,10 +8,11 @@ from db import db_helper
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
+    from categories import Category
     all_category_id = db_helper.get_all_category_id()
     categories = []
     for category_id in all_category_id:
-        categories.append(categories.Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
+        categories.append(Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
     return categories
 
 

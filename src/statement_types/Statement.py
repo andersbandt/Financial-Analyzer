@@ -5,9 +5,9 @@ from tkinter import *  # TODO: bad practice I think, fix this. Like get Text mod
 from functools import partial
 
 # import user defined modules
-from Statement_Classes import Ledger
-from Finance_GUI import gui_helper
-from src.categories import helper
+import statement_types.Ledger as Ledger
+from gui import gui_helper
+from categories import categories_helper
 from db import db_helper
 
 
@@ -110,7 +110,7 @@ class Statement(Ledger.Ledger):
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeStatementAutomatic(self):
-        categories = helper.load_categories()
+        categories = categories_helper.load_categories()
         for transaction in self.transactions:
             transaction.categorizeTransactionAutomatic(categories)
 
