@@ -1,5 +1,5 @@
 # Roadmap for Financial-Analyzer Product
-written on December 12th, 2022
+written on December 22nd, 2022
 
 ## Motivations behind this project
 
