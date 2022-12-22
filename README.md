@@ -1,6 +1,9 @@
 # Financial-Analyzer
 Analyzes spending, budget, and investment data in a GUI
 
+**TO ANYONE JOINING RECENTLY**
+Discord server [here](https://discord.gg/qRKYKUzy)
+
 ## Tab Organization
 
 ### Investment Tab
