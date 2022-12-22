@@ -28,6 +28,8 @@ To compile and hot-reload and run a local server for development
 npm run dev
 ```
 
+At this point you should get a localhost address (for example - http://localhost:5173/) where you can view the application
+
 ### Compile and Minify for Production
 To compile and minify for production
 
