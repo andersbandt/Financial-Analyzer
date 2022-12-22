@@ -6,9 +6,9 @@ import os  # needed to examine filesystem
 
 # import user defined helper modules
 from gui import gui_helper
-from db import db_helper
 from tools import load_helper
 from tools import date_helper
+import db.helpers as dbh
 
 # import Statement classes
 from statement_types import AppleCard
@@ -109,7 +109,7 @@ class tabFinanceData:
         self.files_drop.grid(row=3, column=1)
 
         # place drop down for statement type
-        accounts = db_helper.get_account_ledger_data()
+        accounts = dbh.account.get_account_ledger_data()
 
         clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
@@ -130,7 +130,7 @@ class tabFinanceData:
     def check_month_data_status(self, month, year):
         ### create T/F table for account_ids
         account_stats = []
-        for account_id in db_helper.get_all_account_ids():
+        for account_id in dbh.account.get_all_account_ids():
             account_stats.append([account_id, load_helper.check_account_load_status(account_id, month, year, printmode=None)])
 
         ### draw red/yellow/green boxes
@@ -156,7 +156,7 @@ class tabFinanceData:
                 color = 'yellow'
 
             cv.create_rectangle(width_rec*i + 10, 10, width_rec*i + width_rec - 15, height - 10, fill=color)
-            cv.create_text(width_rec * i + width_rec / 2, height / 2, text=db_helper.get_account_name_from_id(stats[0]),
+            cv.create_text(width_rec * i + width_rec / 2, height / 2, text=dbh.account.get_account_name_from_id(stats[0]),
                            fill="black")
             i += 1
 

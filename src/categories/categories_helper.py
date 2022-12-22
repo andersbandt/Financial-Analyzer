@@ -1,6 +1,5 @@
 from ete3 import Tree
-from db import db_helper
-
+import db.helpers as dbh
 
 ##############################################################################
 ####      CATEGORY ARRAY FUNCTIONS    ########################################
@@ -9,7 +8,7 @@ from db import db_helper
 # load_categories: returns an array containing all the category objects
 def load_categories():
     from categories import Category
-    all_category_id = db_helper.get_all_category_id()
+    all_category_id = dbh.category.get_all_category_id()
     categories = []
     for category_id in all_category_id:
         categories.append(Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
@@ -41,7 +40,7 @@ def get_category_children(category_id, printmode=None):
 
     # init array to return and ledger data
     category_children = []
-    cat_ledge_data = db_helper.get_category_ledger_data()
+    cat_ledge_data = dbh.category.get_category_ledger_data()
 
     # iterate through sql data and grab categories where parent is category
     for cat_sql in cat_ledge_data:
@@ -58,12 +57,12 @@ def get_category_children(category_id, printmode=None):
 
 # category_name_to_id: converts a category name to the ID
 def category_name_to_id(category_name):
-    return db_helper.get_category_id_from_name(category_name)
+    return dbh.category.get_category_id_from_name(category_name)
 
 
 # category_id_to_name
 def category_id_to_name(category_id):
-    return db_helper.get_category_name_from_id(category_id)
+    return dbh.category.get_category_name_from_id(category_id)
 
 
 ##############################################################################

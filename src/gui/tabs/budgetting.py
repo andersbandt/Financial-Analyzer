@@ -9,8 +9,8 @@ import math
 
 # import user defined modules
 from categories import categories_helper
-from db import db_helper
 from gui import gui_helper
+import db.helpers as dbh
 
 
 class tabBudgeting:
@@ -126,7 +126,7 @@ class tabBudgeting:
 
         # attempt to set BudgetCategory
         print("add_budget_gui: attempting to insert BudgetCategory of category_id= " + str(category_id))
-        res = db_helper.insert_bcat(category_id, b_amount, cd)  # add BudgetCategory date. category_id, lim, and cd
+        res = dbh.budget.insert_bcat(category_id, b_amount, cd)  # add BudgetCategory date. category_id, lim, and cd
         # if not res:
         #     gui_helper.gui_print(self.frame, self.prompt, "Uh oh, something went wrong adding keyword")
         # else:

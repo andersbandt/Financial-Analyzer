@@ -40,8 +40,9 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
     dependency injection reasons.
     """
     with sqlite3.connect(database_directory) as conn:
+        cursor = conn.cursor()
         for statement in statements:
-            conn.execute(statement)
+            cursor.execute(statement)
 
 # alter ledger table structure
 # try:

@@ -3,8 +3,8 @@
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
 import yahoo_fin.stock_info as si
 
-from db import db_helper
 import json
+import db.helpers as dbh
 
 
 
@@ -46,7 +46,7 @@ def get_ticker_price_data(ticker, start_date, end_date, interval):
 
 def create_investment_dicts():
     inv_data = []
-    inv_ledge = db_helper.get_inv_ledge_data()
+    inv_ledge = dbh.investments.get_inv_ledge_data()
 
     for ledge in inv_ledge:
         ledge_dict = {
