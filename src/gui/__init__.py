@@ -6,15 +6,14 @@ from tkinter import ttk
 import sv_ttk
 
 # import tab classes
-from gui.tabs import tab_01_dashboard 
-from gui.tabs import tab_02_analyze_history 
-from gui.tabs import tab_03_edit_category
-from gui.tabs import tab_04_load_data 
-from gui.tabs import tab_05_review_investments
-from gui.tabs import tab_06_review_balances
-from gui.tabs import tab_07_categorize_transactions
-from gui.tabs import tab_08_budgetting
-
+from gui.tabs import dashboard 
+from gui.tabs import analyze_history 
+from gui.tabs import edit_category
+from gui.tabs import load_data 
+from gui.tabs import review_investments
+from gui.tabs import review_balances
+from gui.tabs import categorize_transactions
+from gui.tabs import budgetting
 
 class MainApplication:
 	def __init__(self, window, *args, **kwargs):
@@ -36,14 +35,14 @@ class MainApplication:
 	# set up tab control
 	def setTabs(self):
 		print("Creating tab nav bar and initializing tab content")
-		self.tab1 = tab_01_dashboard.tabMainDashboard(self.nb)
-		self.tab2 = tab_02_analyze_history.tabSpendingHistory(self.nb)
-		self.tab3 = tab_03_edit_category.tabEditCategory(self.nb)
-		self.tab4 = tab_04_load_data.tabFinanceData(self.nb)
-		self.tab5 = tab_05_review_investments.tabInvestments(self.nb)
-		self.tab6 = tab_06_review_balances.tabBalances(self.nb)
-		self.tab7 = tab_07_categorize_transactions.tabCategorizeTransactions(self.nb)
-		self.tab8 = tab_08_budgetting.tabBudgeting(self.nb)
+		self.tab1 = dashboard.tabMainDashboard(self.nb)
+		self.tab2 = analyze_history.tabSpendingHistory(self.nb)
+		self.tab3 = edit_category.tabEditCategory(self.nb)
+		self.tab4 = load_data.tabFinanceData(self.nb)
+		self.tab5 = review_investments.tabInvestments(self.nb)
+		self.tab6 = review_balances.tabBalances(self.nb)
+		self.tab7 = categorize_transactions.tabCategorizeTransactions(self.nb)
+		self.tab8 = budgetting.tabBudgeting(self.nb)
 
 		self.nb.add(self.tab1.frame, text="Run Program")
 		self.nb.add(self.tab2.frameX, text="Review Spending History")
