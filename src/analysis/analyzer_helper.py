@@ -207,7 +207,7 @@ def gen_bin_A_matrix(spl_Bx, *args):
         invest_total = 0
         liquid_total = 0
         for account_id in dbh.account.get_all_account_ids():
-            acc_type = get_account_type(account_id)
+            acc_type = dbh.account.get_account_type(account_id)
 
             i = 0
             for acc_type_bin in args:
@@ -231,25 +231,6 @@ def gen_bin_A_matrix(spl_Bx, *args):
         liquid.append(liquid_total)
 
     return [investment, liquid]
-
-
-##############################################################################
-####      GENERAL HELPER FUNCTIONS       #####################################
-##############################################################################
-
-
-
-
-##############################################################################
-####      ACCOUNT INFO FUNCTIONS    ##########################################
-##############################################################################
-
-
-def get_account_type(account_id):
-    acc_type = dbh.account.get_account_type(account_id)
-    return acc_type
-
-
 
 ##############################################################################
 ####      BUDGET ANALYSIS FUNCTIONS    #######################################
