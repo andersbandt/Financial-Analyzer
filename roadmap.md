@@ -47,7 +47,7 @@ like below
       |
       |--SHOPPING
       |
--- /root       /-TRANSFER
+      -root       /-TRANSFER
       |-INTERNAL
       |        \-PAYMENT
       |
