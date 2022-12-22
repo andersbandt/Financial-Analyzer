@@ -46,3 +46,4 @@ w3lib==2.1.1
 websockets==10.4
 yahoo-fin==0.8.9.1
 zipp==3.11.0
+PyQt5
