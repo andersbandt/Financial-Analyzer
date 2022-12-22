@@ -123,6 +123,8 @@ class tabEditCategory:
         #                              command=lambda: self.show_category_tree_diagram(printmode="debug"))  # PRINTMODE
         # show_categories.grid(row=0, column=1)  # place 'Start Categorizing' button
 
+        # print out ASCII tree
+        self.renderTree()
         self.show_category_tree_diagram(printmode="debug")
 
     ##############################################################################
@@ -354,7 +356,7 @@ class tabEditCategory:
         #tk.Label(self.frame, text=t.get_ascii(), width=40).grid(row=0, column=4, rowspan=8)
 
         t.show(layout=my_layout, tree_style=ts, name='ETE')  # start an interactive session to visualize the current node
-        t.render("category_tree.png", w=180, units="mm", tree_style=ts)  # renders the node structure as an image
+        #t.render("category_tree.png", w=180, units="mm", tree_style=ts)  # renders the node structure as an image
 
 
 
