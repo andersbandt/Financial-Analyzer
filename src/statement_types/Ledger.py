@@ -8,7 +8,7 @@ from functools import partial  # needed adding callback functions with correct v
 
 # import user defined modules
 from Finance_GUI import gui_helper
-from categories import category_helper
+from src.categories import helper
 from db import db_helper
 
 
@@ -87,7 +87,7 @@ class Ledger:
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeLedgerAutomatic(self):
-        categories = category_helper.load_categories()
+        categories = helper.load_categories()
         for transaction in self.transactions:
 
             transaction.categorizeTransactionAutomatic(categories)
@@ -141,7 +141,7 @@ class Ledger:
     # change_transaction_category
     def change_transaction_category(self, index, *args):
         gui_helper.gui_print(self.frame, self.prompt, "Changing transaction number " + str(index) + " to category: " + self.clicked_category[index].get())
-        category_id = category_helper.category_name_to_id(self.clicked_category[index].get())
+        category_id = helper.category_name_to_id(self.clicked_category[index].get())
         self.transactions[index].setCategory(category_id)
         return
 
@@ -247,7 +247,7 @@ class Ledger:
 
         #self.clicked_category = [StringVar(self.frame_data) for i in range(rows)]  # initialize StringVar entries for OptionMenus
         self.clicked_category = [0] * rows
-        categories = category_helper.load_categories()
+        categories = helper.load_categories()
 
         # place data for each transaction in a separate row
         for i in range(0, rows):
@@ -295,11 +295,11 @@ class Ledger:
                 self.clicked_category[i].trace("w", partial(self.change_transaction_category, i))
                 labels[i][4] = tk.OptionMenu(self.frame_data, self.clicked_category[i],
                                              # TODO
-                                             *(category_helper.get_category_strings(categories)))
+                                             *(helper.get_category_strings(categories)))
 
             # if the transaction already has a category assigned
             else:
-                labels[i][4] = tk.Label(self.frame_data, text=category_helper.category_id_to_name(string_dict["category"]))
+                labels[i][4] = tk.Label(self.frame_data, text=helper.category_id_to_name(string_dict["category"]))
 
             # place all the components for the transaction we are handling
             for j in range(0, columns):

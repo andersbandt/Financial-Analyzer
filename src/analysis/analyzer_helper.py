@@ -7,7 +7,7 @@ import datetime
 # import user defined modules
 from Statement_Classes import Transaction
 from Finance_GUI import gui_helper
-from categories import category_helper
+from src.categories import helper
 from Finance_GUI import gui_helper
 from db import db_helper
 from tools import date_helper
@@ -39,8 +39,8 @@ def create_category_amounts_array(transactions, categories):
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
 def create_top_category_amounts_array(transactions, categories):
-    tree = category_helper.create_Tree(categories)
-    top_categories = category_helper.get_top_level_category_names(categories)
+    tree = helper.create_Tree(categories)
+    top_categories = helper.get_top_level_category_names(categories)
 
     category_names = []
     print("\nGot this for length of top categories: ", len(top_categories))
@@ -50,7 +50,7 @@ def create_top_category_amounts_array(transactions, categories):
     for category in top_categories:
         node = tree.search_nodes(name=category)[0]
         for leaf in node:
-            category_amounts[i] += sum_individual_category(transactions, category_helper.category_name_to_id(leaf.name))
+            category_amounts[i] += sum_individual_category(transactions, helper.category_name_to_id(leaf.name))
         i += 1
     return top_categories, category_amounts
 
@@ -67,7 +67,7 @@ def return_ledger_exec_dict(transactions):
     not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
 
     for transaction in transactions:
-        trans_category = category_helper.category_id_to_name(transaction.category_id)
+        trans_category = helper.category_id_to_name(transaction.category_id)
 
         if trans_category not in not_counted:
             trans_amount = transaction.getAmount()

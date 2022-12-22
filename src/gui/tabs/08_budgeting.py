@@ -9,23 +9,23 @@ from ete3 import Tree, TreeStyle, Tree, TextFace, add_face_to_node
 import math
 
 # import user defined modules
-from categories import category_helper
-from categories import Category
+from src.categories import helper
+from src import categories
 from db import db_helper
 from Finance_GUI import gui_helper
 
-# TODO: add ability to delete category
-class tabEditCategory:
+
+class tabBudgeting:
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
 
         # init frames within tab
-        self.fr_add_data = tk.Frame(self.frame, bg="#00bcd4")
-        self.fr_add_data.grid(row=0, column=0, padx=5, pady=5)
+        self.fr_add_bud = tk.Frame(self.frame, bg="#00bcd4")
+        self.fr_add_bud.grid(row=0, column=0, padx=5, pady=5)
 
-        self.fr_view_cat = tk.Frame(self.frame, bg="#00bcd4")
-        self.fr_view_cat.grid(row=0, column=1, rowspan=2, padx=5, pady=5)
+        self.fr_view_bud = tk.Frame(self.frame, bg="#00bcd4")
+        self.fr_view_bud.grid(row=0, column=1, rowspan=2, padx=5, pady=5)
 
         self.fr_prompt = tk.Frame(self.frame, bg="gray")
         self.fr_prompt.grid(row=1, column=0, padx=5, pady=5)
@@ -48,164 +48,97 @@ class tabEditCategory:
 
     # initTabContent: initializes the main content of the tab
     def initTabContent(self):
-        print("Initializing tab 3 content")
+        print("Initializing tab 8 content")
 
-        self.init_fr_add_data()
-        self.init_fr_view_cat()
+        self.init_fr_add_bud()
+        self.init_fr_view_bud()
 
 
-    def init_fr_add_data(self):
+    def init_fr_add_bud(self):
         # print frame title
-        Label(self.fr_add_data, text="Add Category Data", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
-
-        # params for text box inputs
-        h = 2
-        w = 20
-
-        # CATEGORY ADDING
-        # dropdown for category parent
-        parent_category_drop, parent_category_option = gui_helper.generate_all_category_dropdown(self.fr_add_data)
-
-        # checkbox for if the category has a parent category or not
-        Label(self.fr_add_data, text="Select Parent Category").grid(row=1, column=0)
-        var1 = tk.IntVar()
-        tk.Checkbutton(self.fr_add_data, text="Parent",
-                       variable=var1,
-                       onvalue=1,
-                       offvalue=0,
-                       command=lambda: self.toggle_show_parent(var1.get(), parent_category_drop)).grid(row=2, column=0)
-
-        # set up user inputs for category information
-        Label(self.fr_add_data, text="Category Name").grid(row=1, column=1, pady=5)
-        category_name = Text(self.fr_add_data, height=h, width=w)
-        category_name.grid(row=2, column=1, columnspan=2)
-
-        # set up button add a category
-        add_category = Button(self.fr_add_data, text="Add Category",
-                              command=lambda: self.add_category_gui(category_name, var1.get(), parent_category_option.get()))  # category_name, parent
-        add_category.grid(row=4, column=3)  # place 'Add Category' button
-
-        # ACCOUNT ADDING
-        # TODO: add selector for 'type' of account
-        # set up user inputs for account information
-        Label(self.fr_add_data, text="Account Name").grid(row=5, column=1, pady=5)
-        account_name = Text(self.fr_add_data, height=h, width=w)
-        account_name.grid(row=6, column=1)
-
-        # set up button to add an account
-        Button(self.fr_add_data, text="Add Account", command=lambda: self.add_account_gui(account_name)).grid(row=7, column=3)  # place 'Start Categorizing' button
+        Label(self.fr_add_bud, text="Add Budget Amount", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # KEYWORD ADDING
         # add drop down for keyword
-        keyword_category_drop, keyword_category_option = gui_helper.generate_all_category_dropdown(self.fr_add_data)
-        keyword_category_drop.grid(row=9, column=0)
+        budget_category_drop, budget_category_option = gui_helper.generate_all_category_dropdown(self.fr_add_bud)
+        budget_category_drop.grid(row=9, column=0, padx=10, pady=5)
 
         # text input for user to add keyword
-        Label(self.fr_add_data, text="Keyword Name").grid(row=8, column=1, pady=5)
-        keyword_name = Text(self.fr_add_data, height=h, width=w)
-        keyword_name.grid(row=9, column=1)
+        Label(self.fr_add_bud, text="Budget Amount").grid(row=8, column=1, pady=5)
 
-        # set up button to add a keyword
-        add_keyword = Button(self.fr_add_data, text="Add Keyword", command=lambda: self.add_keyword_gui(keyword_category_option.get(), keyword_name))
-        add_keyword.grid(row=10, column=3)  # place 'Start Categorizing' button
+        ### add amount for user to input budget limit
+        # validation function for input below
+        def MoneyValidation(S):
+            if S in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+                return True
+            self.fr_add_bud.bell()  # .bell() plays that ding sound telling you there was invalid input
+            return False
+
+        vcmd = (self.fr_add_bud.register(MoneyValidation), '%S')  # register function
+
+        # add budget amount entry
+        b_amount = Entry(self.fr_add_bud, bg='white', validate='key', vcmd=vcmd)
+        b_amount.grid(row=9, column=1)
+
+        # set up button to add a budget limit for a Category
+        add_b_amount = Button(self.fr_add_bud, text="Add Budget Amount", command=lambda: self.add_budget_gui(budget_category_option.get(), b_amount.get()))
+        add_b_amount.grid(row=10, column=3, padx=7, pady=5)  # place 'Start Categorizing' button
 
 
-    # init_fr_view_cat: inits Frame for viewing category tree
-    def init_fr_view_cat(self):
+    # init_fr_view_bud: inits Frame for viewing budgeting
+    def init_fr_view_bud(self):
         # print frame title
-        Label(self.fr_view_cat, text="View Categories", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        Label(self.fr_view_bud, text="View Budget", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to display categories flow chart
         style = Style()
         style.configure('W.TButton', font=('calibri', 10, 'bold', 'underline'), foreground='red')
 
-        # show_categories = ttk.Button(self.fr_view_cat,
-        #                              text="Show Category Chart",
-        #                              style='W.TButton',
-        #                              command=lambda: self.show_category_tree_diagram(printmode="debug"))  # PRINTMODE
-        # show_categories.grid(row=0, column=1)  # place 'Start Categorizing' button
-
-        self.show_category_tree_diagram(printmode="debug")
 
     ##############################################################################
     ####      ADDING FUNCTIONS        ############################################
     ##############################################################################
 
-    # add_category_gui: attempts to add a category to the SQL database
-    def add_category_gui(self, category_name_obj, parent_status, parent):
-        # set new category parent status
-        if parent_status == 0:  # if we are creating a top level category
-            parent = 1  # set parent as 1
-        else:
-            stripped_parent = parent[2:len(parent) - 3]
-            print("Got this for parent: ", stripped_parent)
-            parent = category_helper.category_name_to_id(stripped_parent)  # otherwise set parent to category_id of chosen parent
 
-        category_name = category_name_obj.get("1.0", "end").strip("\n")  # I THINK THIS CATEGORY NAME IS GETTING STRIPPED WRONG
-        if category_name == "":
-            gui_helper.alert_user("Can't have category blank", "Please fill in category name", "error")
+    # add_budget_gui: attempts to create a BudgetCategory with input user information
+    def add_budget_gui(self, category_name, b_amount):
+        # do some more error checking on the BudgetCategory amount
+        # if keyword == "":
+        #     gui_helper.alert_user("Can't have keyword blank", "Please fill in keyword name", "error")
 
-        res = db_helper.insert_category(parent, category_name)
-        if res:
-            gui_helper.gui_print(self.frame, self.prompt, "Added category: ", category_name)
-            category_name_obj.delete("1.0", "end")
-            self.show_category_tree_diagram()
-        else:
-            gui_helper.gui_print(self.frame, self.prompt, "Something went wrong adding category")
+        # get relevant Category ID
+        category_id = helper.category_name_to_id(category_name)
+        if category_id == False:
+            raise Exception("Error converting from category_name to category_id for creating budget")
 
-    # add_account_gui: attempts to add a category to the SQL database
-    # TODO: refactor to add account 'type' support
-    def add_account_gui(self, account_text_obj):
-        account_name = account_text_obj.get("1.0", "end").strip("\n")
-        if account_name == "":
-            gui_helper.alert_user("Can't have account name blank", "Please fill in account name", "error")
+        ### create pop up to prompt user to fill out more information
+        def popup_bonus():
+            win = tk.Toplevel()
+            win.wm_title("Window")
 
-        try:
-            new_account_id = db_helper.insert_account(account_name)
-        except Exception as e:
-                print("Uh oh, something went wrong with adding to category table: ", e)
-        else:
-            gui_helper.gui_print(self.frame, self.prompt, "Added account: ", account_name, " with id: ", new_account_id)
-            account_text_obj.delete("1.0", "end")
-        # TODO: make it update drawn category tree if enabled
+            l = tk.Label(win, text="Input")
+            l.grid(row=0, column=0)
 
-    # add_keyword_gui: attempts to add a keyword to the SQL database
-    def add_keyword_gui(self, category_name, keyword_text_obj):
-        keyword = keyword_text_obj.get("1.0", "end").strip("\n")
-        keyword = keyword.strip('\n')
-        if keyword == "":
-            gui_helper.alert_user("Can't have keyword blank", "Please fill in keyword name", "error")
+            b = ttk.Button(win, text="Okay", command=win.destroy)
+            b.grid(row=1, column=0)
 
-        category_name = category_name[2:len(category_name) - 3]
-        category_id = category_helper.category_name_to_id(category_name)
+        popup_bonus()
 
-        res = db_helper.insert_keyword(keyword, category_id)
-        if not res:
-            gui_helper.gui_print(self.frame, self.prompt, "Uh oh, something went wrong adding keyword")
-        else:
-            gui_helper.gui_print(self.frame, self.prompt, "Added keyword: ", keyword, " to category: ", category_name)
-            keyword_text_obj.delete("1.0", "end")
+        cd = 0
+
+        # attempt to set BudgetCategory
+        print("add_budget_gui: attempting to insert BudgetCategory of category_id= " + str(category_id))
+        res = db_helper.insert_bcat(category_id, b_amount, cd)  # add BudgetCategory date. category_id, lim, and cd
+        # if not res:
+        #     gui_helper.gui_print(self.frame, self.prompt, "Uh oh, something went wrong adding keyword")
+        # else:
+        #     gui_helper.gui_print(self.frame, self.prompt, "Set budget amount of : ", keyword, " to category: ", category_name)
+        #     keyword_text_obj.delete("1.0", "end")
 
 
     ##############################################################################
     ####      HELPER FUNCTIONS          ##########################################
     ##############################################################################
-
-    # generate a drop down menu with all categories in SQL database
-    def generate_all_category_dropdown(self, frame):
-        categories = db_helper.get_category_names()
-
-        clicked_category = StringVar()  # datatype of menu text
-        clicked_category.set(categories[0])  # initial menu text
-        drop = OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
-        return drop, clicked_category
-
-    # toggle_show_parent
-    def toggle_show_parent(self, status, dropdown):
-        if status == 1:
-            dropdown.grid(row=3, column=0)
-        else:
-            dropdown.grid_forget()
 
 
 # TODO: generating the category tree eliminates vertical scroll bar
@@ -214,7 +147,7 @@ class tabEditCategory:
             print("DEBUG: debugging guiTab_3_editCategory.show_category_tree_diagram()")
 
         # load all Category objects from SQL database
-        categories = category_helper.load_categories()
+        categories = helper.load_categories()
 
         ######
         ### trying a new method
@@ -233,7 +166,7 @@ class tabEditCategory:
         canvas.configure(yscrollcommand=vsb.set)
 
         # generate top Category objects
-        top_categories = category_helper.get_top_level_categories()
+        top_categories = helper.get_top_level_categories()
         num_top_level = len(top_categories)
 
         y_pad = 75
@@ -275,7 +208,7 @@ class tabEditCategory:
                     raise Exception("ERROR: can't create category tree - angle matrix couldn't be generated for parent: ", cat.name)
 
                 for i in range(0, num_children):
-                    tmp_Cat = Category.Category(cat.children_id[i])
+                    tmp_Cat = categories.Category(cat.children_id[i])
                     x_cord = x_st + x_child_space
                     y_cord = y_st + int(math.tan(angles[i]) * x_child_space)
 
@@ -320,10 +253,10 @@ class tabEditCategory:
     # renderTree: renders a Tree using built in Tree and Treestyle from ete3 library
     def renderTree(self):
         # load all Category objects from SQL database
-        categories = category_helper.load_categories()
+        categories = helper.load_categories()
 
         # create Tree object
-        t = category_helper.create_Tree(categories)
+        t = helper.create_Tree(categories)
         print("guiTab_3_editCategory.show_category_treediagram: printing tree below")
 
         # print ASCII of tree using internal print function

@@ -7,7 +7,7 @@ from functools import partial
 # import user defined modules
 from Statement_Classes import Ledger
 from Finance_GUI import gui_helper
-from categories import category_helper
+from src.categories import helper
 from db import db_helper
 
 
@@ -110,7 +110,7 @@ class Statement(Ledger.Ledger):
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeStatementAutomatic(self):
-        categories = category_helper.load_categories()
+        categories = helper.load_categories()
         for transaction in self.transactions:
             transaction.categorizeTransactionAutomatic(categories)
 

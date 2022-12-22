@@ -5,7 +5,7 @@ from tkinter import *
 from tkinter.ttk import *
 
 # import user defined packages
-from categories import category_helper
+from src.categories import helper
 from db import db_helper
 
 
@@ -19,7 +19,7 @@ class Category:
         self.parent = cat_sql_data[0][1]
 
         # populate children category_id
-        self.children_id = category_helper.get_category_children(category_id, printmode=None)
+        self.children_id = helper.get_category_children(category_id, printmode=None)
 
         # what is this description used for?
         self.description = None

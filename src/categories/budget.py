@@ -1,12 +1,12 @@
 
 # import needed modules
-from categories import Category
+from src import categories
 from db import db_helper
 
 
-class BudgetCategory(Category.Category):
+class BudgetCategory(categories.Category):
     def __init__(self, category_id):
-        super(Category.Category, self).__init__()
+        super(categories.Category, self).__init__()
         #self.category_id = category_id
 
 
