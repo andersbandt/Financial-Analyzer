@@ -15,12 +15,12 @@ from statement_types import Statement
 from statement_types import Transaction
 
 from gui import gui_helper
-from db import db_helper
 from tools import date_helper
 
 from categories import categories_helper
 from analysis import graphing_analyzer
 from analysis import analyzer_helper
+import db.helpers as dbh
 
 
 # TODO: add some slots for tabular data
@@ -81,7 +81,7 @@ class tabBalances:
 
         ### set up user inputs for account balance
         # account
-        accounts = db_helper.get_account_names()
+        accounts = dbh.account.get_account_names()
 
         clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
@@ -125,10 +125,10 @@ class tabBalances:
     # TODO: add error checking for multiple balances per account on SAME day
     def ins_acc_bal(self, account, amount, date):
         try:
-            account_id = db_helper.get_account_id_from_name(account)
+            account_id = dbh.account.get_account_id_from_name(account)
             formatted_date = date_helper.conv_two_digit_date(date)
 
-            db_helper.insert_account_balance(account_id, amount, formatted_date)
+            dbh.account.insert_account_balance(account_id, amount, formatted_date)
             gui_helper.gui_print(self.frame, self.prompt, "Inserted balance of " + str(amount) + " for account " + account + " on date " + formatted_date)
         except Exception as e:
             gui_helper.gui_print(self.frame, self.prompt, "Something went wrong inserting balance")

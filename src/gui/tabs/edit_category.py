@@ -1,4 +1,3 @@
-
 # import needed modules
 import tkinter as tk
 from tkinter import ttk
@@ -10,8 +9,8 @@ import math
 
 # import user defined modules
 from categories import categories_helper
-from db import db_helper
 from gui import gui_helper
+import db.helpers as dbh
 
 # TODO: add ability to delete category
 class tabEditCategory:
@@ -144,7 +143,7 @@ class tabEditCategory:
         if category_name == "":
             gui_helper.alert_user("Can't have category blank", "Please fill in category name", "error")
 
-        res = db_helper.insert_category(parent, category_name)
+        res = dbh.insert_category(parent, category_name)
         if res:
             gui_helper.gui_print(self.frame, self.prompt, "Added category: ", category_name)
             category_name_obj.delete("1.0", "end")
@@ -160,7 +159,7 @@ class tabEditCategory:
             gui_helper.alert_user("Can't have account name blank", "Please fill in account name", "error")
 
         try:
-            new_account_id = db_helper.insert_account(account_name)
+            new_account_id = dbh.account.insert_account(account_name)
         except Exception as e:
                 print("Uh oh, something went wrong with adding to category table: ", e)
         else:
@@ -178,7 +177,7 @@ class tabEditCategory:
         category_name = category_name[2:len(category_name) - 3]
         category_id = categories_helper.category_name_to_id(category_name)
 
-        res = db_helper.insert_keyword(keyword, category_id)
+        res = dbh.keywords.insert_keyword(keyword, category_id)
         if not res:
             gui_helper.gui_print(self.frame, self.prompt, "Uh oh, something went wrong adding keyword")
         else:
@@ -192,7 +191,7 @@ class tabEditCategory:
 
     # generate a drop down menu with all categories in SQL database
     def generate_all_category_dropdown(self, frame):
-        categories = db_helper.get_category_names()
+        categories = dbh.category.get_category_names()
 
         clicked_category = tk.StringVar()  # datatype of menu text
         clicked_category.set(categories[0])  # initial menu text

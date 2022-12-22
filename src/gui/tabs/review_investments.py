@@ -8,10 +8,9 @@ import requests
 # import user defined modules
 from categories import categories_helper
 from gui import gui_helper
-from db import db_helper
-
 from analysis import inv_h
 from analysis import graphing_analyzer
+import db.helpers as dbh
 
 
 
@@ -69,7 +68,7 @@ class tabInvestments:
         # list of investment accounts (type III)
         tk.Label(self.fr_add_inv_data, text="Investment Account").grid(row=1, column=1)
 
-        acc_names = db_helper.get_account_names_by_type(3)
+        acc_names = dbh.account.get_account_names_by_type(3)
 
         clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(acc_names[0])  # initial menu text
@@ -155,12 +154,12 @@ class tabInvestments:
             raise ValueError
 
         # insert investment
-        db_helper.insert_investment(date, account_id, ticker, amount, inv_type)
+        dbh.investments.insert_investment(date, account_id, ticker, amount, inv_type)
 
 
     def review_inv_acc(self):
         print("guiTab_5_reviewInvestments: running review_inv_acc")
-        tickers = db_helper.get_all_ticker()
+        tickers = dbh.investments.get_all_ticker()
 
         for ticker in tickers:
             inv_h.print_ticker_info(ticker[0])
