@@ -13,6 +13,7 @@ from analysis import graphing_analyzer
 import db.helpers as dbh
 
 
+
 class tabInvestments:
     def __init__(self, master):
         ### add GUI content for tab
