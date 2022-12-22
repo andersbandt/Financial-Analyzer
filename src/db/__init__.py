@@ -35,43 +35,13 @@ class TableStatements:
 
 def all_tables_init(statements: list, database_directory: str) -> bool:
     """
-    Create all the tables. If any of the _table_init() functions
-    return False, print the error message that sqlite3 threw.
-
-    It uses a list instead of importing the TableStatements class
-    for reusability reasons.
-    
-    It also maintains the ability to get which statement threw an
-    exception. 
+    Create all the tables. It uses a list instead 
+    of importing the TableStatements class for 
+    dependency injection reasons.
     """
     with sqlite3.connect(database_directory) as conn:
-        # If we didn't want to capture which statements threw exceptions,
-        # we could use a for loop to iterate through the statements list.
-        # for statement in statements:
-        #     create_table(conn, statement)
-        
-        ledger = create_table(conn, statements[0])
-        account = create_table(conn, statements[1])
-        category = create_table(conn, statements[2])
-        keyword = create_table(conn, statements[3])
-
-    
-    results = [ledger, account, category, keyword] 
-        
-    if all(results) == True:
-        print("All tables initialized successfully.")
-        return True
-    else: 
-        for result in results:
-            print(result) 
-        return False 
-
-def create_table(conn: sqlite3, statement: str) -> bool:
-    try:
-        conn.execute(statement)
-        return True
-    except sqlite3.Error as error:
-        return str(error) 
+        for statement in statements:
+            conn.execute(statement)
 
 # alter ledger table structure
 # try:
