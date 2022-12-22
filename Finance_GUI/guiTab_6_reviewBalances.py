@@ -19,8 +19,8 @@ from Finance_GUI import gui_helper
 from db import db_helper
 from tools import date_helper
 from categories import category_helper
-from analyzing import graphing_analyzer
-from analyzing import analyzer_helper
+from Analyzing import graphing_analyzer
+from Analyzing import analyzer_helper
 
 # TODO: add some slots for tabular data
 #   for example:
