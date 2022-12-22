@@ -9,8 +9,10 @@ import requests
 from categories import categories_helper
 from gui import gui_helper
 from db import db_helper
+
 from analysis import inv_h
 from analysis import graphing_analyzer
+
 
 
 class tabInvestments:

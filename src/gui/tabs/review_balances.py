@@ -17,9 +17,11 @@ from statement_types import Transaction
 from gui import gui_helper
 from db import db_helper
 from tools import date_helper
+
 from categories import categories_helper
 from analysis import graphing_analyzer
 from analysis import analyzer_helper
+
 
 # TODO: add some slots for tabular data
 #   for example:

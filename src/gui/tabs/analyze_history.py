@@ -17,6 +17,7 @@ from gui import gui_helper
 import categories.categories_helper as category_helper
 from analysis import analyzer_helper
 from analysis import graphing_analyzer
+
 from db import db_helper
 
 from tools import date_helper
