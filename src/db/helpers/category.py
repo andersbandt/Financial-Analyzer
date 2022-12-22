@@ -4,7 +4,8 @@ from db import DATABASE_DIRECTORY
 def get_category_info(category_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM category WHERE category_id=?", (category_id))
+        print(category_id)
+        cur.execute("SELECT * FROM category WHERE category_id=?", (category_id,))
     return cur.fetchall()
 
 
