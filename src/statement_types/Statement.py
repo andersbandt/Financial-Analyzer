@@ -1,7 +1,6 @@
 # import needed modules
 import tkinter as tk
 from tkinter import ttk
-from tkinter import *  # TODO: bad practice I think, fix this. Like get Text module
 from functools import partial
 
 # import user defined modules

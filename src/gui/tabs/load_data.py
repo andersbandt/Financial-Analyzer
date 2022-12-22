@@ -2,7 +2,6 @@
 # import needed packages
 import sqlite3
 import tkinter as tk
-from tkinter import *
 import os  # needed to examine filesystem
 
 # import user defined helper modules
@@ -37,7 +36,7 @@ class tabFinanceData:
         self.fr_date_selection = tk.Frame(self.frame)
         self.fr_load_ticker_info = tk.Frame(self.frame)
 
-        self.prompt = Text(self.frame, padx=5, pady=5, height=5)
+        self.prompt = tk.Text(self.frame, padx=5, pady=5, height=5)
 
         self.load_yes = 0  # yes button to loading statement data
         self.load_no = 0  # no button for loading statement data
@@ -60,12 +59,12 @@ class tabFinanceData:
     # init_date_selection_content: initializes the date and year drop down
     def init_fr_date_selection(self):
         # print frame title
-        Label(self.fr_date_selection, text="Choose Statement Date", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_date_selection, text="Choose Statement Date", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up top row of text labels
-        label = Label(self.fr_date_selection, text="Select Year")
+        label = tk.Label(self.fr_date_selection, text="Select Year")
         label.grid(row=1, column=0)
-        label = Label(self.fr_date_selection, text="Select Month")
+        label = tk.Label(self.fr_date_selection, text="Select Month")
         label.grid(row=1, column=1)
 
         # set up user inputs for statement (year and month)
@@ -75,7 +74,7 @@ class tabFinanceData:
         month_dropdown[0].grid(row=2, column=1)
 
         # set up button to start generate list of files in certain month/year directory
-        gen_file_drop = Button(self.fr_date_selection, text="Select Month",
+        gen_file_drop = tk.Button(self.fr_date_selection, text="Select Month",
                                command=lambda: self.show_account_file_select(self.fr_date_selection, year_dropdown[1].get(), month_dropdown[1].get()))
         gen_file_drop.grid(row=2, column=3)
 
@@ -84,7 +83,7 @@ class tabFinanceData:
     def show_account_file_select(self, frame, year, month):
         ### show account information stuff ###
         # add label
-        label = Label(frame, text="Month Files")
+        label = tk.Label(frame, text="Month Files")
         label.grid(row=3, column=0)
 
         # delete previous month files drop down
@@ -104,21 +103,21 @@ class tabFinanceData:
             return
 
         # create drop down of files
-        clicked_file = StringVar()  # datatype of menu text
+        clicked_file = tk.StringVar()  # datatype of menu text
         clicked_file.set(dir_list[0])
-        self.files_drop = OptionMenu(frame, clicked_file, *dir_list)
+        self.files_drop = tk.OptionMenu(frame, clicked_file, *dir_list)
         self.files_drop.grid(row=3, column=1)
 
         # place drop down for statement type
         accounts = db_helper.get_account_ledger_data()
 
-        clicked_account = StringVar()  # datatype of menu text
+        clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
-        self.account_drop = OptionMenu(frame, clicked_account, *accounts)  # create drop down menu of accounts
+        self.account_drop = tk.OptionMenu(frame, clicked_account, *accounts)  # create drop down menu of accounts
         self.account_drop.grid(row=3, column=2)
 
         # set up button to start loading in file data
-        gen_file_drop = Button(frame, text="Select File",
+        gen_file_drop = tk.Button(frame, text="Select File",
                                command=lambda: self.load_statement(clicked_file.get(), clicked_account.get()[1:11], year, month))
         gen_file_drop.grid(row=3, column=3)
 
@@ -140,7 +139,7 @@ class tabFinanceData:
         height = 75
         frame = tk.Frame(self.fr_date_selection)
         frame.grid(row=4, column=0, columnspan=4)
-        cv = Canvas(frame, bg="gray", width=width, height=height)
+        cv = tk.Canvas(frame, bg="gray", width=width, height=height)
         cv.grid(row=0, column=0)
 
         # set rectangle parameters

@@ -1,7 +1,6 @@
 
 # import needed packages
 import tkinter as tk
-from tkinter import *
 from tkcalendar import DateEntry
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import requests
@@ -33,7 +32,7 @@ class tabInvestments:
         self.fr_gr_inv.grid(row=2, column=0)
 
         # create prompt for console output
-        self.prompt = Text(self.frame, padx=5, pady=5, height=5)
+        self.prompt = tk.Text(self.frame, padx=5, pady=5, height=5)
 
         # current transaction for analyzing
         self.transactions = []
@@ -61,40 +60,40 @@ class tabInvestments:
     # init_fr_add_inv_data: inits GUI content for adding investment data
     def init_fr_add_inv_data(self):
         # add date selector
-        Label(self.fr_add_inv_data, text="Date").grid(row=1, column=0, pady=5)
+        tk.Label(self.fr_add_inv_data, text="Date").grid(row=1, column=0, pady=5)
         date_entry = DateEntry(self.fr_add_inv_data, width=16, background="magenta3", foreground="white", bd=2)
         date_entry.grid(row=2, column=0, padx=10, pady=10)
 
         # list of investment accounts (type III)
-        Label(self.fr_add_inv_data, text="Investment Account").grid(row=1, column=1)
+        tk.Label(self.fr_add_inv_data, text="Investment Account").grid(row=1, column=1)
 
         acc_names = db_helper.get_account_names_by_type(3)
 
-        clicked_account = StringVar()  # datatype of menu text
+        clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(acc_names[0])  # initial menu text
-        drop = OptionMenu(self.fr_add_inv_data, clicked_account, *acc_names)  # create drop down menu of months
+        drop = tk.OptionMenu(self.fr_add_inv_data, clicked_account, *acc_names)  # create drop down menu of months
         drop.grid(row=2, column=1, padx=10, pady=10)
 
         # ticker information
-        Label(self.fr_add_inv_data, text="Ticker").grid(row=1, column=2)
-        investment_ticker = Text(self.fr_add_inv_data, height=3, width=12)
+        tk.Label(self.fr_add_inv_data, text="Ticker").grid(row=1, column=2)
+        investment_ticker = tk.Text(self.fr_add_inv_data, height=3, width=12)
         investment_ticker.grid(row=2, column=2, pady=10, padx=10)
 
         # shares amount information
-        Label(self.fr_add_inv_data, text="Shares").grid(row=1, column=3)
-        transaction_amount = Text(self.fr_add_inv_data, height=3, width=12)
+        tk.Label(self.fr_add_inv_data, text="Shares").grid(row=1, column=3)
+        transaction_amount = tk.Text(self.fr_add_inv_data, height=3, width=12)
         transaction_amount.grid(row=2, column=3, pady=10, padx=10)
 
         # investment type
         # create dropdown for 1 through 5
-        Label(self.fr_add_inv_data, text="Investment Type").grid(row=1, column=4)
-        inv_type = Text(self.fr_add_inv_data, height=3, width=12)
+        tk.Label(self.fr_add_inv_data, text="Investment Type").grid(row=1, column=4)
+        inv_type = tk.Text(self.fr_add_inv_data, height=3, width=12)
         inv_type.grid(row=2, column=4, pady=10, padx=10)
-        Label(self.fr_add_inv_data, text="1: pure stock\n2: mutual fund\n3: bonds\n4: crypto\n5: cash").grid(row=2, column=5)
+        tk.Label(self.fr_add_inv_data, text="1: pure stock\n2: mutual fund\n3: bonds\n4: crypto\n5: cash").grid(row=2, column=5)
 
 
         # add button to execute addition of investment information
-        add_keyword = Button(self.fr_add_inv_data, text="Add Investment Ticker Data",
+        add_keyword = tk.Button(self.fr_add_inv_data, text="Add Investment Ticker Data",
                              command=lambda: self.add_investment_data(date_entry.get(),
                                                                       clicked_account.get(),
                                                                       investment_ticker,
@@ -108,7 +107,7 @@ class tabInvestments:
         # add dropdown for investment type accounts (type III)
 
         # set up button to start examining investment account
-        start_analyzing = Button(self.fr_rev_inv_data, text="Print Current Position Data", command=lambda: self.review_inv_acc())
+        start_analyzing = tk.Button(self.fr_rev_inv_data, text="Print Current Position Data", command=lambda: self.review_inv_acc())
         start_analyzing.grid(row=1, column=3)  # place 'Start Categorizing' button
 
 
@@ -116,18 +115,18 @@ class tabInvestments:
         # add title and buttons in their own frame
         fr_title_button = tk.Frame(self.fr_gr_inv)
         fr_title_button.grid(row=0, column=0, pady=10, padx=10, sticky="")
-        Label(fr_title_button, text="Graph Processing", font=("Arial", 16)).grid(
+        tk.Label(fr_title_button, text="Graph Processing", font=("Arial", 16)).grid(
             row=0,
             column=0,
             padx=10,
             pady=10)
 
         # set up button to show asset allocation
-        b_asset_alloc = Button(fr_title_button, text="Show Asset Allocation", command=lambda: self.show_asset_alloc())
+        b_asset_alloc = tk.Button(fr_title_button, text="Show Asset Allocation", command=lambda: self.show_asset_alloc())
         b_asset_alloc.grid(row=0, column=1, padx=5)  # place 'Start Categorizing' button
 
         # set up button to print historical price history of accounts
-        b_hist_price = Button(fr_title_button, text="Show Historical Price", command=lambda: self.show_hist_price_data())
+        b_hist_price = tk.Button(fr_title_button, text="Show Historical Price", command=lambda: self.show_hist_price_data())
         b_hist_price.grid(row=0, column=2, padx=5)  # place 'Start Categorizing' button
 
 

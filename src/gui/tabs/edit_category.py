@@ -1,7 +1,6 @@
 
 # import needed modules
 import tkinter as tk
-from tkinter import *
 from tkinter import ttk
 from tkinter.ttk import Style
 
@@ -38,8 +37,8 @@ class tabEditCategory:
         self.times_analyze_ran = 0
 
         # set up text box for user communication
-        Label(self.fr_prompt, text="Console Output").grid(row=0, column=0, pady=10)
-        self.prompt = Text(self.fr_prompt, padx=10, pady=10, height=5, width=50)
+        tk.Label(self.fr_prompt, text="Console Output").grid(row=0, column=0, pady=10)
+        self.prompt = tk.Text(self.fr_prompt, padx=10, pady=10, height=5, width=50)
         self.prompt.grid(row=1, column=0, padx=10, pady=10)
 
         # run function to initialize the GUI tab content
@@ -56,7 +55,7 @@ class tabEditCategory:
 
     def init_fr_add_data(self):
         # print frame title
-        Label(self.fr_add_data, text="Add Category Data", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_add_data, text="Add Category Data", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # params for text box inputs
         h = 2
@@ -67,7 +66,7 @@ class tabEditCategory:
         parent_category_drop, parent_category_option = gui_helper.generate_all_category_dropdown(self.fr_add_data)
 
         # checkbox for if the category has a parent category or not
-        Label(self.fr_add_data, text="Select Parent Category").grid(row=1, column=0)
+        tk.Label(self.fr_add_data, text="Select Parent Category").grid(row=1, column=0)
         var1 = tk.IntVar()
         tk.Checkbutton(self.fr_add_data, text="Parent",
                        variable=var1,
@@ -76,24 +75,24 @@ class tabEditCategory:
                        command=lambda: self.toggle_show_parent(var1.get(), parent_category_drop)).grid(row=2, column=0)
 
         # set up user inputs for category information
-        Label(self.fr_add_data, text="Category Name").grid(row=1, column=1, pady=5)
-        category_name = Text(self.fr_add_data, height=h, width=w)
+        tk.Label(self.fr_add_data, text="Category Name").grid(row=1, column=1, pady=5)
+        category_name = tk.Text(self.fr_add_data, height=h, width=w)
         category_name.grid(row=2, column=1, columnspan=2)
 
         # set up button add a category
-        add_category = Button(self.fr_add_data, text="Add Category",
+        add_category = tk.Button(self.fr_add_data, text="Add Category",
                               command=lambda: self.add_category_gui(category_name, var1.get(), parent_category_option.get()))  # category_name, parent
         add_category.grid(row=4, column=3)  # place 'Add Category' button
 
         # ACCOUNT ADDING
         # TODO: add selector for 'type' of account
         # set up user inputs for account information
-        Label(self.fr_add_data, text="Account Name").grid(row=5, column=1, pady=5)
-        account_name = Text(self.fr_add_data, height=h, width=w)
+        tk.Label(self.fr_add_data, text="Account Name").grid(row=5, column=1, pady=5)
+        account_name = tk.Text(self.fr_add_data, height=h, width=w)
         account_name.grid(row=6, column=1)
 
         # set up button to add an account
-        Button(self.fr_add_data, text="Add Account", command=lambda: self.add_account_gui(account_name)).grid(row=7, column=3)  # place 'Start Categorizing' button
+        tk.Button(self.fr_add_data, text="Add Account", command=lambda: self.add_account_gui(account_name)).grid(row=7, column=3)  # place 'Start Categorizing' button
 
         # KEYWORD ADDING
         # add drop down for keyword
@@ -101,19 +100,19 @@ class tabEditCategory:
         keyword_category_drop.grid(row=9, column=0)
 
         # text input for user to add keyword
-        Label(self.fr_add_data, text="Keyword Name").grid(row=8, column=1, pady=5)
-        keyword_name = Text(self.fr_add_data, height=h, width=w)
+        tk.Label(self.fr_add_data, text="Keyword Name").grid(row=8, column=1, pady=5)
+        keyword_name = tk.Text(self.fr_add_data, height=h, width=w)
         keyword_name.grid(row=9, column=1)
 
         # set up button to add a keyword
-        add_keyword = Button(self.fr_add_data, text="Add Keyword", command=lambda: self.add_keyword_gui(keyword_category_option.get(), keyword_name))
+        add_keyword = tk.Button(self.fr_add_data, text="Add Keyword", command=lambda: self.add_keyword_gui(keyword_category_option.get(), keyword_name))
         add_keyword.grid(row=10, column=3)  # place 'Start Categorizing' button
 
 
     # init_fr_view_cat: inits Frame for viewing category tree
     def init_fr_view_cat(self):
         # print frame title
-        Label(self.fr_view_cat, text="View Categories", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_view_cat, text="View Categories", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to display categories flow chart
         style = Style()
@@ -195,9 +194,9 @@ class tabEditCategory:
     def generate_all_category_dropdown(self, frame):
         categories = db_helper.get_category_names()
 
-        clicked_category = StringVar()  # datatype of menu text
+        clicked_category = tk.StringVar()  # datatype of menu text
         clicked_category.set(categories[0])  # initial menu text
-        drop = OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
+        drop = tk.OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
         return drop, clicked_category
 
     # toggle_show_parent
@@ -224,7 +223,7 @@ class tabEditCategory:
         # set up Canvas
         w = 525
         h = 625
-        canvas = Canvas(self.fr_view_cat, width=w, height=h, bg="white")
+        canvas = tk.Canvas(self.fr_view_cat, width=w, height=h, bg="white")
         #canvas.grid(row=1, column=0, rowspan=3)
         canvas.grid(row=1, column=0, padx=25, pady=25)
 

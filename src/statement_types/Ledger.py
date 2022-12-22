@@ -1,7 +1,6 @@
 
 # import needed modules
 import tkinter as tk
-from tkinter import *
 
 import keyboard
 from functools import partial  # needed adding callback functions with correct variables in for loops
@@ -37,7 +36,7 @@ class Ledger:
         self.fr_sel_action.grid(row=2, column=2)
 
         # prompt for text output
-        self.prompt = Text(self.frame, padx=10, pady=10, height=5)
+        self.prompt = tk.Text(self.frame, padx=10, pady=10, height=5)
         self.prompt.grid(row=2, column=0, padx=10, pady=10)
 
         # initialize more GUI content for table
@@ -161,15 +160,15 @@ class Ledger:
         self.update_ledger_sizing(labels)
 
         # place button for deleting statement
-        delete_statement = Button(self.fr_action, text="Delete Statement", command=self.delete_statement)
+        delete_statement = tk.Button(self.fr_action, text="Delete Statement", command=self.delete_statement)
         delete_statement.grid(row=0, column=0, padx=10, pady=10)
 
         # place button for saving statement
-        save_statement = Button(self.fr_action, text="Update Statement", command=self.save_statement)
+        save_statement = tk.Button(self.fr_action, text="Update Statement", command=self.save_statement)
         save_statement.grid(row=1, column=0, padx=10, pady=10)
 
         # place button for DELETING the SELECTED Transactions only
-        del_sel = Button(self.fr_sel_action, text="Delete Selected Transactions", command=self.del_sel_trans)
+        del_sel = tk.Button(self.fr_sel_action, text="Delete Selected Transactions", command=self.del_sel_trans)
         del_sel.grid(row=0, column=0, padx=10, pady=10)
 
 
@@ -206,7 +205,7 @@ class Ledger:
                 print(arg)
 
         # write title
-        Label(self.frame, text=self.title, font=("Arial", 16)).grid(row=0, column=0)
+        tk.Label(self.frame, text=self.title, font=("Arial", 16)).grid(row=0, column=0)
 
         ### add option for changing transaction sort method
         def change_sort(option):
@@ -226,7 +225,7 @@ class Ledger:
         sort_options = ["Date Ascending", "Date Descending", "Amount Ascending", "Amount Descending"]
 
         # set variable for sorting options
-        variable = StringVar()
+        variable = tk.StringVar()
         variable.set(sort_options[0])
 
         # create dropdown
@@ -290,7 +289,7 @@ class Ledger:
 
             ### if the transaction does not yet have a category
             if string_dict["category"] == 0:
-                self.clicked_category[i] = StringVar(self.frame_data)  # datatype of menu text
+                self.clicked_category[i] = tk.StringVar(self.frame_data)  # datatype of menu text
                 self.clicked_category[i].set("Please select a category")  # initial menu text
                 self.clicked_category[i].trace("w", partial(self.change_transaction_category, i))
                 labels[i][4] = tk.OptionMenu(self.frame_data, self.clicked_category[i],

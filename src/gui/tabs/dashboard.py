@@ -1,6 +1,5 @@
 # import needed packages
 import tkinter as tk
-from tkinter import *
 from tkinter import ttk
 
 # import user defined modules

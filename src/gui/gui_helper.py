@@ -1,8 +1,8 @@
 # import needed modules
 
 # import needed modules
-from tkinter import *
 from tkinter import messagebox
+import tkinter as tk
 
 import math
 
@@ -64,9 +64,9 @@ def get_statement_folder(base_filepath, year, month):
 def generate_all_category_dropdown(frame):
     categories = db_helper.get_category_names()
 
-    clicked_category = StringVar(frame)  # datatype of menu text
+    clicked_category = tk.StringVar(frame)  # datatype of menu text
     clicked_category.set(categories[0])  # initial menu text
-    drop = OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
+    drop = tk.OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
     return drop, clicked_category
 
 
@@ -77,9 +77,9 @@ def generateYearDropDown(frame):
         "2021",
         "2022"]
 
-    clicked_year = StringVar()  # datatype of menu text
+    clicked_year = tk.StringVar()  # datatype of menu text
     clicked_year.set("2022")  # initial menu text
-    drop = OptionMenu(frame, clicked_year, *years)  # create drop down menu of years
+    drop = tk.OptionMenu(frame, clicked_year, *years)  # create drop down menu of years
     return drop, clicked_year
 
 
@@ -100,9 +100,9 @@ def generateMonthDropDown(frame):
         "December",
     ]
 
-    clicked_month = StringVar()  # datatype of menu text
+    clicked_month = tk.StringVar()  # datatype of menu text
     clicked_month.set(months[0])  # initial menu text
-    drop = OptionMenu(frame, clicked_month, *months)  # create drop down menu of months
+    drop = tk.OptionMenu(frame, clicked_month, *months)  # create drop down menu of months
     return drop, clicked_month
 
 
@@ -114,7 +114,7 @@ def gui_print(master, prompt, message, *args):
     message = ">>>" + message
     print(message)
     if master != 0:
-        prompt.insert(INSERT, (message+"\n"))
+        prompt.insert(tk.INSERT, (message+"\n"))
 
     prompt.see("end")
     return True
