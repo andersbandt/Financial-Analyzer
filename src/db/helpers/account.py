@@ -1,24 +1,31 @@
 import sqlite3
+
 from db import DATABASE_DIRECTORY
+
 
 def insert_account(account_name):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute('SELECT account_id FROM account')
-        new_account_id = cur.fetchall()[-1][0] + 1  # grab latest addition (should be highest value) and add 1
+        cur.execute("SELECT account_id FROM account")
+        new_account_id = (
+            cur.fetchall()[-1][0] + 1
+        )  # grab latest addition (should be highest value) and add 1
         cur.execute(
             """INSERT INTO account (account_id, name) 
-            VALUES(?, ?)""", 
-            (new_account_id, account_name))
+            VALUES(?, ?)""",
+            (new_account_id, account_name),
+        )
     return new_account_id
 
 
 def get_account_id_from_name(account_name):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute('SELECT account_id FROM account WHERE name=?', [account_name])
+        cur.execute("SELECT account_id FROM account WHERE name=?", [account_name])
         try:
-            account_id = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+            account_id = cur.fetchall()[0][
+                0
+            ]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
     return account_id
@@ -27,9 +34,11 @@ def get_account_id_from_name(account_name):
 def get_account_name_from_id(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute('SELECT name FROM account WHERE account_id=?', [account_id])
+        cur.execute("SELECT name FROM account WHERE account_id=?", [account_id])
         try:
-            account_name = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+            account_name = cur.fetchall()[0][
+                0
+            ]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
 
@@ -76,9 +85,11 @@ def get_account_ledger_data():
 def get_account_type(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute('SELECT type FROM account WHERE account_id=?', [account_id])
+        cur.execute("SELECT type FROM account WHERE account_id=?", [account_id])
         try:
-            account_type = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+            account_type = cur.fetchall()[0][
+                0
+            ]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
     return account_type

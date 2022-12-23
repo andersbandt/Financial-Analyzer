@@ -1,27 +1,16 @@
-
 # import needed packages
+import os  # needed to examine filesystem
 import sqlite3
 import tkinter as tk
-import os  # needed to examine filesystem
 
+import db.helpers as dbh
 # import user defined helper modules
 from gui import gui_helper
-from tools import load_helper
-from tools import date_helper
-import db.helpers as dbh
-
 # import Statement classes
-from statement_types import AppleCard
-from statement_types import Marcus
-from statement_types import Robinhood
-from statement_types import WellsCredit
-from statement_types import WellsChecking
-from statement_types import WellsSaving
-from statement_types import VanguardBrokerage
-from statement_types import VanguardRoth
-from statement_types import Venmo
-
-
+from statement_types import (AppleCard, Marcus, Robinhood, VanguardBrokerage,
+                             VanguardRoth, Venmo, WellsChecking, WellsCredit,
+                             WellsSaving)
+from tools import date_helper, load_helper
 
 # TODO:
 #   - add cash recording
@@ -59,7 +48,9 @@ class tabFinanceData:
     # init_date_selection_content: initializes the date and year drop down
     def init_fr_date_selection(self):
         # print frame title
-        tk.Label(self.fr_date_selection, text="Choose Statement Date", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(
+            self.fr_date_selection, text="Choose Statement Date", font=("Arial", 16)
+        ).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up top row of text labels
         label = tk.Label(self.fr_date_selection, text="Select Year")
@@ -74,10 +65,14 @@ class tabFinanceData:
         month_dropdown[0].grid(row=2, column=1)
 
         # set up button to start generate list of files in certain month/year directory
-        gen_file_drop = tk.Button(self.fr_date_selection, text="Select Month",
-                               command=lambda: self.show_account_file_select(self.fr_date_selection, year_dropdown[1].get(), month_dropdown[1].get()))
+        gen_file_drop = tk.Button(
+            self.fr_date_selection,
+            text="Select Month",
+            command=lambda: self.show_account_file_select(
+                self.fr_date_selection, year_dropdown[1].get(), month_dropdown[1].get()
+            ),
+        )
         gen_file_drop.grid(row=2, column=3)
-
 
     # show_account_file_select: grabs files from a certain month and display drop down
     def show_account_file_select(self, frame, year, month):
@@ -99,7 +94,11 @@ class tabFinanceData:
         dir_list = os.listdir(dir_path)
 
         if len(dir_list) == 0:
-            gui_helper.alert_user("No files found", "Uh oh, no files were found in selected month's file folder", "error")
+            gui_helper.alert_user(
+                "No files found",
+                "Uh oh, no files were found in selected month's file folder",
+                "error",
+            )
             return
 
         # create drop down of files
@@ -113,17 +112,23 @@ class tabFinanceData:
 
         clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
-        self.account_drop = tk.OptionMenu(frame, clicked_account, *accounts)  # create drop down menu of accounts
+        self.account_drop = tk.OptionMenu(
+            frame, clicked_account, *accounts
+        )  # create drop down menu of accounts
         self.account_drop.grid(row=3, column=2)
 
         # set up button to start loading in file data
-        gen_file_drop = tk.Button(frame, text="Select File",
-                               command=lambda: self.load_statement(clicked_file.get(), clicked_account.get()[1:11], year, month))
+        gen_file_drop = tk.Button(
+            frame,
+            text="Select File",
+            command=lambda: self.load_statement(
+                clicked_file.get(), clicked_account.get()[1:11], year, month
+            ),
+        )
         gen_file_drop.grid(row=3, column=3)
 
         ### show file status stuff ###
         self.check_month_data_status(month, year)
-
 
     # TODO: move this out of here
     # creates an array of true/false depending on if data seems to have been loaded in or not
@@ -131,7 +136,14 @@ class tabFinanceData:
         ### create T/F table for account_ids
         account_stats = []
         for account_id in dbh.account.get_all_account_ids():
-            account_stats.append([account_id, load_helper.check_account_load_status(account_id, month, year, printmode=None)])
+            account_stats.append(
+                [
+                    account_id,
+                    load_helper.check_account_load_status(
+                        account_id, month, year, printmode=None
+                    ),
+                ]
+            )
 
         ### draw red/yellow/green boxes
         # create an inner window
@@ -143,54 +155,81 @@ class tabFinanceData:
         cv.grid(row=0, column=0)
 
         # set rectangle parameters
-        width_rec = width/len(account_stats)
+        width_rec = width / len(account_stats)
 
         i = 0
         for stats in account_stats:
             # create a rectangle representing status
             if stats[1] == 0:
-                color = 'red'
+                color = "red"
             elif stats[1] == 1:
-                color = 'green'
+                color = "green"
             elif stats[1] == 2:
-                color = 'yellow'
+                color = "yellow"
 
-            cv.create_rectangle(width_rec*i + 10, 10, width_rec*i + width_rec - 15, height - 10, fill=color)
-            cv.create_text(width_rec * i + width_rec / 2, height / 2, text=dbh.account.get_account_name_from_id(stats[0]),
-                           fill="black")
+            cv.create_rectangle(
+                width_rec * i + 10,
+                10,
+                width_rec * i + width_rec - 15,
+                height - 10,
+                fill=color,
+            )
+            cv.create_text(
+                width_rec * i + width_rec / 2,
+                height / 2,
+                text=dbh.account.get_account_name_from_id(stats[0]),
+                fill="black",
+            )
             i += 1
-
 
     def load_statement(self, file_name, account_id, year, month):
         account_id = int(account_id)  # unsure if this is needed or not
         month_int = date_helper.month2Int(month)
 
-        #try:
+        # try:
         # TODO: can I figure out a way to not hard code this in?
         if account_id == 2000000001:  # Marcus
-            stat = Marcus.Marcus(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = Marcus.Marcus(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             if not stat.create_statement_data():
-                gui_helper.alert_user("Error with loading statement", "Something went wrong loading this statement")
+                gui_helper.alert_user(
+                    "Error with loading statement",
+                    "Something went wrong loading this statement",
+                )
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000002:
-            stat = WellsChecking.WellsChecking(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = WellsChecking.WellsChecking(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000003:
-            stat = WellsSaving.WellsSaving(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = WellsSaving.WellsSaving(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000004:
-            stat = WellsCredit.WellsCredit(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = WellsCredit.WellsCredit(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000005:  # Vanguard Brokerage
-            stat = VanguardBrokerage.VanguardBrokerage(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = VanguardBrokerage.VanguardBrokerage(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             if not stat.create_statement_data():
-                gui_helper.alert_user("Error with loading statement", "Something went wrong loading this statement")
+                gui_helper.alert_user(
+                    "Error with loading statement",
+                    "Something went wrong loading this statement",
+                )
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000006:  # Vanguard Roth
-            stat = VanguardRoth.VanguardRoth(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = VanguardRoth.VanguardRoth(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000007:  # Venmo
@@ -198,15 +237,27 @@ class tabFinanceData:
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000008:  # Robinhood
-            stat = Robinhood.Robinhood(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = Robinhood.Robinhood(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
-            stat.createStatementTable(6, 0)  # creates a statement table at position (7, 0) *(row, column)
+            stat.createStatementTable(
+                6, 0
+            )  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000009:  # Apple Card
-            stat = AppleCard.AppleCard(self.frame, account_id, year, month_int, file_name, 5, 0)
+            stat = AppleCard.AppleCard(
+                self.frame, account_id, year, month_int, file_name, 5, 0
+            )
             stat.create_statement_data()
             stat.createStatementTable()  # creates a statement table at position (7, 0) *(row, column)
         else:
-            raise Exception("No valid account selected in guiTab_loadSpendingData: load_statement")
-            gui_helper.alert_user("Error in code account binding", "No valid Statement Class exists for the selected account ID", "error")
-        #except Exception as e:
+            raise Exception(
+                "No valid account selected in guiTab_loadSpendingData: load_statement"
+            )
+            gui_helper.alert_user(
+                "Error in code account binding",
+                "No valid Statement Class exists for the selected account ID",
+                "error",
+            )
+        # except Exception as e:
         #    gui_helper.alert_user("Statement creation failed", e, "error")

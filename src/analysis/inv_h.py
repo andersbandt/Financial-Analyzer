@@ -1,12 +1,10 @@
-
 # import needed modules
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
+import json
+
 import yahoo_fin.stock_info as si
 
-import json
 import db.helpers as dbh
-
-
 
 ##############################################################################
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
@@ -35,7 +33,13 @@ def get_ticker_price(ticker):
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
 def get_ticker_price_data(ticker, start_date, end_date, interval):
-    hist_price_data = si.get_data(ticker, start_date=start_date, end_date=end_date, index_as_date=False, interval=interval)
+    hist_price_data = si.get_data(
+        ticker,
+        start_date=start_date,
+        end_date=end_date,
+        index_as_date=False,
+        interval=interval,
+    )
     print(hist_price_data)
     return hist_price_data
 
@@ -43,6 +47,7 @@ def get_ticker_price_data(ticker, start_date, end_date, interval):
 ##############################################################################
 ######      OVERALL ANALYSIS FUNCTIONS      ##################################
 ##############################################################################
+
 
 def create_investment_dicts():
     inv_data = []
@@ -53,8 +58,7 @@ def create_investment_dicts():
             "ticker": ledge[3],
             "account": ledge[2],
             "shares": ledge[4],
-            "type": ledge[7]
-
+            "type": ledge[7],
         }
         inv_data.append(ledge_dict)
     return inv_data
