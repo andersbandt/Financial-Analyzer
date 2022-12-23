@@ -28,7 +28,7 @@ Discord server [here](https://discord.gg/qRKYKUzy)
     pip3 install -r requirements.txt
     ```
 
-4. Run the application:
+4. Run the Tkinter based version of the application:
     ```bash
     python3 main.py
     ```
