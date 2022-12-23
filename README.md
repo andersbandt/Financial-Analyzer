@@ -35,11 +35,12 @@ Discord server [here](https://discord.gg/qRKYKUzy)
     
 ### Financial Data File Structure
 
-On my computer I have a folder where I store all the statements for each account. Each month
+On my computer I have a folder where I store all the statements for each account. You can
+download a sample file folder structure with `sample_financials_folder_structure.zip`. Each month
 I go to the accounts and download a file representing all the account information for each
 month. Typically, this is .csv format. The file structure for the data looks like:
 
-For example - all under "C:\Users\ander\Documents\Financials\"
+For example - all under "C:\Users\bob\Documents\Financials\"
 
 - Monthly Statement\2020\
     - 01-January\
