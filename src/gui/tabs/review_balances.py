@@ -1,26 +1,20 @@
-
 # import needed packages
+import sqlite3
 import tkinter as tk
-from tkcalendar import Calendar, DateEntry
+from functools import partial
 from tkinter import ttk
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from functools import partial
-
 import lambdas
-import sqlite3
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkcalendar import Calendar, DateEntry
 
-# import user defined modules
-from statement_types import Statement
-from statement_types import Transaction
-
-from gui import gui_helper
-from tools import date_helper
-
-from categories import categories_helper
-from analysis import graphing_analyzer
-from analysis import analyzer_helper
 import db.helpers as dbh
+from analysis import analyzer_helper, graphing_analyzer
+from categories import categories_helper
+from gui import gui_helper
+# import user defined modules
+from statement_types import Statement, Transaction
+from tools import date_helper
 
 
 # TODO: add some slots for tabular data
@@ -57,7 +51,6 @@ class tabBalances:
 
         self.initTabContent()
 
-
     # initTabContent: initializes all content for the tab
     def initTabContent(self):
         print("Initializing tab 6 content")
@@ -65,19 +58,19 @@ class tabBalances:
 
         self.init_fr_rev_bal()
 
-
     # init_fr_ins_bal: initializes the content for inserting balance information
     def init_fr_ins_bal(self):
         print("Initializing balance info insert frame")
 
         # add a frame title
-        tk.Label(self.fr_ins_bal, text="Insert Account Balance", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(
+            self.fr_ins_bal, text="Insert Account Balance", font=("Arial", 16)
+        ).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up top row of text labels
         tk.Label(self.fr_ins_bal, text="Select Account").grid(row=1, column=0)
         tk.Label(self.fr_ins_bal, text="Enter Amount").grid(row=1, column=1)
         tk.Label(self.fr_ins_bal, text="Enter Date (MM/DD/YY)").grid(row=1, column=2)
-
 
         ### set up user inputs for account balance
         # account
@@ -85,7 +78,9 @@ class tabBalances:
 
         clicked_account = tk.StringVar()  # datatype of menu text
         clicked_account.set(accounts[0])  # initial menu text
-        account_drop = tk.OptionMenu(self.fr_ins_bal, clicked_account, *accounts)  # create drop down menu of accounts
+        account_drop = tk.OptionMenu(
+            self.fr_ins_bal, clicked_account, *accounts
+        )  # create drop down menu of accounts
         account_drop.grid(row=2, column=0)
 
         # amount
@@ -93,33 +88,48 @@ class tabBalances:
         bal_amount.grid(row=2, column=1)
 
         # date entry
-        date_entry = DateEntry(self.fr_ins_bal, width=16, background="magenta3", foreground="white", bd=2)
+        date_entry = DateEntry(
+            self.fr_ins_bal, width=16, background="magenta3", foreground="white", bd=2
+        )
         date_entry.grid(row=2, column=2)
 
         # set up button to insert account balance update
-        ins_bal_but = ttk.Button(self.fr_ins_bal, text="Insert Balance",
-                                 command=lambda: self.ins_acc_bal(clicked_account.get(),
-                                                                  bal_amount.get("1.0", "end").strip("\n"),
-                                                                  date_entry.get()))
-        ins_bal_but.grid(row=1, column=3, rowspan=2)  # place 'Start Categorizing' button
-
+        ins_bal_but = ttk.Button(
+            self.fr_ins_bal,
+            text="Insert Balance",
+            command=lambda: self.ins_acc_bal(
+                clicked_account.get(),
+                bal_amount.get("1.0", "end").strip("\n"),
+                date_entry.get(),
+            ),
+        )
+        ins_bal_but.grid(
+            row=1, column=3, rowspan=2
+        )  # place 'Start Categorizing' button
 
     # init_fr_rev_bal: initializes the content for tab for reviewing balances
     def init_fr_rev_bal(self):
         print("Initializing balance review frame")
 
         # add a frame title
-        tk.Label(self.fr_rev_bal, text="Review Balance History", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(
+            self.fr_rev_bal, text="Review Balance History", font=("Arial", 16)
+        ).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
 
         # set up button to insert account balance update
-        show_st_liq_inv = ttk.Radiobutton(self.fr_rev_bal, text="Show Stacked Liquid/Investment Chart",
-                                          command=lambda: self.show_stacked_liquid_investment())
+        show_st_liq_inv = ttk.Radiobutton(
+            self.fr_rev_bal,
+            text="Show Stacked Liquid/Investment Chart",
+            command=lambda: self.show_stacked_liquid_investment(),
+        )
         show_st_liq_inv.grid(row=1, column=0)
 
-        show_liq_bal = ttk.Radiobutton(self.fr_rev_bal, text="Show Liquid Balance",
-                                          command=lambda: self.show_stacked_liquid_investment())
+        show_liq_bal = ttk.Radiobutton(
+            self.fr_rev_bal,
+            text="Show Liquid Balance",
+            command=lambda: self.show_stacked_liquid_investment(),
+        )
         show_liq_bal.grid(row=1, column=1)
-
 
     # ins_acc_bal: inserts data for an account balance record into the SQL database
     # TODO: add error checking for multiple balances per account on SAME day
@@ -129,12 +139,24 @@ class tabBalances:
             formatted_date = date_helper.conv_two_digit_date(date)
 
             dbh.account.insert_account_balance(account_id, amount, formatted_date)
-            gui_helper.gui_print(self.frame, self.prompt, "Inserted balance of " + str(amount) + " for account " + account + " on date " + formatted_date)
+            gui_helper.gui_print(
+                self.frame,
+                self.prompt,
+                "Inserted balance of "
+                + str(amount)
+                + " for account "
+                + account
+                + " on date "
+                + formatted_date,
+            )
         except Exception as e:
-            gui_helper.gui_print(self.frame, self.prompt, "Something went wrong inserting balance")
+            gui_helper.gui_print(
+                self.frame, self.prompt, "Something went wrong inserting balance"
+            )
             gui_helper.gui_print(self.frame, self.prompt, e)
-            gui_helper.gui_print(self.frame, self.prompt, "Try again when your code is fixed")
-
+            gui_helper.gui_print(
+                self.frame, self.prompt, "Try again when your code is fixed"
+            )
 
     # this function will be interesting to write.
     # I think I should keep a cumulative total of two balances - checkings/savings and investments
@@ -181,8 +203,7 @@ class tabBalances:
         print(recent_Bx)
 
         # Update buttons frames idle tasks to let tkinter calculate sizes
-        #self.frame.update_idletasks()
-
+        # self.frame.update_idletasks()
 
     def show_liquid_over_time(self):
         print("INFO: show_liquid_over_time running")
@@ -208,10 +229,8 @@ class tabBalances:
         print(recent_Bx)
 
         # Update buttons frames idle tasks to let tkinter calculate sizes
-        #self.frame.update_idletasks()
+        # self.frame.update_idletasks()
 
     def set_acc_show_settings(self, var):
         print("Got this for var:", var)
         return
-
-

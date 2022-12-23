@@ -1,5 +1,7 @@
 import sqlite3
+
 from db import DATABASE_DIRECTORY
+
 
 # insert_investment: insert an investment into the database
 def insert_investment(date, account_id, ticker, amount, inv_type):
@@ -7,7 +9,8 @@ def insert_investment(date, account_id, ticker, amount, inv_type):
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO investment (trans_date, account_id, ticker, shares, inv_type, value, calc_type) VALUES(?, ?, ?, ?, ?, ?, ?)",
-            (date, account_id, ticker, amount, inv_type, 0, 1))
+            (date, account_id, ticker, amount, inv_type, 0, 1),
+        )
     return True
 
 

@@ -1,17 +1,15 @@
 # import needed modules
 
 # import needed modules
-from tkinter import messagebox
-import tkinter as tk
-
 import math
+import tkinter as tk
+from tkinter import messagebox
 
+import db.helpers as dbh
 # import user defined modules
 from tools import date_helper
-import db.helpers as dbh
 
-
-#TODO: make general console output that lives on the bottom of the application
+# TODO: make general console output that lives on the bottom of the application
 
 
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
@@ -47,7 +45,9 @@ def get_statement_folder(base_filepath, year, month):
         print("Bad month int stored in statement: " + str(month))
         return
 
-    statement_folder = base_filepath + "/" + str(year) + "/Monthly Statements/" + month_string
+    statement_folder = (
+        base_filepath + "/" + str(year) + "/Monthly Statements/" + month_string
+    )
     return statement_folder
 
 
@@ -66,16 +66,15 @@ def generate_all_category_dropdown(frame):
 
     clicked_category = tk.StringVar(frame)  # datatype of menu text
     clicked_category.set(categories[0])  # initial menu text
-    drop = tk.OptionMenu(frame, clicked_category, *categories)  # create drop down menu of months
+    drop = tk.OptionMenu(
+        frame, clicked_category, *categories
+    )  # create drop down menu of months
     return drop, clicked_category
 
 
 # generateYearDropDown: generate a year drop down menu
 def generateYearDropDown(frame):
-    years = [
-        "2020",
-        "2021",
-        "2022"]
+    years = ["2020", "2021", "2022"]
 
     clicked_year = tk.StringVar()  # datatype of menu text
     clicked_year.set("2022")  # initial menu text
@@ -102,7 +101,9 @@ def generateMonthDropDown(frame):
 
     clicked_month = tk.StringVar()  # datatype of menu text
     clicked_month.set(months[0])  # initial menu text
-    drop = tk.OptionMenu(frame, clicked_month, *months)  # create drop down menu of months
+    drop = tk.OptionMenu(
+        frame, clicked_month, *months
+    )  # create drop down menu of months
     return drop, clicked_month
 
 
@@ -114,7 +115,7 @@ def gui_print(master, prompt, message, *args):
     message = ">>>" + message
     print(message)
     if master != 0:
-        prompt.insert(tk.INSERT, (message+"\n"))
+        prompt.insert(tk.INSERT, (message + "\n"))
 
     prompt.see("end")
     return True
@@ -126,7 +127,7 @@ def gui_print(master, prompt, message, *args):
 
 # promptYesNo: prompts the user for a yes or no response with a certain 'message' prompt
 def promptYesNo(message):
-    response = messagebox.askquestion('ALERT', message)
+    response = messagebox.askquestion("ALERT", message)
 
     if response == "yes":
         return True
@@ -137,16 +138,16 @@ def promptYesNo(message):
 # alert_user: alerts the user with a prompt that flashes on the screen
 #   kind can be of type {"error", "warning", and "info"}
 def alert_user(title, message, kind):
-    if kind not in ('error', 'warning', 'info'):
-        raise ValueError('Unsupported alert kind.')
+    if kind not in ("error", "warning", "info"):
+        raise ValueError("Unsupported alert kind.")
 
-    show_method = getattr(messagebox, 'show{}'.format(kind))
+    show_method = getattr(messagebox, "show{}".format(kind))
     show_method(title, message)
 
 
 # initialize an empty string
 def convertTuple(tup):
-    string = ''
+    string = ""
     for item in tup:
         string = string + item
     return string
@@ -167,22 +168,32 @@ def generate_tree_angles(num_children, max_angle):
         return [0]
 
     if num_children == 2:
-        return [max_angle/2, -max_angle/2]
+        return [max_angle / 2, -max_angle / 2]
 
     if num_children == 3:
         return [max_angle, 0, -max_angle]
 
     if num_children == 4:
-        return [max_angle, max_angle * 1/2, -max_angle * 1/2, -max_angle]
+        return [max_angle, max_angle * 1 / 2, -max_angle * 1 / 2, -max_angle]
 
     if num_children == 5:
-        return [max_angle, max_angle * 3/5, 0, -max_angle * 3/5, -max_angle]
+        return [max_angle, max_angle * 3 / 5, 0, -max_angle * 3 / 5, -max_angle]
 
     if num_children == 6:
-        return [max_angle, max_angle * 4/5, max_angle * 2/5, -max_angle * 2/5, -max_angle * 4/5, -max_angle]
+        return [
+            max_angle,
+            max_angle * 4 / 5,
+            max_angle * 2 / 5,
+            -max_angle * 2 / 5,
+            -max_angle * 4 / 5,
+            -max_angle,
+        ]
 
     print("Uh oh, this statement shouldn't be reached! No angle matrix was found!")
-    print("ERROR: can't generate angle matrix for number of children: " + str(num_children))
+    print(
+        "ERROR: can't generate angle matrix for number of children: "
+        + str(num_children)
+    )
 
 
 # drawLine: draws a line between coordinates (x1, y1) and (x2, y2) on 'canvas'
@@ -198,7 +209,7 @@ def paintBranch(canvas, depth, x1, y1, length, angle):
         # Draw the line
         drawLine(canvas, x1, y1, x2, y2)
 
-        angleFactor = math.pi/5
+        angleFactor = math.pi / 5
         sizeFactor = 0.58
 
         # Draw the left branch

@@ -1,11 +1,14 @@
-import sqlite3 
-DATABASE_DIRECTORY = 'src/db/financials.db'
+import sqlite3
+
+DATABASE_DIRECTORY = "src/db/financials.db"
+
 
 class TableStatements:
     """
     A class for holding the SQL statements.
     """
-    ledger =     '''CREATE TABLE ledger
+
+    ledger = """CREATE TABLE ledger
                     (key         INTEGER  PRIMARY KEY AUTOINCREMENT,
                     trans_date   DATE,
                     account_id   INT(10),
@@ -13,36 +16,38 @@ class TableStatements:
                     amount       NUMERIC(10,2),
                     description  VARCHAR(300),
                     note         VARCHAR(300),
-                    date_added   DATETIME);''' 
-    account =    '''CREATE TABLE account
+                    date_added   DATETIME);"""
+    account = """CREATE TABLE account
                     (account_id   INT(10) PRIMARY KEY,
                     name          VARCHAR(32),
-                    type          INT(10));'''
-    category =   '''CREATE TABLE category
+                    type          INT(10));"""
+    category = """CREATE TABLE category
                     (category_id    INT(10) PRIMARY KEY,
                     parent          INT(10),
-                    name            VARCHAR(32));'''
-    #TODO: decide if it should be 'keywords' or 'keyword'
-    keyword =    '''CREATE TABLE keywords 
+                    name            VARCHAR(32));"""
+    # TODO: decide if it should be 'keywords' or 'keyword'
+    keyword = """CREATE TABLE keywords 
                     (id            INTEGER PRIMARY KEY AUTOINCREMENT,
                     category_id    INT(10),
-                    keyword        VARCHAR(32));'''
-    #TODO: Decide if this table is going to be used. It was in the comments section below so I added it here.
+                    keyword        VARCHAR(32));"""
+    # TODO: Decide if this table is going to be used. It was in the comments section below so I added it here.
     # budget =     '''CREATE TABLE budget
     #                 (category_id    INT PRIMARY KEY ,
     #                 lim           NUMERIC(10,2) ,
     #                 cd              INT(10));'''
 
+
 def all_tables_init(statements: list, database_directory: str) -> bool:
     """
-    Create all the tables. It uses a list instead 
-    of importing the TableStatements class for 
+    Create all the tables. It uses a list instead
+    of importing the TableStatements class for
     dependency injection reasons.
     """
     with sqlite3.connect(database_directory) as conn:
         cursor = conn.cursor()
         for statement in statements:
             cursor.execute(statement)
+
 
 # alter ledger table structure
 # try:
@@ -62,7 +67,6 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
 # 	print(er)
 # else:
 # 	print("Table 'ledger' copied succesfully")
-
 
 
 # try:
@@ -86,7 +90,3 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
 # 	print(er)
 # else:
 # 	print("Table 'investment' created successfully")
-
-
-
-
