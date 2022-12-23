@@ -13,7 +13,7 @@ from gui.tabs import load_data
 from gui.tabs import review_investments
 from gui.tabs import review_balances
 from gui.tabs import categorize_transactions
-from gui.tabs import budgetting
+from gui.tabs import budgeting
 
 class MainApplication:
 	def __init__(self, window, *args, **kwargs):
@@ -42,7 +42,7 @@ class MainApplication:
 		self.tab5 = review_investments.tabInvestments(self.nb)
 		self.tab6 = review_balances.tabBalances(self.nb)
 		self.tab7 = categorize_transactions.tabCategorizeTransactions(self.nb)
-		self.tab8 = budgetting.tabBudgeting(self.nb)
+		self.tab8 = budgeting.tabBudgeting(self.nb)
 
 		self.nb.add(self.tab1.frame, text="Run Program")
 		self.nb.add(self.tab2.frameX, text="Review Spending History")

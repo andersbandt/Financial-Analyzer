@@ -1,3 +1,4 @@
+
 <script setup>
 import 'bootstrap/dist/css/bootstrap.min.css'
 import '@coreui/coreui/dist/css/coreui.min.css'
@@ -11,8 +12,6 @@ import { CCardTitle } from '@coreui/vue';
 import { CButton } from '@coreui/vue';
 import { CCardText } from '@coreui/vue';
 import { CContainer } from '@coreui/vue'
-
-
 </script>
 
 <template>
@@ -22,7 +21,7 @@ import { CContainer } from '@coreui/vue'
     <CNav variant="pills" class="card-header-pills">
       <CNavItem>
         <CNavLink
-          href="/data_load.html"
+          href="#"
           active
         >
           Active
@@ -56,4 +55,3 @@ import { CContainer } from '@coreui/vue'
 
 
 </template>
-

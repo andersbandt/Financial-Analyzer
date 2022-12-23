@@ -143,7 +143,7 @@ class tabEditCategory:
         if category_name == "":
             gui_helper.alert_user("Can't have category blank", "Please fill in category name", "error")
 
-        res = dbh.insert_category(parent, category_name)
+        res = dbh.category.insert_category(parent, category_name)
         if res:
             gui_helper.gui_print(self.frame, self.prompt, "Added category: ", category_name)
             category_name_obj.delete("1.0", "end")

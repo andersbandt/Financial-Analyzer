@@ -13,11 +13,16 @@
     "@coreui/coreui": "^4.2.4",
     "@coreui/vue": "^4.5.0",
     "bootstrap": "^5.2.3",
-    "vue": "^3.2.45"
+    "mdbvue": "^6.7.3",
+    "sass": "^1.57.1",
+    "vue": "^3.2.45",
+    "vue-navigation-bar": "^5.0.2",
+    "vue-router": "^4.1.6"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.1.4",
     "@vitejs/plugin-vue": "^4.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
     "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/test-utils": "^2.2.6",
     "eslint": "^8.22.0",

@@ -1,5 +1,5 @@
 import sqlite3 
-DATABASE_DIRECTORY = 'src/db/financials.db'
+DATABASE_DIRECTORY = 'backend/db/financials.db'
 
 class TableStatements:
     """
