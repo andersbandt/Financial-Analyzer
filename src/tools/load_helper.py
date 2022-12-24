@@ -1,10 +1,9 @@
-
 # import needed modules
 
 
+import db.helpers as dbh
 # import user created modules
 from tools import date_helper
-import db.helpers as dbh
 
 ##############################################################################
 ####      VARIOUS FUNCTIONS    ###############################################
@@ -19,15 +18,22 @@ import db.helpers as dbh
 def check_account_load_status(account_id, month, year, printmode=None):
     # first check if any transaction data exists at all
     if not date_helper.month_year_to_date_range(month, year):
-        raise Exception("Uh oh, something went wrong getting date range for status indicators")
+        raise Exception(
+            "Uh oh, something went wrong getting date range for status indicators"
+        )
     else:
         date_start, date_end = date_helper.month_year_to_date_range(month, year)
 
-    account_ledger_data = dbh.ledger.get_account_transactions_between_date(account_id, date_start, date_end, printmode)
+    account_ledger_data = dbh.ledger.get_account_transactions_between_date(
+        account_id, date_start, date_end, printmode
+    )
 
     if printmode is not None:
         print("\nExamining account:", dbh.account.get_account_name_from_id(account_id))
-        print("Got this many transactions for account in date range: ", len(account_ledger_data))
+        print(
+            "Got this many transactions for account in date range: ",
+            len(account_ledger_data),
+        )
 
         print("Transactions below: ")
         print(account_ledger_data)
@@ -47,4 +53,3 @@ def check_account_load_status(account_id, month, year, printmode=None):
 
 def check_transaction_load_status(transaction):
     pass
-

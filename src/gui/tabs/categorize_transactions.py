@@ -1,13 +1,10 @@
-
 # import needed packages
 import tkinter as tk
 
 # import user defined helper modules
 import db.helpers as dbh
-
 # import Statement classes
-from statement_types import Ledger
-from statement_types import Transaction
+from statement_types import Ledger, Transaction
 
 
 class tabCategorizeTransactions:
@@ -15,7 +12,9 @@ class tabCategorizeTransactions:
         # tkinter frame stuff
         self.master = master
         self.frame = tk.Frame(self.master)
-        self.fr_categorize = tk.Frame(self.frame, highlightcolor="green", height=200, width=100, cursor="dot")
+        self.fr_categorize = tk.Frame(
+            self.frame, highlightcolor="green", height=200, width=100, cursor="dot"
+        )
 
         self.prompt = tk.Text(self.frame, padx=5, pady=5, height=5)
 
@@ -35,16 +34,21 @@ class tabCategorizeTransactions:
         self.fr_categorize.grid(row=0, column=0)
         self.init_categorization_content()
 
-
     def init_categorization_content(self):
-        label = tk.Label(self.fr_categorize, text="In this section you can categorize already loaded in transactions" \
-                                                 "that don't have categories")
+        label = tk.Label(
+            self.fr_categorize,
+            text="In this section you can categorize already loaded in transactions"
+            "that don't have categories",
+        )
         label.grid(row=0, column=0)
 
         # set up button to start loading in file data
-        categorize_transactions = tk.Button(self.fr_categorize, text="Start Categorization", command=lambda: self.start_categorization())
+        categorize_transactions = tk.Button(
+            self.fr_categorize,
+            text="Start Categorization",
+            command=lambda: self.start_categorization(),
+        )
         categorize_transactions.grid(row=0, column=1)
-
 
     def start_categorization(self):
         self.fr_categorize.grid_forget()
@@ -54,13 +58,13 @@ class tabCategorizeTransactions:
 
         transactions = []
         for data in ledger_data:
-            transactions.append(Transaction.Transaction(data[1], data[2], data[3], data[4], data[5], data[0]))
+            transactions.append(
+                Transaction.Transaction(
+                    data[1], data[2], data[3], data[4], data[5], data[0]
+                )
+            )
 
         statement = Ledger.Ledger(self.frame, "Uncategorized Transactions", 1, 0)
         statement.set_statement_data(transactions)
         statement.categorizeLedgerAutomatic()
         statement.createStatementTable()
-
-
-
-

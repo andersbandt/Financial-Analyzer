@@ -4,10 +4,12 @@ Class: Investment
 Investment represents a single investment in an asset
 
 """
-from statement_types.Transaction import Transaction
-from datetime import date  # needed to get current date
-from googlefinance import getQuotes
 import json
+from datetime import date  # needed to get current date
+
+from googlefinance import getQuotes
+
+from statement_types.Transaction import Transaction
 
 
 class Investment(Transaction):
@@ -15,7 +17,6 @@ class Investment(Transaction):
         self.ticker = ticker
         self.shares = shares
         self.account_id = account_id
-
 
     # get_current_value: gets the current value of the investment
     def get_current_value(self):

@@ -1,14 +1,13 @@
-
 # import needed modules
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 ##############################################################################
 ####      PLOTTING FUNCTIONS    ##############################################
 ##############################################################################
 
-def get_cat_pie_plot(amounts, categories, explode=.1, title=None):
+
+def get_cat_pie_plot(amounts, categories, explode=0.1, title=None):
     # generate labels
     labels = []
     for i in range(0, len(amounts)):
@@ -21,15 +20,15 @@ def get_cat_pie_plot(amounts, categories, explode=.1, title=None):
     plt.pie(amounts, labels=labels, explode=myexplode, shadow=False, normalize=True)
 
     # add legend and title
-    #plt.legend(patches, labels, loc="best")
+    # plt.legend(patches, labels, loc="best")
     plt.title(title)
 
     # Set aspect ratio to be equal so that pie is drawn as a circle.
-    plt.axis('equal')
+    plt.axis("equal")
     plt.tight_layout()
 
 
-def get_pie_plot(amounts, labels, explode=.1, title=None, legend=False):
+def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
     # clear current plot
     plt.clf()
 
@@ -48,7 +47,7 @@ def get_pie_plot(amounts, labels, explode=.1, title=None, legend=False):
     plt.title(title)
 
     # Set aspect ratio to be equal so that pie is drawn as a circle.
-    plt.axis('equal')
+    plt.axis("equal")
     plt.tight_layout()
 
 
@@ -62,12 +61,14 @@ def get_line_chart(x_axis, y_axis, title=None, legend=False):
     # add legend and title
     if legend:
         pass
-        #plt.legend(patches, labels, loc="best")
+        # plt.legend(patches, labels, loc="best")
     plt.title(title)
 
 
 # get_stacked_bar_chart: creates a bar chart with multiple 'stacked' values on the y axis
-def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None):
+def get_stacked_bar_chart(
+    x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None
+):
     # clear current plot
     plt.clf()
 
@@ -79,7 +80,7 @@ def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=N
 
     # set general plot info
     plt.title(title)
-    plt.legend((p1[0], p2[0]), ('Investment', 'Liquid'), loc=2, frameon='false')
+    plt.legend((p1[0], p2[0]), ("Investment", "Liquid"), loc=2, frameon="false")
 
     # set X axis (date) info
     if x_ticks is not None:
@@ -89,11 +90,13 @@ def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=N
     max_val = max(y_1 + y_2)
     ticks = 10
 
-    plt.ylabel('Amount (k dollaz $)')
-    plt.yticks(np.arange(0, max_val, max_val/ticks))  # sets the y axis scaling and step size
-    plt.tick_params(top='off', bottom='off', right='off')
+    plt.ylabel("Amount (k dollaz $)")
+    plt.yticks(
+        np.arange(0, max_val, max_val / ticks)
+    )  # sets the y axis scaling and step size
+    plt.tick_params(top="off", bottom="off", right="off")
 
-    plt.grid(axis='y', linestyle='-')
+    plt.grid(axis="y", linestyle="-")
 
 
 ##############################################################################
@@ -168,9 +171,11 @@ def get_spaces(length, trim):
 
 # print_category_amount
 def print_category_amount(category, amount):
-    string_to_print = ("CATEGORY: " + category.name + get_spaces(len(category.name), 16) + " || AMOUNT: " + str(amount))
+    string_to_print = (
+        "CATEGORY: "
+        + category.name
+        + get_spaces(len(category.name), 16)
+        + " || AMOUNT: "
+        + str(amount)
+    )
     print(string_to_print)
-
-
-
-

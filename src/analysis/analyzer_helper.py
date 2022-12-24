@@ -1,18 +1,15 @@
 # import needed modules
-import numpy as np
-from datetime import date
 import datetime
+from datetime import date
 
-# import user defined modules
-from statement_types import Transaction
-from categories import categories_helper
-from gui.gui_helper import alert_user
-from tools import date_helper
+import numpy as np
 
 import db.helpers as dbh
-
-
-
+from categories import categories_helper
+from gui.gui_helper import alert_user
+# import user defined modules
+from statement_types import Transaction
+from tools import date_helper
 
 
 # sum_individual_category: returns the dollar ($) total of a certain category in a statement
@@ -52,7 +49,9 @@ def create_top_category_amounts_array(transactions, categories):
     for category in top_categories:
         node = tree.search_nodes(name=category)[0]
         for leaf in node:
-            category_amounts[i] += sum_individual_category(transactions, categories_helper.category_name_to_id(leaf.name))
+            category_amounts[i] += sum_individual_category(
+                transactions, categories_helper.category_name_to_id(leaf.name)
+            )
         i += 1
     return top_categories, category_amounts
 
@@ -81,10 +80,10 @@ def return_ledger_exec_dict(transactions):
             elif trans_amount > 0:
                 incomes += trans_amount
 
-    exec_summary = {"expenses": expenses,
-                    "incomes": incomes}
+    exec_summary = {"expenses": expenses, "incomes": incomes}
 
     return exec_summary
+
 
 # recall_transaction_data: loads up an array of Transaction objects based on date range and accounts
 #     @param date_start - the starting date for search
@@ -96,12 +95,22 @@ def recall_transaction_data(date_start, date_end, accounts):
     # create an array of Transaction objects with the database data
     transactions = []  # clear transactions
     for item in ledger_data:
-        if item[2] in accounts:  # only add transactions that are in the supplied accounts list
-            transactions.append(Transaction.Transaction(item[1], item[2], item[3], item[4], item[5], item[0]))
+        if (
+            item[2] in accounts
+        ):  # only add transactions that are in the supplied accounts list
+            transactions.append(
+                Transaction.Transaction(
+                    item[1], item[2], item[3], item[4], item[5], item[0]
+                )
+            )
 
     if len(transactions) == 0:
-        alert_user("No results found", "Uh oh, search for data produced no results", "error")
-        raise Exception("Uh oh, analyzer_helper.recall_transaction_data produced no results.")
+        alert_user(
+            "No results found", "Uh oh, search for data produced no results", "error"
+        )
+        raise Exception(
+            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
+        )
         return None
 
     return transactions
@@ -119,7 +128,9 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
     today = date.today()
 
     # init date object 'days_prev' less
-    d = datetime.timedelta(days=days_prev)  # this variable can only be named d. No exceptions. Ever.
+    d = datetime.timedelta(
+        days=days_prev
+    )  # this variable can only be named d. No exceptions. Ever.
     a = today - d  # compute the date (today - timedelta)
 
     # get balance data
@@ -137,7 +148,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
         a_A[account_id] = 0
 
     # search through edge code limits to add first (N-1) bin A vectors
-    for i in range(0, N-1):
+    for i in range(0, N - 1):
         # add T/F checker for if value has been updated
         bal_added = {}
         for account_id in dbh.account.get_all_account_ids():
@@ -168,7 +179,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
                 # NOTE: took out below code so the current code is just adding latest ones
                 # if the balance is higher than what we currently have than replace Bx in spl_Bx
                 #    in this way we get the 'dominant' vector (high value)
-                #if bx[2] > a_A[bx[1]]:
+                # if bx[2] > a_A[bx[1]]:
                 #    a_A[bx[1]] = bx[2]
 
         # set Bx to dominant A vector after search is complete
@@ -218,7 +229,7 @@ def gen_bin_A_matrix(spl_Bx, *args):
                 invest_total += Bx[account_id]
 
             if acc_type in liquid_acc:
-                liquid_total += (Bx[account_id])
+                liquid_total += Bx[account_id]
 
         # cont = []
         # for i in range(0, len(args)):
@@ -232,14 +243,11 @@ def gen_bin_A_matrix(spl_Bx, *args):
 
     return [investment, liquid]
 
+
 ##############################################################################
 ####      BUDGET ANALYSIS FUNCTIONS    #######################################
 ##############################################################################
 
+
 def compare_trans_vs_budget(transactions, budget_filename):
     pass
-
-
-
-
-

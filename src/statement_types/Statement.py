@@ -1,22 +1,33 @@
 # import needed modules
 import tkinter as tk
-from tkinter import ttk
 from functools import partial
+from tkinter import ttk
 
+import db.helpers as dbh
 # import user defined modules
 import statement_types.Ledger as Ledger
-from gui import gui_helper
 from categories import categories_helper
-import db.helpers as dbh
+from gui import gui_helper
 
 
 # TODO: make the 'update' button say 'save' for the Statement
 class Statement(Ledger.Ledger):
-    def __init__(self, master, account_id, year, month, file, row_num, column_num, *args, **kwargs):
+    def __init__(
+        self,
+        master,
+        account_id,
+        year,
+        month,
+        file,
+        row_num,
+        column_num,
+        *args,
+        **kwargs
+    ):
         title = str(account_id) + ":" + str(year) + "-" + str(month)
 
         # call parent class __init__ method
-        #super(Ledger.Ledger, self).__init__(master, title, row_num, column_num, *args, **kwargs)
+        # super(Ledger.Ledger, self).__init__(master, title, row_num, column_num, *args, **kwargs)
         super().__init__(master, title, row_num, column_num, *args, **kwargs)
 
         # initialize identifying statement info
@@ -24,11 +35,11 @@ class Statement(Ledger.Ledger):
         self.year = year
         self.month = month
 
-
-
         # # load in statement filepath info
         self.base_filepath = "C:/Users/ander/OneDrive/Documents/Financials"
-        self.filepath = gui_helper.get_statement_folder(self.base_filepath, year, month) + file  # generate filepath of .csv file to download
+        self.filepath = (
+            gui_helper.get_statement_folder(self.base_filepath, year, month) + file
+        )  # generate filepath of .csv file to download
         #
         # # initialize statement data content
         # self.transactions = []
@@ -47,7 +58,6 @@ class Statement(Ledger.Ledger):
         # # photo filepath
         self.photo_filepath = ""
 
-
     ##############################################################################
     ####      DATA LOADING FUNCTIONS    ##########################################
     ##############################################################################
@@ -55,10 +65,18 @@ class Statement(Ledger.Ledger):
     # create_statement_data: combines and automatically categorizes transactions across all raw account statement data
     def create_statement_data(self):
         if self.check_statement_status(self.load_statement_data()):
-            gui_helper.gui_print(self.master, self.prompt, "Uh oh, looks like data already exists for this particular statement")
-            res = gui_helper.promptYesNo("Data might already be loaded in for this statement... do you want to continue?")
+            gui_helper.gui_print(
+                self.master,
+                self.prompt,
+                "Uh oh, looks like data already exists for this particular statement",
+            )
+            res = gui_helper.promptYesNo(
+                "Data might already be loaded in for this statement... do you want to continue?"
+            )
             if res is False:
-                gui_helper.gui_print(self.master, self.prompt, "Ok, not loading in statement")
+                gui_helper.gui_print(
+                    self.master, self.prompt, "Ok, not loading in statement"
+                )
                 return
 
         print("Creating statement data for", self.title)
@@ -66,14 +84,23 @@ class Statement(Ledger.Ledger):
 
         # check for if transactions actually got loaded in
         if len(self.transactions) == 0:
-            gui_helper.gui_print(self.master, self.prompt, "Uh oh, something went wrong retrieving transactions. Likely the transaction data is corrupt and resulted in 0 transactions. Exiting statement data creation.")
+            gui_helper.gui_print(
+                self.master,
+                self.prompt,
+                "Uh oh, something went wrong retrieving transactions. Likely the transaction data is corrupt and resulted in 0 transactions. Exiting statement data creation.",
+            )
             return False
 
-        gui_helper.gui_print(self.master, self.prompt, "Loaded in raw transaction data, running categorizeStatementAutomatic() now!")
+        gui_helper.gui_print(
+            self.master,
+            self.prompt,
+            "Loaded in raw transaction data, running categorizeStatementAutomatic() now!",
+        )
 
         self.categorizeStatementAutomatic()  # run categorizeStatementAutomatic on the transactions
-        gui_helper.gui_print(self.master, self.prompt,
-                             "Statement should be loaded and displayed")
+        gui_helper.gui_print(
+            self.master, self.prompt, "Statement should be loaded and displayed"
+        )
 
     # load_statement_data: this function should be defined per account's Statement class
     # DO NOT DELETE
@@ -91,17 +118,20 @@ class Statement(Ledger.Ledger):
             month_start = str(self.year) + "-" + "0" + str(self.month) + "-" + "01"
             month_end = str(self.year) + "-" + "0" + str(self.month) + "-" + "31"
 
-        loaded_transactions = dbh.ledger.get_account_transactions_between_date(self.account_id, month_start, month_end)
+        loaded_transactions = dbh.ledger.get_account_transactions_between_date(
+            self.account_id, month_start, month_end
+        )
 
         # compare to loaded length of transactions
         if len(loaded_transactions) == len(current_transactions):
-            if len(loaded_transactions) != 0:  # prevents alerting when data might not be loading in correctly
+            if (
+                len(loaded_transactions) != 0
+            ):  # prevents alerting when data might not be loading in correctly
                 print("Uh oh, has this data been loaded in already?")
                 # sanity check a couple transactions??
                 return True
         else:
             return False
-
 
     ##############################################################################
     ####      CATEGORIZATION FUNCTIONS    ########################################
@@ -113,7 +143,6 @@ class Statement(Ledger.Ledger):
         for transaction in self.transactions:
             transaction.categorizeTransactionAutomatic(categories)
 
-
     ##############################################################################
     ####      DATA SAVING FUNCTIONS    ###########################################
     ##############################################################################
@@ -124,9 +153,15 @@ class Statement(Ledger.Ledger):
     def save_statement(self):
         gui_helper.gui_print(self.frame, self.prompt, "Attempting to save statement...")
         if self.check_statement_status(self.transactions):
-            response = gui_helper.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
+            response = gui_helper.promptYesNo(
+                "It looks like a saved statement for "
+                + self.title
+                + " already exists, are you sure you want to overwrite by saving this one?"
+            )
             if response is False:
-                gui_helper.gui_print(self.frame, self.prompt, "Ok, not saving statement")
+                gui_helper.gui_print(
+                    self.frame, self.prompt, "Ok, not saving statement"
+                )
                 return False
 
         error_status = 0
@@ -136,11 +171,11 @@ class Statement(Ledger.Ledger):
                 error_status = 1
 
         if error_status == 1:
-            gui_helper.alert_user("Error in ledger adding!", "At least 1 thing went wrong adding to ledger")
+            gui_helper.alert_user(
+                "Error in ledger adding!",
+                "At least 1 thing went wrong adding to ledger",
+            )
             return False
         else:
             gui_helper.gui_print(self.frame, self.prompt, "Saved statement")
         return True
-
-
-

@@ -1,16 +1,15 @@
-
 # import needed modules
+import math
 import tkinter as tk
 from tkinter import ttk
 from tkinter.ttk import Style
 
-from ete3 import Tree, TreeStyle, Tree, TextFace, add_face_to_node
-import math
+from ete3 import TextFace, Tree, TreeStyle, add_face_to_node
 
+import db.helpers as dbh
 # import user defined modules
 from categories import categories_helper
 from gui import gui_helper
-import db.helpers as dbh
 
 
 class tabBudgeting:
@@ -43,7 +42,6 @@ class tabBudgeting:
         # run function to initialize the GUI tab content
         self.initTabContent()
 
-
     # initTabContent: initializes the main content of the tab
     def initTabContent(self):
         print("Initializing tab 8 content")
@@ -51,14 +49,18 @@ class tabBudgeting:
         self.init_fr_add_bud()
         self.init_fr_view_bud()
 
-
     def init_fr_add_bud(self):
         # print frame title
-        tk.Label(self.fr_add_bud, text="Add Budget Amount", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_add_bud, text="Add Budget Amount", font=("Arial", 16)).grid(
+            row=0, column=0, columnspan=5, padx=3, pady=3
+        )
 
         # KEYWORD ADDING
         # add drop down for keyword
-        budget_category_drop, budget_category_option = gui_helper.generate_all_category_dropdown(self.fr_add_bud)
+        (
+            budget_category_drop,
+            budget_category_option,
+        ) = gui_helper.generate_all_category_dropdown(self.fr_add_bud)
         budget_category_drop.grid(row=9, column=0, padx=10, pady=5)
 
         # text input for user to add keyword
@@ -67,36 +69,45 @@ class tabBudgeting:
         ### add amount for user to input budget limit
         # validation function for input below
         def MoneyValidation(S):
-            if S in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+            if S in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
                 return True
             self.fr_add_bud.bell()  # .bell() plays that ding sound telling you there was invalid input
             return False
 
-        vcmd = (self.fr_add_bud.register(MoneyValidation), '%S')  # register function
+        vcmd = (self.fr_add_bud.register(MoneyValidation), "%S")  # register function
 
         # add budget amount entry
-        b_amount = tk.Entry(self.fr_add_bud, bg='white', validate='key', vcmd=vcmd)
+        b_amount = tk.Entry(self.fr_add_bud, bg="white", validate="key", vcmd=vcmd)
         b_amount.grid(row=9, column=1)
 
         # set up button to add a budget limit for a Category
-        add_b_amount = tk.Button(self.fr_add_bud, text="Add Budget Amount", command=lambda: self.add_budget_gui(budget_category_option.get(), b_amount.get()))
-        add_b_amount.grid(row=10, column=3, padx=7, pady=5)  # place 'Start Categorizing' button
-
+        add_b_amount = tk.Button(
+            self.fr_add_bud,
+            text="Add Budget Amount",
+            command=lambda: self.add_budget_gui(
+                budget_category_option.get(), b_amount.get()
+            ),
+        )
+        add_b_amount.grid(
+            row=10, column=3, padx=7, pady=5
+        )  # place 'Start Categorizing' button
 
     # init_fr_view_bud: inits Frame for viewing budgeting
     def init_fr_view_bud(self):
         # print frame title
-        tk.Label(self.fr_view_bud, text="View Budget", font=("Arial", 16)).grid(row=0, column=0, columnspan=5, padx=3, pady=3)
+        tk.Label(self.fr_view_bud, text="View Budget", font=("Arial", 16)).grid(
+            row=0, column=0, columnspan=5, padx=3, pady=3
+        )
 
         # set up button to display categories flow chart
         style = Style()
-        style.configure('W.TButton', font=('calibri', 10, 'bold', 'underline'), foreground='red')
-
+        style.configure(
+            "W.TButton", font=("calibri", 10, "bold", "underline"), foreground="red"
+        )
 
     ##############################################################################
     ####      ADDING FUNCTIONS        ############################################
     ##############################################################################
-
 
     # add_budget_gui: attempts to create a BudgetCategory with input user information
     def add_budget_gui(self, category_name, b_amount):
@@ -107,7 +118,9 @@ class tabBudgeting:
         # get relevant Category ID
         category_id = categories_helper.category_name_to_id(category_name)
         if category_id == False:
-            raise Exception("Error converting from category_name to category_id for creating budget")
+            raise Exception(
+                "Error converting from category_name to category_id for creating budget"
+            )
 
         ### create pop up to prompt user to fill out more information
         def popup_bonus():
@@ -125,21 +138,24 @@ class tabBudgeting:
         cd = 0
 
         # attempt to set BudgetCategory
-        print("add_budget_gui: attempting to insert BudgetCategory of category_id= " + str(category_id))
-        res = dbh.budget.insert_bcat(category_id, b_amount, cd)  # add BudgetCategory date. category_id, lim, and cd
+        print(
+            "add_budget_gui: attempting to insert BudgetCategory of category_id= "
+            + str(category_id)
+        )
+        res = dbh.budget.insert_bcat(
+            category_id, b_amount, cd
+        )  # add BudgetCategory date. category_id, lim, and cd
         # if not res:
         #     gui_helper.gui_print(self.frame, self.prompt, "Uh oh, something went wrong adding keyword")
         # else:
         #     gui_helper.gui_print(self.frame, self.prompt, "Set budget amount of : ", keyword, " to category: ", category_name)
         #     keyword_text_obj.delete("1.0", "end")
 
-
     ##############################################################################
     ####      HELPER FUNCTIONS          ##########################################
     ##############################################################################
 
-
-# TODO: generating the category tree eliminates vertical scroll bar
+    # TODO: generating the category tree eliminates vertical scroll bar
     def show_category_tree_diagram(self, printmode=None):
         if printmode == "debug":
             print("DEBUG: debugging guiTab_3_editCategory.show_category_tree_diagram()")
@@ -155,12 +171,12 @@ class tabBudgeting:
         w = 525
         h = 625
         canvas = tk.Canvas(self.fr_view_cat, width=w, height=h, bg="white")
-        #canvas.grid(row=1, column=0, rowspan=3)
+        # canvas.grid(row=1, column=0, rowspan=3)
         canvas.grid(row=1, column=0, padx=25, pady=25)
 
         # add a scrollbar
         vsb = tk.Scrollbar(self.fr_view_cat, orient="vertical", command=canvas.yview)
-        vsb.grid(row=0, column=1, rowspan=6, sticky='ns')
+        vsb.grid(row=0, column=1, rowspan=6, sticky="ns")
         canvas.configure(yscrollcommand=vsb.set)
 
         # generate top Category objects
@@ -168,7 +184,9 @@ class tabBudgeting:
         num_top_level = len(top_categories)
 
         y_pad = 75
-        x_child_space = int((w - 20) / 10) + 200  # the denominator should be the length of the tree
+        x_child_space = (
+            int((w - 20) / 10) + 200
+        )  # the denominator should be the length of the tree
 
         # set parameters for starting node location
         x_top = 150
@@ -183,16 +201,19 @@ class tabBudgeting:
         y_b_space = 0
         for category in top_categories:
             y_prev = y_top
-            #y_top = y_prev + .3*num_top*y_top_space + y_spacer
+            # y_top = y_prev + .3*num_top*y_top_space + y_spacer
             y_top = y_prev + y_t_space + y_b_space
 
             # DEBUG PRINTING
-            print("Drawing parent at = ", x_top, ",", y_top) if printmode == "debug" else 0
+            print(
+                "Drawing parent at = ", x_top, ",", y_top
+            ) if printmode == "debug" else 0
             print("y_t_space = ", y_t_space) if printmode == "debug" else 0
             print("y_b_space = ", y_b_space) if printmode == "debug" else 0
             # draw top level parent node (all along same leftmost vertical row)
-            category.draw_Category_gui_obj(canvas, x_top, y_top, w, h, kind="full", master=self.fr_view_cat)  # draw Category node
-
+            category.draw_Category_gui_obj(
+                canvas, x_top, y_top, w, h, kind="full", master=self.fr_view_cat
+            )  # draw Category node
 
             # draw_children: draws the children for a Category 'cat' based on a starting x coordinate 'x_st'
             def draw_children(cat, x_st, y_st, max_angle, fill_color="gray"):
@@ -203,7 +224,10 @@ class tabBudgeting:
                 angles = gui_helper.generate_tree_angles(num_children, max_angle)
 
                 if angles is None:
-                    raise Exception("ERROR: can't create category tree - angle matrix couldn't be generated for parent: ", cat.name)
+                    raise Exception(
+                        "ERROR: can't create category tree - angle matrix couldn't be generated for parent: ",
+                        cat.name,
+                    )
 
                 for i in range(0, num_children):
                     tmp_Cat = categories.Category(cat.children_id[i])
@@ -212,31 +236,58 @@ class tabBudgeting:
 
                     # draw the child node
                     if printmode == "debug":
-                        print("Drawing child at (x, y): " + str(x_cord) + "," + str(y_cord))
+                        print(
+                            "Drawing child at (x, y): "
+                            + str(x_cord)
+                            + ","
+                            + str(y_cord)
+                        )
 
-                    tmp_Cat.draw_Category_gui_obj(canvas, x_cord, y_cord, w, h, kind="full", fill_color=fill_color, master=self.fr_view_cat)
+                    tmp_Cat.draw_Category_gui_obj(
+                        canvas,
+                        x_cord,
+                        y_cord,
+                        w,
+                        h,
+                        kind="full",
+                        fill_color=fill_color,
+                        master=self.fr_view_cat,
+                    )
 
                     # draw branch linking parent node to child node
-                    gui_helper.drawLine(canvas, x_st + w, y_st + h / 2, x_cord, y_cord + h / 2)
+                    gui_helper.drawLine(
+                        canvas, x_st + w, y_st + h / 2, x_cord, y_cord + h / 2
+                    )
 
                     # recursively call if Category has children
                     l = len(tmp_Cat.children_id)
                     if l > 0:
-                        draw_children(tmp_Cat, x_st + x_child_space, y_cord, max_angle, fill_color=fill_color)
-
+                        draw_children(
+                            tmp_Cat,
+                            x_st + x_child_space,
+                            y_cord,
+                            max_angle,
+                            fill_color=fill_color,
+                        )
 
             # if top level Category has children, start children drawing algorithm
             if len(category.children_id) > 0:
                 # set up next top level category spacing based on children length
-                y_t_space = int(3.5 * h * math.sqrt(len(category.children_id)))  # the "top" spacing for the next parent
+                y_t_space = int(
+                    3.5 * h * math.sqrt(len(category.children_id))
+                )  # the "top" spacing for the next parent
 
                 # draw children
-                max_angle = math.pi * 17 / 180  # max +/- deviation in degrees from parent node
+                max_angle = (
+                    math.pi * 17 / 180
+                )  # max +/- deviation in degrees from parent node
                 draw_children(category, x_top, y_top, max_angle, fill_color="#062b19")
 
             # add bottom level spacing contribution
-            if len(categories[num_top+1].children_id) > 0:
-                y_b_space = int(3.5 * h * math.sqrt(len(categories[num_top+1].children_id)))  # the "top" spacing for the next parent
+            if len(categories[num_top + 1].children_id) > 0:
+                y_b_space = int(
+                    3.5 * h * math.sqrt(len(categories[num_top + 1].children_id))
+                )  # the "top" spacing for the next parent
             else:
                 y_b_space = 0
 
@@ -245,8 +296,7 @@ class tabBudgeting:
 
         # finish sizing scrollbar
         # TODO: calling this may be causing the canvas to resize weird... look into
-        canvas.configure(scrollregion=canvas.bbox('all'))
-
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
     # renderTree: renders a Tree using built in Tree and Treestyle from ete3 library
     def renderTree(self):
@@ -264,7 +314,9 @@ class tabBudgeting:
         ts = TreeStyle()
         ts.show_leaf_name = False
 
-        def my_layout(node):  # this adds the recursive node labeling behavior. (I think)
+        def my_layout(
+            node,
+        ):  # this adds the recursive node labeling behavior. (I think)
             # create a text face
             f = TextFace(node.name, tight_text=False)  # create name of node
 
@@ -277,16 +329,19 @@ class tabBudgeting:
             f.border.width = 1
 
             # add the text face to the node
-            add_face_to_node(f, node, column=0, position="branch-right")  # add TextFace,
+            add_face_to_node(
+                f, node, column=0, position="branch-right"
+            )  # add TextFace,
 
         ts.layout_fn = my_layout  # set layout of TreeStyle() object
         ts.scale = 50  # adjust scale
 
         # display the final category tree
-        #tk.Label(self.frame, text=t.get_ascii(), width=40).grid(row=0, column=4, rowspan=8)
+        # tk.Label(self.frame, text=t.get_ascii(), width=40).grid(row=0, column=4, rowspan=8)
 
-        t.show(layout=my_layout, tree_style=ts, name='ETE')  # start an interactive session to visualize the current node
-        t.render("category_tree.png", w=180, units="mm", tree_style=ts)  # renders the node structure as an image
-
-
-
+        t.show(
+            layout=my_layout, tree_style=ts, name="ETE"
+        )  # start an interactive session to visualize the current node
+        t.render(
+            "category_tree.png", w=180, units="mm", tree_style=ts
+        )  # renders the node structure as an image
