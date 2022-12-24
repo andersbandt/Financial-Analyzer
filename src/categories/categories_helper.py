@@ -1,5 +1,5 @@
-
 from ete3 import Tree
+
 import db.helpers as dbh
 
 ##############################################################################
@@ -9,10 +9,13 @@ import db.helpers as dbh
 # load_categories: returns an array containing all the category objects
 def load_categories():
     from categories import Category
+
     all_category_id = dbh.category.get_all_category_id()
     categories = []
     for category_id in all_category_id:
-        categories.append(Category(category_id[0]))  # have to grab 0 index because category_id is a tuple
+        categories.append(
+            Category(category_id[0])
+        )  # have to grab 0 index because category_id is a tuple
     return categories
 
 
@@ -20,7 +23,11 @@ def load_categories():
 def check_categories(categories_array):
     for category in categories_array:
         if category.keyword is None:
-            print("Uh oh, category: " + category.name + " has no keywords associated with it")
+            print(
+                "Uh oh, category: "
+                + category.name
+                + " has no keywords associated with it"
+            )
 
 
 # print_categories: prints all the categories in an array of Category
@@ -32,6 +39,7 @@ def print_categories(categories_array):
 ##############################################################################
 ####      CATEGORY FUNCTIONS     #############################################
 ##############################################################################
+
 
 def get_category_children(category_id, printmode=None):
     # debug print statements
@@ -122,8 +130,3 @@ def create_Tree(categories):
     print("    length of created tree: ", len("root"))
 
     return t
-
-
-
-
-

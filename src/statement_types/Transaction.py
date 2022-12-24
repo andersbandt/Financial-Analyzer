@@ -7,6 +7,7 @@ Transaction represents a single transaction on any statement
 
 from dateutil.parser import parse
 
+
 class Transaction:
     def __init__(self, date, account_id, category_id, amount, description, *args):
         self.date = date
@@ -16,8 +17,8 @@ class Transaction:
         self.description = description
 
         try:
-            if self.amount[0] == '$':
-                self.amount = self.amount[1:len(self.amount)]
+            if self.amount[0] == "$":
+                self.amount = self.amount[1 : len(self.amount)]
         except TypeError as e:
             pass
 
@@ -42,7 +43,7 @@ class Transaction:
         self.check_date()
         self.check_amount()
 
-    #check_date: checks if a Transaction date variable is valid
+    # check_date: checks if a Transaction date variable is valid
     def check_date(self):
         if self.date:
             try:
@@ -53,22 +54,23 @@ class Transaction:
                 return False
         return False
 
-    #check_amount: checks if a Transaction amount variable is valid
+    # check_amount: checks if a Transaction amount variable is valid
     def check_amount(self):
         if type(self.amount) is float:
             return True
 
         if type(self.amount) is str:
-            result = self.amount.find(',')
+            result = self.amount.find(",")
 
             if result != -1:
-                print("ERROR (TRANSACTION): transaction might be loaded in with a comma (big no no)")
+                print(
+                    "ERROR (TRANSACTION): transaction might be loaded in with a comma (big no no)"
+                )
                 return False
             else:
                 return True
 
         return True
-
 
     ##############################################################################
     ####      GETTER FUNCTIONS    ################################################
@@ -81,7 +83,7 @@ class Transaction:
     # get_category_string: returns transaction's category as a string
     def get_category_string(self):
         pass
-        #return category_helper.category_id_to_name(self.category_id)
+        # return category_helper.category_id_to_name(self.category_id)
 
     ##############################################################################
     ####      SETTER FUNCTIONS    ################################################
@@ -100,12 +102,16 @@ class Transaction:
     def categorizeTransactionAutomatic(self, categories):
         # if the description is missing or blank
         if self.description == "" or self.description is None:
-            print("Uh oh, description doesn't exist for this transaction. Unable to automatically categorize.")
+            print(
+                "Uh oh, description doesn't exist for this transaction. Unable to automatically categorize."
+            )
 
         # if the category ID is blank (able to assign a new one)
         if self.category_id is None or self.category_id == 0:
-            for category in categories:  # iterate through all provided Category objects in array
-                #if category.keyword is None:
+            for (
+                category
+            ) in categories:  # iterate through all provided Category objects in array
+                # if category.keyword is None:
                 #   print("Weird, a category has no keywords associated with it... that shouldn't happen")
                 try:
                     if any(keyword in self.description for keyword in category.keyword):
@@ -121,7 +127,6 @@ class Transaction:
         # if no category got assigned set as NA category (0)
         if self.category_id is None:
             self.category_id = 0
-
 
     # categorizeTransactionManual: manually categorizes a transaction using input description
     def categorizeTransactionManual(self, description):
@@ -140,9 +145,16 @@ class Transaction:
 
     # printTransaction: pretty prints a single transaction
     def printTransaction(self):
-        stringToPrint = ("DATE: " + ''.join(self.date) + \
-                         " || AMOUNT: " + ''.join(str(self.amount)) + self.getSpaces(len(str(self.amount)), 8) + \
-                         " || DESC: " + ''.join(self.description[0:40]) + self.getSpaces(len(self.description), 40))
+        stringToPrint = (
+            "DATE: "
+            + "".join(self.date)
+            + " || AMOUNT: "
+            + "".join(str(self.amount))
+            + self.getSpaces(len(str(self.amount)), 8)
+            + " || DESC: "
+            + "".join(self.description[0:40])
+            + self.getSpaces(len(self.description), 40)
+        )
         if self.category_id is not None:
             stringToPrint = stringToPrint + " || CATEGORY: " + str(self.category_id)
 
@@ -152,10 +164,14 @@ class Transaction:
 
     # getSaveString: gets an array of what to save to CSV file for the transaction
     def getSaveStringArray(self):
-        saveStringArray = [''.join(self.date), ''.join(str(self.amount)), ''.join(self.description)]
+        saveStringArray = [
+            "".join(self.date),
+            "".join(str(self.amount)),
+            "".join(self.description),
+        ]
 
         if self.category_id != None:
-            saveStringArray.append(''.join(self.category_id))
+            saveStringArray.append("".join(self.category_id))
 
         return saveStringArray
 
@@ -167,7 +183,7 @@ class Transaction:
             "amount": str(self.amount),
             "description": str(self.description),
             "category": self.category_id,
-            "source": self.account_id
+            "source": self.account_id,
         }
 
         return string_dict

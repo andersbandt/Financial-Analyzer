@@ -1,9 +1,6 @@
-
 # import needed modules
 import datetime
 import re
-
-
 
 ##############################################################################
 ####      DATE VERIFICATION FUNCTIONS        #################################
@@ -16,6 +13,7 @@ def date_order(date1, date2):
     else:
         return False
 
+
 # check_sql_date_format: checks if a date is properly formatted in YYYY-MM-DD string format
 def check_sql_date_format(date_string):
     char = "-"
@@ -25,7 +23,6 @@ def check_sql_date_format(date_string):
         print("Date string locations of '-' don't match")
         raise Exception("ERROR: improperly formatted date string: ", date_string)
     return True
-
 
 
 ##############################################################################
@@ -69,18 +66,22 @@ def conv_two_digit_date(date):
     ind = [i.start() for i in re.finditer(char, date)]
 
     if len(ind) != 2:
-        print("ERROR: may be passing in a poorly formatted date into: load_helper - conv_two_digit_date()")
+        print(
+            "ERROR: may be passing in a poorly formatted date into: load_helper - conv_two_digit_date()"
+        )
         raise Exception("Can't convert date into YYYY-MM-DD format")
 
-    month = date[0:ind[0]]
+    month = date[0 : ind[0]]
     if int(month) < 10:
         month = "0" + month
 
-    day = date[ind[0]+1:ind[1]]
+    day = date[ind[0] + 1 : ind[1]]
     if int(day) < 10:
         day = "0" + day
 
-    year = str(20) + date[ind[1]+1:]  # prepend '20' to year (only will work for years 2000-2099)
+    year = (
+        str(20) + date[ind[1] + 1 :]
+    )  # prepend '20' to year (only will work for years 2000-2099)
 
     formatted_date = year + "-" + month + "-" + day
 
@@ -138,7 +139,9 @@ def get_edge_code_dates(date_start, days_prev, N):
     edge_code_date = []  # length = N - 1
     for i in range(1, N):
         d_prev = round(days_prev * i / N)
-        d_y = datetime.timedelta(days=d_prev)  # this variable can only be named d_y - No exceptions ever.
+        d_y = datetime.timedelta(
+            days=d_prev
+        )  # this variable can only be named d_y - No exceptions ever.
         edge_code_date.insert(0, date_start - d_y)
     return edge_code_date
 
