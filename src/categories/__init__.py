@@ -1,7 +1,6 @@
 # import needed modules
 import tkinter as tk
-from tkinter import *
-from tkinter.ttk import *
+import tkinter.ttk as ttk
 
 import db.helpers as dbh
 # import user defined packages
@@ -130,13 +129,13 @@ class Category:
 
         # place category info
         gui_text = "Category: " + self.name
-        Label(self.frame, text=gui_text).grid(row=0, column=0, pady=3)
+        ttk.Label(self.frame, text=gui_text).grid(row=0, column=0, pady=3)
         gui_text = "ID: " + str(self.id)
-        Label(self.frame, text=gui_text).grid(row=1, column=0, pady=3)
+        ttk.Label(self.frame, text=gui_text).grid(row=1, column=0, pady=3)
         gui_text = "Keywords: "
         for keyword in self.keyword:
             gui_text = gui_text + keyword + ", "
-        Label(self.frame, text=gui_text).grid(row=2, column=0, pady=3)
+        ttk.Label(self.frame, text=gui_text).grid(row=2, column=0, pady=3)
 
         # rename button
         tk.Button(
