@@ -1,9 +1,12 @@
 # import needed modules
 import sqlite3
+import sys
 
 import db
 import gui
 
+from loguru import logger
+logger.add(sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>")
 
 # main: main function of the program. Really just calls gui_driver
 def main():
@@ -23,7 +26,7 @@ def db_init():
     try:
         all_tables_init(statements, DATABASE_DIRECTORY)
     except sqlite3.Error:
-        print("Tables already in db file.")
+        logger.exception("Tables already in db file.")
 
 
 # thing that's gotta be here
