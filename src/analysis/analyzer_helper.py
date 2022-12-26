@@ -11,6 +11,15 @@ from gui.gui_helper import alert_user
 from statement_types import Transaction
 from tools import date_helper
 
+from loguru import logger
+
+class AnalyzerHelperError(Exception):
+    """Analyzer Helper Error"""
+    def __init__(self, origin="AnalyzerHelper", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+    def __str__(self):
+        return self.msg
 
 # sum_individual_category: returns the dollar ($) total of a certain category in a statement
 # inputs: transactions- list of Transaction objects, category_id- category_id of interest
@@ -22,8 +31,8 @@ def sum_individual_category(transactions, category_id):
             try:
                 total_amount += transaction.amount
             except TypeError as e:
-                print("Uh oh, wrong type in transaction:", transaction.description)
-
+                error = f"Uh oh, wrong type in transaction: {transaction.description}"
+                logger.exception(error)
     return total_amount
 
 
