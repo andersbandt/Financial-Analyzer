@@ -3,7 +3,6 @@ import datetime
 from db import DATABASE_DIRECTORY
 from statement_types.Transaction import Transaction
 
-
 # insert_transaction: inserts a Transaction object into the SQL database
 def insert_transaction(transaction: Transaction) -> bool:
     """
@@ -13,7 +12,7 @@ def insert_transaction(transaction: Transaction) -> bool:
         cur = conn.cursor()
         #TODO: should this say "ledger_new" instead of "ledger"?
         cur.execute(
-            "INSERT INTO ledger_new (trans_date, account_id, category_id, amount, description, date_added) VALUES(?, ?, ?, ?, ?)",
+            "INSERT INTO ledger (trans_date, account_id, category_id, amount, description, date_added) VALUES(?, ?, ?, ?, ?,?)",
             (
             transaction.date,
             transaction.account_id,
