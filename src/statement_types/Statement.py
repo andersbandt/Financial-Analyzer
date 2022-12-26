@@ -27,7 +27,7 @@ class Statement(Ledger.Ledger):
 
 
         # # load in statement filepath info
-        self.base_filepath = "C:/Users/ander/OneDrive/Documents/Financials"
+        self.base_filepath = "C:\\Users\\latal\\Documents\\Financials"
         self.filepath = gui_helper.get_statement_folder(self.base_filepath, year, month) + file  # generate filepath of .csv file to download
         #
         # # initialize statement data content
