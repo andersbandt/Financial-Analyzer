@@ -94,7 +94,7 @@ class tabFinanceData:
             self.account_drop.grid_remove()
 
         # create and place new file dropdown
-        base_path = "C://Users//ander//OneDrive//Documents//Financials"
+        base_path = "C:\\Users\\latal\\Documents\\Financials"
         dir_path = gui_helper.get_statement_folder(base_path, year, month)
         dir_list = os.listdir(dir_path)
 
