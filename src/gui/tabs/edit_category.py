@@ -124,7 +124,7 @@ class tabEditCategory:
         # show_categories.grid(row=0, column=1)  # place 'Start Categorizing' button
 
         # print out ASCII tree
-        self.renderTree()
+        # self.renderTree()
         self.show_category_tree_diagram(printmode="debug")
 
     ##############################################################################
