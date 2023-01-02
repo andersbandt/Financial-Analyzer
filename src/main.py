@@ -1,12 +1,24 @@
 # import needed modules
 import sqlite3
 import sys
+from collections import defaultdict
+from random import choice
+
+from loguru import logger
 
 import db
 import gui
 
-from loguru import logger
-logger.add(sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>")
+colors = ["blue", "cyan", "green", "magenta", "red", "yellow"]
+color_per_module = defaultdict(lambda: choice(colors))
+
+
+def formatter(record):
+    color_tag = color_per_module[record["name"]]
+    return "<" + color_tag + ">[{name}]</> <bold>{message}</>\n{exception}"
+
+
+logger.add(sys.stdout, colorize=True, format=formatter)
 
 # main: main function of the program. Really just calls gui_driver
 def main():

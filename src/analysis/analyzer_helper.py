@@ -3,6 +3,7 @@ import datetime
 from datetime import date
 
 import numpy as np
+from loguru import logger
 
 import db.helpers as dbh
 from categories import categories_helper
@@ -10,20 +11,25 @@ from gui.gui_helper import alert_user
 # import user defined modules
 from statement_types import Transaction
 from tools import date_helper
+from utils import logfn
 
-from loguru import logger
 
+@logfn
 class AnalyzerHelperError(Exception):
     """Analyzer Helper Error"""
+
     def __init__(self, origin="AnalyzerHelper", msg="Error encountered"):
         self.msg = f"{origin} error encountered: {msg}"
         return self.msg
+
     def __str__(self):
         return self.msg
+
 
 # sum_individual_category: returns the dollar ($) total of a certain category in a statement
 # inputs: transactions- list of Transaction objects, category_id- category_id of interest
 # output: dollar total
+@logfn
 def sum_individual_category(transactions, category_id):
     total_amount = 0
     for transaction in transactions:  # for every transaction in the statement
@@ -37,6 +43,7 @@ def sum_individual_category(transactions, category_id):
 
 
 # create_category_amounts_array: returns the dollar ($) total of all categories in a statement
+@logfn
 def create_category_amounts_array(transactions, categories):
     category_amounts = []  # form 1D array of amounts to return
     for category in categories:
@@ -46,12 +53,13 @@ def create_category_amounts_array(transactions, categories):
 
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
+@logfn
 def create_top_category_amounts_array(transactions, categories):
     tree = categories_helper.create_Tree(categories)
     top_categories = categories_helper.get_top_level_category_names(categories)
 
-    category_names = []
-    print("\nGot this for length of top categories: ", len(top_categories))
+    category_names = []  # TODO: this is unused
+    logger.debug(f"Got this for length of top categories: {len(top_categories)}")
     category_amounts = np.zeros(len(top_categories))
 
     i = 0
@@ -70,6 +78,7 @@ def create_top_category_amounts_array(transactions, categories):
 ##############################################################################
 
 # return_ledger_exec_summary: returns a dictionary containing a summary of critical information about an array of Transactions
+@logfn
 def return_ledger_exec_dict(transactions):
     expenses = 0
     incomes = 0
@@ -98,6 +107,7 @@ def return_ledger_exec_dict(transactions):
 #     @param date_start - the starting date for search
 #     @param date_end - the ending date for search
 #     @param accounts - array of which accounts to search
+@logfn
 def recall_transaction_data(date_start, date_end, accounts):
     ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
 
@@ -117,10 +127,13 @@ def recall_transaction_data(date_start, date_end, accounts):
         alert_user(
             "No results found", "Uh oh, search for data produced no results", "error"
         )
-        raise Exception(
+        logger.exception(
             "Uh oh, analyzer_helper.recall_transaction_data produced no results."
         )
-        return None
+        raise AnalyzerHelperError(
+            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
+        )
+        return None  # TODO not required
 
     return transactions
 
@@ -132,6 +145,7 @@ def recall_transaction_data(date_start, date_end, accounts):
 # gen_Bx_matrix: generate 'Bx_matrix'
 #     this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
 #     B is an array of balance data between now and a previous day
+@logfn
 def gen_Bx_matrix(days_prev, N, printmode="None"):
     # init today date object
     today = date.today()
@@ -178,9 +192,10 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
                 bx_datetime = datetime.datetime.strptime(bx[3], "%Y-%m-%d")
                 bx_date = bx_datetime.date()
             except ValueError as e:
-                print("Error converting string to datetime object: ", bx[3])
-                print(e)
-                raise Exception("Can't proceed with populating Bx A vector")
+                logger.exception(
+                    f"Error converting string to datetime object: {bx[3]} with exception details {e}"
+                )
+                raise AnalyzerHelperError("Can't proceed with populating Bx A vector")
 
             # if date is less than edge code (in the date bin)
             if bx_date < edge_code_date[i]:
@@ -192,9 +207,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
                 #    a_A[bx[1]] = bx[2]
 
         # set Bx to dominant A vector after search is complete
-        if printmode == "debug":
-            print("Dominant A vector appears to be")
-            print(a_A)
+        logger.debug("Dominant A vector appears to be {a_A}")
         # append vector to spl_Bx after search for 'dominant' vector is complete
         spl_Bx.append(a_A)
 
@@ -208,6 +221,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
     return spl_Bx
 
 
+@logfn
 def gen_bin_A_matrix(spl_Bx, *args):
     # set which type number corresponds to which type of account
     inv_acc = [3]
@@ -258,5 +272,6 @@ def gen_bin_A_matrix(spl_Bx, *args):
 ##############################################################################
 
 
+@logfn
 def compare_trans_vs_budget(transactions, budget_filename):
     pass
