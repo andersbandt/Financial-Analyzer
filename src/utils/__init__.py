@@ -10,7 +10,7 @@ def logfn(fn):
 
         out = fn(*args, **kwargs)
 
-        logger.info("Done running {fn.__name__} with return value {out}")
+        logger.info(f"Done running {fn.__name__} with return value {out}")
         return out
 
     return wrapper
