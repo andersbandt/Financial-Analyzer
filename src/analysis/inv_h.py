@@ -5,12 +5,14 @@ import json
 import yahoo_fin.stock_info as si
 
 import db.helpers as dbh
+from utils import logfn
 
 ##############################################################################
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
 ##############################################################################
 
 # print_ticker_info: prints the info for a certain ticker to the console
+@logfn
 def print_ticker_info(ticker):
     print("printing ticker info for ticker: ", ticker)
 
@@ -25,6 +27,7 @@ def print_ticker_info(ticker):
 
 
 # get_ticker_price: returns the current live price for a certain ticker
+@logfn
 def get_ticker_price(ticker):
     price = si.get_live_price(ticker)
     return price
@@ -32,6 +35,7 @@ def get_ticker_price(ticker):
 
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
+@logfn
 def get_ticker_price_data(ticker, start_date, end_date, interval):
     hist_price_data = si.get_data(
         ticker,
@@ -49,6 +53,7 @@ def get_ticker_price_data(ticker, start_date, end_date, interval):
 ##############################################################################
 
 
+@logfn
 def create_investment_dicts():
     inv_data = []
     inv_ledge = dbh.investments.get_inv_ledge_data()
