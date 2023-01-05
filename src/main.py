@@ -6,17 +6,14 @@ from random import choice
 
 from loguru import logger
 
-import db
 import gui
 
 colors = ["blue", "cyan", "green", "magenta", "red", "yellow"]
 color_per_module = defaultdict(lambda: choice(colors))
 
-
 def formatter(record):
     color_tag = color_per_module[record["name"]]
     return "<" + color_tag + ">[{name}]</> <bold>{message}</>\n{exception}"
-
 
 logger.add(sys.stdout, colorize=True, format=formatter)
 
@@ -43,5 +40,5 @@ def db_init():
 
 # thing that's gotta be here
 if __name__ == "__main__":
-    # db_init() # only used if database doesn't exist
+    db_init() # only used if database doesn't exist
     main()
