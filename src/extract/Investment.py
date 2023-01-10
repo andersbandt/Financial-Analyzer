@@ -9,7 +9,7 @@ from datetime import date  # needed to get current date
 
 from googlefinance import getQuotes
 
-from statement_types.Transaction import Transaction
+from extract.Transaction import Transaction
 
 
 class Investment(Transaction):

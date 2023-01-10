@@ -8,7 +8,7 @@ import db.helpers as dbh
 from categories import categories_helper
 from gui.gui_helper import alert_user
 # import user defined modules
-from statement_types import Transaction
+from extract import Transaction
 from tools import date_helper
 
 

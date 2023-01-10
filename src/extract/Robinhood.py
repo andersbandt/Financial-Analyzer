@@ -1,12 +1,11 @@
-# import needed modules
 from PyPDF2 import PdfFileReader
 
-import statement_types.Statement as Statement
-import statement_types.Transaction as Transaction
+import extract.Statement as Statement
+import extract.Transaction as Transaction
 from gui import gui_helper
 
 
-class VanguardRoth(Statement.Statement):
+class Robinhood(Statement.Statement):
     def __init__(
         self,
         master,
@@ -27,7 +26,7 @@ class VanguardRoth(Statement.Statement):
 
         # initialize identifying statement info
         self.title = (
-            "Vanguard Roth: "
+            "Robinhood: "
             + str(self.account_id)
             + ":"
             + str(self.year)
@@ -41,14 +40,14 @@ class VanguardRoth(Statement.Statement):
         gui_helper.gui_print(
             self.frame,
             self.prompt,
-            "Extracting raw Vanguard Roth statement at: ",
+            "Extracting raw Robinhood statement at: ",
             self.filepath,
         )
 
         try:
             with open(self.filepath, "rb") as f:
                 reader = PdfFileReader(f)
-                contents = reader.getPage(1).extractText().split("\n")
+                contents = reader.getPage(2).extractText().split("\n")
                 print(contents)
 
                 # print("Balance Info:")
@@ -63,7 +62,7 @@ class VanguardRoth(Statement.Statement):
 
                 start_date = contents[4][0:10]
                 start_balance = balances_string[
-                    whitespace_index[3] + 2 : whitespace_index[4]
+                    whitespace_index[2] + 2 : whitespace_index[3]
                 ].replace(",", "")
                 print("Start date", start_date)
                 print("Start balance", start_balance)
@@ -80,9 +79,7 @@ class VanguardRoth(Statement.Statement):
 
                 # add ending balance
                 end_date = contents[9]
-                end_balance = contents[14][1:].replace(
-                    ",", ""
-                )  # delete the commas from the number
+                end_balance = contents[14][1:].replace(",", "")
                 print("End date", end_date)
                 print("End balance", end_balance)
                 transactions.append(

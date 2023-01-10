@@ -7,9 +7,9 @@ import db.helpers as dbh
 # import user defined helper modules
 from gui import gui_helper
 # import Statement classes
-from statement_types import (AppleCard, Marcus, Robinhood, VanguardBrokerage,
+from extract import (Marcus, Robinhood, VanguardBrokerage,
                              VanguardRoth, Venmo, WellsChecking, WellsCredit,
-                             WellsSaving)
+                             WellsSaving, apple_card)
 from tools import date_helper, load_helper
 
 # TODO:
@@ -245,7 +245,7 @@ class tabFinanceData:
                 6, 0
             )  # creates a statement table at position (7, 0) *(row, column)
         elif account_id == 2000000009:  # Apple Card
-            stat = AppleCard.AppleCard(
+            stat = apple_card.AppleCard(
                 self.frame, account_id, year, month_int, file_name, 5, 0
             )
             stat.create_statement_data()

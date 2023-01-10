@@ -13,7 +13,7 @@ from analysis import analyzer_helper, graphing_analyzer
 # import user defined helper modules
 from gui import gui_helper
 # import Statement_Classes
-from statement_types import Ledger
+from extract import Ledger
 from tools import date_helper
 
 # TODO: lots

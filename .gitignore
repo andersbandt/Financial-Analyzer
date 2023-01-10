@@ -1,8 +1,13 @@
 # Pycharm stuff
 .idea/
 
+# scratch files
+scratch.py
+
 # Databases - to prevent personal financial information from being online!
 *.db
+*.csv
+*.pdf
 
 # Project outputs
 category_tree.PNG

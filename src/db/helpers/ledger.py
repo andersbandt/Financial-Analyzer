@@ -2,7 +2,7 @@ import datetime
 import sqlite3
 
 from db import DATABASE_DIRECTORY
-from statement_types.Transaction import Transaction
+from extract.Transaction import Transaction
 
 
 # insert_transaction: inserts a Transaction object into the SQL database

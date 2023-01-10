@@ -2,8 +2,8 @@ import csv
 
 from PyPDF2 import PdfFileReader
 
-import statement_types.Statement as Statement
-import statement_types.Transaction as Transaction
+import extract.Statement as Statement
+import extract.Transaction as Transaction
 from gui import gui_helper
 from tools import date_helper
 

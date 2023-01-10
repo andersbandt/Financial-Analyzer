@@ -13,7 +13,7 @@ from analysis import analyzer_helper, graphing_analyzer
 from categories import categories_helper
 from gui import gui_helper
 # import user defined modules
-from statement_types import Statement, Transaction
+from extract import Statement, Transaction
 from tools import date_helper
 
 

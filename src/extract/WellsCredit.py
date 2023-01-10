@@ -1,11 +1,11 @@
 import csv
 
-import statement_types.Statement as Statement
-import statement_types.Transaction as Transaction
+import extract.Statement as Statement
+import extract.Transaction as Transaction
 from gui import gui_helper
 
 
-class WellsSaving(Statement.Statement):
+class WellsCredit(Statement.Statement):
     def __init__(
         self,
         master,
@@ -26,7 +26,7 @@ class WellsSaving(Statement.Statement):
 
         # initialize identifying statement info
         self.title = (
-            "Wells Saving: "
+            "Wells Credit: "
             + str(self.account_id)
             + ":"
             + str(self.year)
@@ -44,7 +44,7 @@ class WellsSaving(Statement.Statement):
         gui_helper.gui_print(
             self.frame,
             self.prompt,
-            "Extracting raw Wells Saving statement at: ",
+            "Extracting raw Wells Credit statement at: ",
             self.filepath,
         )
         try:

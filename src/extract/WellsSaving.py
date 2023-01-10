@@ -1,12 +1,11 @@
-# import needed modules
 import csv
 
-import statement_types.Statement as Statement
-import statement_types.Transaction as Transaction
+import extract.Statement as Statement
+import extract.Transaction as Transaction
 from gui import gui_helper
 
 
-class WellsChecking(Statement.Statement):
+class WellsSaving(Statement.Statement):
     def __init__(
         self,
         master,
@@ -27,7 +26,7 @@ class WellsChecking(Statement.Statement):
 
         # initialize identifying statement info
         self.title = (
-            "Wells Checking: "
+            "Wells Saving: "
             + str(self.account_id)
             + ":"
             + str(self.year)
@@ -45,7 +44,7 @@ class WellsChecking(Statement.Statement):
         gui_helper.gui_print(
             self.frame,
             self.prompt,
-            "Extracting raw Wells Checking statement at: ",
+            "Extracting raw Wells Saving statement at: ",
             self.filepath,
         )
         try:
@@ -53,9 +52,7 @@ class WellsChecking(Statement.Statement):
                 csv_reader = csv.reader(f, delimiter=",")
                 for line in csv_reader:
                     raw_date = line[0]
-                    date = (
-                        raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5]
-                    )  # year-month-date
+                    date = raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5]
                     transactions.append(
                         Transaction.Transaction(
                             date, self.account_id, None, float(line[1]), line[4]

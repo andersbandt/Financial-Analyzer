@@ -5,7 +5,7 @@ from tkinter import ttk
 
 import db.helpers as dbh
 # import user defined modules
-import statement_types.Ledger as Ledger
+import extract.Ledger as Ledger
 from categories import categories_helper
 from gui import gui_helper
 

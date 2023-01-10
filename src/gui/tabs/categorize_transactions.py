@@ -4,7 +4,7 @@ import tkinter as tk
 # import user defined helper modules
 import db.helpers as dbh
 # import Statement classes
-from statement_types import Ledger, Transaction
+from extract import Ledger, Transaction
 
 
 class tabCategorizeTransactions:
