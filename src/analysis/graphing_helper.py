@@ -2,11 +2,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from utils import logfn
+
 ##############################################################################
 ####      PLOTTING FUNCTIONS    ##############################################
 ##############################################################################
 
 
+@logfn
 def get_cat_pie_plot(amounts, categories, explode=0.1, title=None):
     # generate labels
     labels = []
@@ -28,6 +31,7 @@ def get_cat_pie_plot(amounts, categories, explode=0.1, title=None):
     plt.tight_layout()
 
 
+@logfn
 def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
     # clear current plot
     plt.clf()
@@ -51,6 +55,7 @@ def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
     plt.tight_layout()
 
 
+@logfn
 def get_line_chart(x_axis, y_axis, title=None, legend=False):
     # clear current plot
     plt.clf()
@@ -66,6 +71,7 @@ def get_line_chart(x_axis, y_axis, title=None, legend=False):
 
 
 # get_stacked_bar_chart: creates a bar chart with multiple 'stacked' values on the y axis
+@logfn
 def get_stacked_bar_chart(
     x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None
 ):
@@ -105,6 +111,7 @@ def get_stacked_bar_chart(
 
 # strip_non_graphical_transactions: strips certain transactions that are part of categories
 #   that don't graph well
+@logfn
 def strip_non_graphical_transactions(categories, amounts):
     non_graphical = ["BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"]
 
@@ -121,6 +128,7 @@ def strip_non_graphical_transactions(categories, amounts):
 
 # strip_non_graphical_transactions: strips certain transactions that are part of categories
 #   that don't graph well
+@logfn
 def strip_non_expense_categories(categories, amounts):
     non_expense = ["INCOME"]
 
@@ -136,6 +144,7 @@ def strip_non_expense_categories(categories, amounts):
 
 
 # strip_zero_categories: strips any Category with 0$ of transaction data loaded
+@logfn
 def strip_zero_categories(categories, amounts):
     new_categories = []
     new_amounts = []
@@ -149,6 +158,7 @@ def strip_zero_categories(categories, amounts):
 
 
 # graph_format_expenses: absolutes all expenses and rounds to 2 decimal points
+@logfn
 def format_expenses(amounts):
     # iterate through expense amounts
     for i in range(0, len(amounts)):
@@ -162,6 +172,7 @@ def format_expenses(amounts):
 ##############################################################################
 
 # getSpaces: gets the number of spaces needed for pretty printing in straight columns
+@logfn
 def get_spaces(length, trim):
     spaces = ""
     for i in range(trim - length):
@@ -170,6 +181,7 @@ def get_spaces(length, trim):
 
 
 # print_category_amount
+@logfn
 def print_category_amount(category, amount):
     string_to_print = (
         "CATEGORY: "

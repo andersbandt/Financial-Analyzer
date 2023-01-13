@@ -7,6 +7,7 @@ matplotlib.use("TkAgg")
 from datetime import date
 
 import matplotlib.pyplot as plt
+from loguru import logger
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import analysis.analyzer_helper as analyzer_helper
@@ -14,6 +15,7 @@ import analysis.graphing_helper as graphing_helper
 import analysis.inv_h as inv_h
 from gui import gui_helper
 from tools import date_helper
+from utils import logfn
 
 ##############################################################################
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
@@ -22,8 +24,23 @@ from tools import date_helper
 # piChartExpenseSummary: plots a pie chart of expenses
 #    input: statement
 #    output: none (plots pie chart)
+
+
+@logfn
+class GraphingAnalyzerError(Exception):
+    """Graphing Analyzer Error"""
+
+    def __init__(self, origin="Graphing Analyzer", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+
+    def __str__(self):
+        return self.msg
+
+
+@logfn
 def create_pie_chart(transactions, categories, printmode=None):
-    print("Running graphing_analyzer: create_pie_chart")
+    logger.debug("Running graphing_analyzer: create_pie_chart")
 
     # create an array of category strings and array of amount floats
     #   using an array of Transactions and an array of Category objects
@@ -53,8 +70,9 @@ def create_pie_chart(transactions, categories, printmode=None):
 
 
 # create_top_pie_chart: return a pyplot figure of a summation of all top level categories
+@logfn
 def create_top_pie_chart(transactions, categories, printmode=None):
-    print("Running graphing_analyzer: create_top_pie_chart")
+    logger.debug("Running graphing_analyzer: create_top_pie_chart")
 
     # initialize array
     categories, amounts = analyzer_helper.create_top_category_amounts_array(
@@ -72,7 +90,7 @@ def create_top_pie_chart(transactions, categories, printmode=None):
 
     # error handle generated categories and amounts array
     if len(categories) != len(amounts):
-        print("Categories is not the same length as amounts")
+        logger.info("Categories is not the same length as amounts")
         gui_helper.alert_user(
             "Error generating graph.",
             "Generated categories is not the same length as generated amounts",
@@ -86,15 +104,16 @@ def create_top_pie_chart(transactions, categories, printmode=None):
 
     #  create and return figure
     fig = plt.figure(1)
-    patches, texts = graphing_helper.get_pie_plot(
+    patches, texts = graphing_helper.get_pie_plot(  # TODO: return values not being used
         amounts, categories, explode=0.1, title="Top Level Data"
     )
     return fig
 
 
 # create_bar_chart:
+@logfn
 def create_bar_chart(transactions, categories):
-    print("Running graphing_analyzer: create_pie_chart")
+    logger.debug("Running graphing_analyzer: create_pie_chart")
 
     categories, amounts = analyzer_helper.create_category_amounts_array(
         transactions, categories
@@ -118,10 +137,15 @@ def create_bar_chart(transactions, categories):
     plt.show()
 
 
+@logfn
 def create_summation_vs_time(transactions, categories):
     exec_summary = analyzer_helper.return_transaction_exec_summary(transactions)
-    print("create_summation_vs_time got this for expenses", exec_summary["expenses"])
-    print("create_summation_vs_time got this for incomes", exec_summary["incomes"])
+    logger.info(
+        f"create_summation_vs_time got this for expenses {exec_summary['expenses']}"
+    )
+    logger.info(
+        f"create_summation_vs_time got this for incomes {exec_summary['incomes']}"
+    )
 
 
 ##############################################################################
@@ -130,6 +154,7 @@ def create_summation_vs_time(transactions, categories):
 
 # create_stacked_balances: creates a 'stacked' balances graph showing different asset types
 #     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
+@logfn
 def create_stacked_balances(days_prev, N):
 
     # generate matrix of Bx values
@@ -143,11 +168,10 @@ def create_stacked_balances(days_prev, N):
 
     # error handling on amount of binning done to balances
     if len(spl_Bx) != N:
-        print("Length of spl_Bx: ", len(spl_Bx))
-        print("N is:", str(N))
-        raise BaseException(
-            "FUCK YOU BITCH YOUR spl_Bx array is not of length N it is length ",
-            len(spl_Bx),
+        logger.debug(f"Length of spl_Bx: {len(spl_Bx)}")
+        logger.debug(f"N is:{str(N)}")
+        raise GraphingAnalyzerError(
+            f"YOUR spl_Bx array is not of length N it is length {len(spl_Bx)}"
         )
 
     # investment = []  # array for investment assets+  !NOTE!THIS MUST BE THE LENGTH OF N
@@ -182,6 +206,7 @@ def create_stacked_balances(days_prev, N):
 
 
 # TODO: can't figure out this function until I get a good way to SET WHICH ACCOUNT_IDS CORRESPOND TO WHAT TYPE OF ACCOUNT
+@logfn
 def create_liquid_over_time(days_prev, N):
     pass
 
@@ -191,6 +216,7 @@ def create_liquid_over_time(days_prev, N):
 ##############################################################################
 
 # create_asset_alloc_chart: creates a pie chart representing asset allocation
+@logfn
 def create_asset_alloc_chart():
     # get list of investment dict objects
     inv_dict = inv_h.create_investment_dicts()
@@ -230,6 +256,7 @@ def create_asset_alloc_chart():
 
 
 # create_asset_alloc_chart: creates a pie chart representing asset allocation
+@logfn
 def create_hist_price_data_line_chart(days_prev=180):
     # get list of investment dict objects
     inv_dict = inv_h.create_investment_dicts()
@@ -246,10 +273,10 @@ def create_hist_price_data_line_chart(days_prev=180):
 
     # iterate through list and add to totals
     for investment in inv_dict:
-        print("INFO: retrieving historical stock price data for portfolio")
-        print("Starting date: ", start_date)
-        print("Ending date: ", end_date)
-        hist_data = inv_h.get_ticker_price_data(
+        logger.info(f"Retrieving historical stock price data for portfolio")
+        logger.debug(f"Starting date: {start_date}")
+        logger.debug(f"Ending date: {end_date}")
+        hist_data = inv_h.get_ticker_price_data(  # TODO: not being used
             investment["ticker"], start_date, end_date, interval="1d"
         )
 
