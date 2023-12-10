@@ -41,12 +41,12 @@ month. Typically, this is .csv format. The file structure for the data looks lik
 
 For example - all under "C:\Users\ander\Documents\Financials\"
 
-- Monthly Statement\2020\
+- monthly_statements\2020\
     - 01-January\
     - 02-February\
     - ...
     - 12-December
-- Monthly Statements\2021\
+- monthly_statements\2021\
     - 01-January\
     - ...
     - 12-December\
