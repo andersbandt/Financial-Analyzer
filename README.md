@@ -30,9 +30,18 @@ Discord server [here](https://discord.gg/qRKYKUzy)
     pip3 install -r requirements.txt
     ```
 
+#### Editing code 
+
+There will be some filepaths to adjust in the code based on your machine.
+
+The first is in `src/db/__init__.py' and is the `DATABASE_DIRECTORY`
+The second is in the monthly statements base filepath
+
+#### Running application
+
 4. Run the application:
     ```bash
-    python3 src/main.py
+    python src/main.py
     ```
     
 ### Financial Data File Structure
