@@ -1,0 +1,46 @@
+
+# import needed packages
+import sqlite3
+
+# import user defined modules
+from db import DATABASE_DIRECTORY
+from cli.tabs import SubMenu
+
+
+class TabMainDashboard(SubMenu.SubMenu):
+    def __init__(self, title, basefilepath):
+
+        # initialize information about sub menu options
+        action_strings = ["High level summary",
+                          "System configuration",
+                          "Execute RAW SQL statement"]
+
+        action_funcs = [self.a01_summary,
+                        self.a02_config,
+                        self.a03_execute_sql]
+
+        # call parent class __init__ method
+        super().__init__(title, basefilepath, action_strings, action_funcs)
+
+
+    ##############################################################################
+    ####      ACTION FUNCTIONS           #########################################
+    ##############################################################################
+
+    def a01_summary(self):
+        print("... displaying high level summary ...")
+
+
+    def a02_config(self):
+        print("... adjust settings here ...")
+
+
+    def a03_execute_sql(self):
+        with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+            cur = conn.cursor()
+            conn.set_trace_callback(print)
+            cur.execute(
+                "update `category` set `parent_id` = '1000000050' where `category_id` = '1000000026'"
+            )
+            conn.set_trace_callback(None)
+        return cur.fetchall()
