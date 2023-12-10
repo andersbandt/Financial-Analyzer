@@ -1,5 +1,7 @@
 # Financial-Analyzer
-Analyzes spending, budget, and investment data in a GUI
+This project is meant for analysis of personal financial data in a CLI (command line interface) application.
+
+This project used to leverage the Tkinter GUI framework for Python. However, the GUI slows down development time tremendously. A CLI is much easier to work with.
 
 **TO ANYONE JOINING RECENTLY**
 Discord server [here](https://discord.gg/qRKYKUzy)
@@ -39,7 +41,7 @@ On my computer I have a folder where I store all the statements for each account
 I go to the accounts and download a file representing all the account information for each
 month. Typically, this is .csv format. The file structure for the data looks like:
 
-For example - all under "C:\Users\ander\Documents\Financials\"
+For example - all under "C:\Users\anders\Documents\Financials\"
 
 - monthly_statements\2020\
     - 01-January\
