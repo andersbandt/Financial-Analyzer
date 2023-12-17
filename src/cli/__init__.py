@@ -99,7 +99,10 @@ class MainApplication:
                 except ValueError:
                     print("Invalid integer string")
 
-                self.tabs[choice_int-1].run()
+                try:
+                    self.tabs[choice_int-1].run()
+                except IndexError:
+                    print("\n\n\n!!! List choice out of range !!!")
 
 
 

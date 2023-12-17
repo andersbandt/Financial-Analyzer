@@ -95,7 +95,8 @@ def get_category_name_from_id(category_id):
         except IndexError as e:
             print("ERROR SQL:", e)
             print("probably no results found for SQL query): ", e)
-            return None
+            print("Can't get category name for id: " + str(category_id))
+            #         return None
 
 
 

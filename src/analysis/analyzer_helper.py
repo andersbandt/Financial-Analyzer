@@ -3,13 +3,16 @@
 # import needed modules
 from datetime import datetime
 import numpy as np
-from loguru import logger
+
 
 # import user defined modules
 import db.helpers as dbh
-from categories import categories_helper
+from categories import categories_helper as cath
 from statement_types import Transaction
 from tools import date_helper
+
+# import logger
+from loguru import logger
 from utils import logfn
 
 
@@ -31,18 +34,24 @@ class AnalyzerHelperError(Exception):
 
 
 # @param   N is the number of bins to form across dates
-def sum_date_binned_transaction(transactions, days_prev, N):
+def sum_date_binned_transaction(accounts, days_prev, N):
     # create the DATETIME objects from the previous days in N groups
     edge_code_date = date_helper.get_edge_code_dates(
         datetime.today(),
         days_prev,
-        N)
+        N) # have to add +2 here because we want N to be the number of bins not indices
 
     print("Got this for transactions edge codes")
     for edge in edge_code_date:
         print(edge)
 
-    return 0
+    date_binned_transactions = []
+
+    for i in range(0, N):
+        cur_trans = recall_transaction_data(edge_code_date[i], edge_code_date[i+1], accounts=accounts)
+        date_binned_transactions.append(cur_trans)
+
+    return date_binned_transactions, edge_code_date
 
 
 # sum_individual_category: returns the dollar ($) total of a certain category in a statement
@@ -72,24 +81,37 @@ def create_category_amounts_array(transactions, categories):
 
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
+# TODO: add NA (cat ID of 0) as an option to add to the array
 # @logfn
-def create_top_category_amounts_array(transactions, categories):
-    tree = categories_helper.create_Tree(categories)
-    top_categories = categories_helper.get_top_level_category_names(categories)
+def create_top_category_amounts_array(transactions, categories, count_NA=True):
+    tree = cath.create_Tree(categories, cat_type="id")
+    top_cat_id = cath.get_top_level_categories(cat_type="id")
+    top_cat_str = cath.get_top_level_categories(cat_type="name")
 
-    category_names = []  # TODO: this is unused
-    logger.debug(f"Got this for length of top categories: {len(top_categories)}")
-    category_amounts = np.zeros(len(top_categories))
-
-    i = 0
-    for category in top_categories:
-        node = tree.search_nodes(name=category)[0]
+    category_amounts = []
+    for i in range(0, len(top_cat_id)):
+        category_amounts.append(0)
+        # node = tree.search_nodes(name=category)[0]
+        node = tree.search_nodes(name=top_cat_id[i])[0]
+        # for node in tree.search_nodes(name=category)
+        #     for descendant in node.traverse():
+        #         print(descendant.name)
+        # print("Checking node\n")
+        # print(node)
+        # print("\n\n")
         for leaf in node:
             category_amounts[i] += sum_individual_category(
-                transactions, categories_helper.category_name_to_id(leaf.name)
+                transactions, leaf.name
             )
         i += 1
-    return top_categories, category_amounts
+
+    if count_NA:
+        top_cat_str.append("NA (uncategorized)")
+        category_amounts.append(
+            sum_individual_category(transactions, 0)
+        )
+
+    return top_cat_str, category_amounts
 
 
 ##############################################################################
@@ -105,7 +127,7 @@ def return_ledger_exec_dict(transactions):
     not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
 
     for transaction in transactions:
-        trans_category = categories_helper.category_id_to_name(transaction.category_id)
+        trans_category = cath.category_id_to_name(transaction.category_id)
 
         if trans_category not in not_counted:
             trans_amount = transaction.getAmount()
@@ -129,6 +151,7 @@ def return_ledger_exec_dict(transactions):
 # @logfn
 def recall_transaction_data(date_start=-1, date_end=-1, accounts=None):
     if date_start != -1 and date_end != -1:
+        print("Recalling transactions between " + date_start + " and " + date_end)
         ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
     else:
         print("getting ALL transactions")
