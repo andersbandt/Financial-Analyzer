@@ -1,13 +1,16 @@
 
+
 # import needed packages
 from functools import partial
+import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime, timedelta
 
 # import user defined helper modules
-import categories.categories_helper as category_helper
-from analysis import analyzer_helper, graphing_analyzer
+import categories.categories_helper as cath
+from analysis import analyzer_helper as anah
+from analysis import graphing_analyzer
+from analysis import graphing_helper as grah
 from tools import date_helper
 from account import account_helper
 
@@ -41,13 +44,11 @@ class TabSpendingHistory(SubMenu.SubMenu):
                         self.a02_print_db_trans,
                         self.show_top_pie_chart]
 
-
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
 
-
-# a01_exec_summary:
-#   in order to speed up debug this function should just do a bunch of key careabouts
+    # a01_exec_summary:
+    #   in order to speed up debug this function should just do a bunch of key careabouts
     def a01_exec_summary(self):
         print(" ... showing executive summary ...")
 
@@ -64,7 +65,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             print("Error with recalling data", "No accounts selected.", "error")
 
         # LOAD IN TRANSACTIONS FROM 12 MONTHS AGO
-        transactions = analyzer_helper.recall_transaction_data(
+        transactions = anah.recall_transaction_data(
             one_year_ago.strftime('%Y-%m-%d'),
             today.strftime('%Y-%m-%d'),
             accounts)
@@ -74,26 +75,25 @@ class TabSpendingHistory(SubMenu.SubMenu):
             raise Exception("Can't analyze history. Invalid transaction data recalled.")
 
 
-        # EXEC 1: total spending trend month to month for the last 12 months
-        sum_trans_data = analyzer_helper.sum_date_binned_transaction(transactions, 365, 12)
+        # EXEC 1: plot data from previous timeframe
+        self.exec_summary_01(accounts,
+                             1000, # number of days previous
+                             6) # number of bins (N)
+
 
         # EXEC 2: current categories with a big delta to past averages
 
         # get gross statistics
-        ledger_stats = analyzer_helper.return_ledger_exec_dict(transactions)
+        ledger_stats = anah.return_ledger_exec_dict(transactions)
         print("Got this for ledger statistics")
         print(ledger_stats)
 
 
-
     def a02_print_db_trans(self):
-        transactions = analyzer_helper.recall_transaction_data()
-
+        transactions = anah.recall_transaction_data()
         tmp_ledger = Ledger.Ledger("All StatementData")
         tmp_ledger.set_statement_data(transactions)
-
         tmp_ledger.print_statement()
-
 
     # show_pie_chart: shows a pie chart of all category and amount data in current loaded Ledger
     def show_pie_chart(self):
@@ -101,10 +101,9 @@ class TabSpendingHistory(SubMenu.SubMenu):
         self.check_data_load_status()
         # get pyplot figure, patches, and texts
         figure, categories, amounts = graphing_analyzer.create_pie_chart(
-            self.transactions, category_helper.load_categories(), printmode="debug"
+            self.transactions, cath.load_categories(), printmode="debug"
         )
         figure.show()
-
 
     # TODO: normalize and report as percent
     def show_top_pie_chart(self):
@@ -112,11 +111,9 @@ class TabSpendingHistory(SubMenu.SubMenu):
         self.check_data_load_status()
         # get pyplot figure
         figure = graphing_analyzer.create_top_pie_chart(
-            self.ledger.transactions, category_helper.load_categories()
+            self.ledger.transactions, cath.load_categories()
         )
         figure.show()
-
-
 
     def show_budget_diff_chart(self):
         # check for data load status and error handle
@@ -124,15 +121,62 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         # get pyplot figure
         figure = graphing_analyzer.create_top_pie_chart(
-            self.transactions, category_helper.load_categories()
+            self.transactions, cath.load_categories()
         )
-        canvas = FigureCanvasTkAgg(figure, self.fr_graph_proc)
-        canvas.get_tk_widget().grid(row=2, column=0)
-
 
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
     ##############################################################################
+
+
+    def exec_summary_01(self, accounts, days_prev, num_slices):
+        # LOAD CATEGORIES
+        categories = cath.load_categories()
+
+        # EXEC 1: total spending trend month to month for the last 12 months
+        date_bin_trans, edge_codes = anah.sum_date_binned_transaction(accounts,  # a list of Transaction objects
+                                                          days_prev,  # number of previous days
+                                                          num_slices)  # n = 12 different slices
+
+        # set up graphing stuff
+        plt.rcdefaults()
+        fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
+
+
+        print("Analyzing spending on top categories for date binned transactions")
+        i = 0
+        for trans in date_bin_trans:
+            print("\n\n")
+            top_cat_str, amounts = anah.create_top_category_amounts_array(trans, categories, count_NA=False)
+            # do some post-processing on top-level categories and amounts
+            to_remove = ["INCOME", "INTERNAL"]
+            for j in range(0, len(top_cat_str)):
+                if top_cat_str[j] in to_remove:
+                    print("Removing " + top_cat_str[j] + " from top categories list at index: " + str(j))
+                    to_remove.remove(top_cat_str[j])
+                    del top_cat_str[j]
+                    del amounts[j]
+                    if len(to_remove) == 0:
+                        break
+
+            print(top_cat_str)
+            print(amounts)
+
+            # add each plot to graph for date bin
+            # add bar chart to axes for subplot
+            grah.get_bar_chart(ax,
+                               i,
+                               top_cat_str,
+                               amounts,
+                               title=edge_codes[i] + " to " + edge_codes[i+1])
+            i += 1
+
+        # Set common labels
+        # ax[i].set_xlabel("Amount ($)")
+        fig.text(0.5, 0.04, 'Categories', ha='center', va='center')
+        fig.text(0.06, 0.5, 'Amount ($)', ha='center', va='center', rotation='vertical')
+
+        plt.show()
 
 

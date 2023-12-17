@@ -70,6 +70,19 @@ def get_line_chart(x_axis, y_axis, title=None, legend=False):
     plt.title(title)
 
 
+# @logfn
+def get_bar_chart(ax, i, labels, amounts, title=None):
+    y_pos = np.arange(len(labels))
+    ax[i].barh(y_pos, amounts, align="center", color="green", ecolor="black")
+    ax[i].set_yticks(y_pos)
+    ax[i].set_yticklabels(labels)
+    ax[i].invert_yaxis()  # labels read top-to-bottom
+
+    if title is not None:
+        ax[i].set_title(title)
+
+
+
 # get_stacked_bar_chart: creates a bar chart with multiple 'stacked' values on the y axis
 @logfn
 def get_stacked_bar_chart(

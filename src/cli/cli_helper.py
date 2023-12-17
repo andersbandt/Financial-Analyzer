@@ -65,7 +65,7 @@ def get_statement_folder(base_filepath, year, month):
 # spinput: really general input function to help with flow control
 
 # type (int)  === will return any POSITIVE VALUE (will return -1 on bad input)
-def spinput(prompt, type="text"):
+def spinput(prompt, inp_type="text"):
     inp = input(prompt)
 
     # handle user prompts to either quit command or terminate program
@@ -98,7 +98,6 @@ def spinput(prompt, type="text"):
     return inp
 
 
-
 # promptYesNo: function for prompting user for a YES or NO input
 def promptYesNo(prompt):
     res = input(prompt + "\n\t(y or n):")
@@ -110,6 +109,7 @@ def promptYesNo(prompt):
 
 # prompt date function below in another section
 
+
 ##############################################################################
 ####      prompt_toolkit FUNCTIONS        ####################################
 ##############################################################################
@@ -118,7 +118,6 @@ def promptYesNo(prompt):
 def autocomplete(input_text, word_list):
     completer = WordCompleter(word_list)
     return prompt(input_text, completer=completer)
-
 
 
 # inp_auto: user input with autocomplete function on a provided array of strings
@@ -157,8 +156,8 @@ def get_month_input():
     return int(month)
 
 
-def get_date_input(prompt):
-    print(prompt)
+def get_date_input(prompt_str):
+    print(prompt_str)
     while True:
         date_str = input("Enter the date (YYYY-MM-DD): ")
 
@@ -188,8 +187,8 @@ def category_prompt_all(prompt_str, display):
         return cath.category_name_to_id(cat_inp)
 
 
-def account_prompt_all(prompt):
-    print(prompt)
+def account_prompt_all(prompt_str):
+    print(prompt_str)
     # get a list of all the accounts
     accounts = dbh.account.get_account_names()
 
@@ -198,7 +197,7 @@ def account_prompt_all(prompt):
         logger.exception("Uh oh, no accounts found!")
         return
 
-    ac_inp = inp_auto("What is the account?", accounts, echo=True, stat=prompt)
+    ac_inp = inp_auto("What is the account?", accounts, echo=True, stat=prompt_str)
     ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
     return ac_inp_id
 

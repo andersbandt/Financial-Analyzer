@@ -71,7 +71,7 @@ class TabCategory(SubMenu.SubMenu):
         print("... checking categories ...")
 
         # print out ASCII tree of categories
-        tree = cath.create_Tree(cath.load_categories())
+        tree = cath.create_Tree(cath.load_categories(), cat_type="name")
 
         # METHOD 1: using get_ascii function
         tree_ascii = tree.get_ascii(compact=False, show_internal=True)

@@ -10,6 +10,9 @@ from ete3 import Tree
 import db.helpers as dbh
 from categories import Category
 
+# import logger
+from loguru import logger
+from utils import logfn
 
 ##############################################################################
 ####      CATEGORY ARRAY FUNCTIONS    ########################################
@@ -17,15 +20,13 @@ from categories import Category
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    print("load_categories: loading category ID's")
+    logger.debug("cath.load_categories: loading category ID's")
     all_category_id = dbh.category.get_all_category_id()
-    print("load_categories: done getting all categories")
     categories = []
     for category_id in all_category_id:
         categories.append(
             Category.Category(category_id[0])
         )  # have to grab 0 index because category_id is a tuple
-    print("ACTUALLY RETURNING CATEGORIERs")
     return categories
 
 
@@ -115,20 +116,18 @@ def get_category_strings(categories_array):
     return category_names
 
 
-def get_top_level_categories():
+def get_top_level_categories(cat_type="class"):
     top = []
     for category in load_categories():
         if category.parent == 1:
-            top.append(category)
+            if cat_type == "class":
+                top.append(category)
+            elif cat_type == "id":
+                top.append(category.id)
+            elif cat_type == "name":
+                top.append(category.name)
     return top
 
-
-def get_top_level_category_names(categories):
-    top = []
-    for category in categories:
-        if category.parent == 1:
-            top.append(category.name)
-    return top
 
 
 ##############################################################################
@@ -145,25 +144,33 @@ def get_category_children_obj(category):
 
 
 # create_Tree: creates a Tree object of the categories
-def create_Tree(categories):
-    print("category_helper.create_Tree: Generating Tree object of categories")
+# @logfn
+def create_Tree(categories, cat_type="id"):
+    logger.debug("category_helper.create_Tree: Generating Tree object of categories")
     t = Tree()
     root = t.add_child(name="root")  # create root node
 
     # first add all top level categories
-    print("create_Tree: adding top level categories")
-    for category in categories:
+    logger.debug("create_Tree: populating children node Categories")
+    for category in get_top_level_categories():
         if category.parent == 1:  # if it is a top level category
-            root.add_child(name=category.name)
+            if cat_type == "id":
+                root.add_child(name=category.id)
+            elif cat_type == "name":
+                root.add_child(name=category.name)
+            else:
+                logger.exception("Bad type supplied for category Tree creation")
 
     # then populate children
-    print("create_Tree: populating children node Categories")
+    logger.debug("create_Tree: populating children node Categories")
     for category in categories:
         if category.parent != 1:
-            nodes = t.search_nodes(name=category_id_to_name(category.parent))
+            nodes = t.search_nodes(name=category.parent)
             for node in nodes:
-                node.add_child(name=category.name)
+                if cat_type == "id":
+                    node.add_child(name=category.id)
+                elif cat_type == "name":
+                    node.add_child(name=category.name)
 
-    print("\tlength of created tree: ", len("root"))
 
     return t

@@ -1,20 +1,22 @@
+
 # import needed modules
-import matplotlib
 import numpy as np
 
-matplotlib.use("TkAgg")
+# matplotlib.use("TkAgg")
 
 from datetime import date
 
 import matplotlib.pyplot as plt
 from loguru import logger
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import analysis.analyzer_helper as analyzer_helper
 import analysis.graphing_helper as graphing_helper
 import analysis.inv_h as inv_h
 from tools import date_helper
 from utils import logfn
+
+
+# TODO: I think I should phase out this module. A better decoupling of analysis and graphing functions would be ideal
 
 ##############################################################################
 ####      SPENDING PLOTTING FUNCTIONS    #####################################

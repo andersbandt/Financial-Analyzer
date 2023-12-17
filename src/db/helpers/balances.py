@@ -1,5 +1,8 @@
+
+# import needed modules
 import sqlite3
 
+# import user definitions
 from db import DATABASE_DIRECTORY
 
 

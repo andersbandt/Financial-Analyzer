@@ -135,16 +135,24 @@ def get_date_int_array():
 
 
 # get_edge_code_dates:
-# @param    date_start  this must be a datetime object
-# @param   days_prev   this is just an integer the number of days since 'date_start'
+# @param    date_start  datetime object
+# @param    days_prev   integer the number of days since 'date_start'
+# @param    N           number of bins to form
 def get_edge_code_dates(date_start, days_prev, N):
-    edge_code_date = []  # length = N - 1
-    for i in range(1, N):
-        d_prev = round(days_prev * i / N)
+    edge_code_date = []  # length = N + 1
+
+    # NOTE: perhaps at some point audit this is performing my desired function
+    for i in range(0, N+1):
+        d_prev = round(days_prev * i / (N+1))
         d_y = datetime.timedelta(
             days=d_prev
         )  # this variable can only be named d_y - No exceptions ever.
-        edge_code_date.insert(0, date_start - d_y)
+        edge_code_date.append(
+            (date_start - d_y).strftime('%Y-%m-%d')
+        )
+
+    edge_code_date.reverse()
+
     return edge_code_date
 
 
