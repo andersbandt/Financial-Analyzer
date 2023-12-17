@@ -1,19 +1,7 @@
 
-# import needed modules
-from prompt_toolkit import prompt
-# from prompt_toolkit import print_formatted_text as print
 
-# import needed packages
-
+# import user defined modules
 from cli.tabs import *
-
-# from cli.tabs import a01_dashboard
-# from cli.tabs import a02_analyze_history
-# from cli.tabs import a03_categories
-# from cli.tabs import a04_account
-# from cli.tabs import a05_load_data
-# from
-# from cli.tabs import a09_investments
 
 
 class MainApplication:
@@ -51,7 +39,7 @@ class MainApplication:
         self.tab3 = a03_account.TabAccount("Manage Accounts", self.basefilepath)
         self.tab4 = a04_load_data.TabLoadData("Load Data", self.basefilepath)
         self.tab5 = a05_analyze_history.TabSpendingHistory("Analyze Spending History", self.basefilepath)
-        self.tab6 = a02_categories.TabCategory("Balances", self.basefilepath)
+        self.tab6 = a06_balances.TabBalances("Balances", self.basefilepath)
         self.tab7 = a07_categorize_transaction.TabTransCategorize("Categorize Transactions", self.basefilepath)
         self.tab8 = a02_categories.TabCategory("Budgeting", self.basefilepath)
         self.tab9 = a09_investments.TabInvestment("Review investments", self.basefilepath)
