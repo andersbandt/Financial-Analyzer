@@ -49,7 +49,8 @@ class TableStatements:
     balance = """CREATE TABLE balance
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
                     account_id              INT(10) REFERENCES account(id),
-                    amount                  NUMERIC(10,2));"""
+                    amount                  NUMERIC(10,2),
+                    bal_date                DATE);"""
     investment = """CREATE TABLE investment
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
                     date                    DATE,

@@ -40,7 +40,8 @@ class SubMenu():
                 try:
                     usr_inp = int(usr_inp)
                 except ValueError:
-                    print("Uh oh, was that a number?")
+                    print("\n\nUh oh, was that a number ?!?")
+                    continue
 
             # handle user action
             if usr_inp > len(self.action_funcs):

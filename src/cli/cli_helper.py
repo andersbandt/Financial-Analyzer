@@ -125,13 +125,13 @@ def autocomplete(input_text, word_list):
 # @param prompt        gets printed
 # @param stat          not sure what this is doing
 # @param disp_options  toggles all the possible array getting printed or not
-def inp_auto(prompt, strings_arr, echo=False, disp_options=True, exact_match=False):
+def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
     # IF USER SELECTED DISPLAY OPTIONS
     if disp_options:
         for string in strings_arr:
             print("-" + string)
 
-    user_input = autocomplete(prompt + " ", strings_arr)
+    user_input = autocomplete(prompt_str + " ", strings_arr)
 
     if exact_match:
         if user_input not in strings_arr:
@@ -188,7 +188,6 @@ def category_prompt_all(prompt_str, display):
 
 
 def account_prompt_all(prompt_str):
-    print(prompt_str)
     # get a list of all the accounts
     accounts = dbh.account.get_account_names()
 
@@ -197,7 +196,7 @@ def account_prompt_all(prompt_str):
         logger.exception("Uh oh, no accounts found!")
         return
 
-    ac_inp = inp_auto("What is the account?", accounts, echo=True, stat=prompt_str)
+    ac_inp = inp_auto(prompt_str, accounts, echo=True)
     ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
     return ac_inp_id
 

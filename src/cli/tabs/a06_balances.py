@@ -21,16 +21,13 @@ class TabBalances(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 
         # initialize information about sub menu options
-        action_strings = ["Add category",
-                          "Print categories",
-                          "Add keyword",
-                          "Print keywords",
-                          "Delete category",
-                          "Update parent of category"]
+        action_strings = ["Add balance",
+                          "Show current wealth",
+                          "Show ALL wealth trends"]
 
-        action_funcs = [self.a01_add_category,
-                        self.a02_check_category,
-                        self.a03_manage_keywords]
+        action_funcs = [self.a01_add_balance,
+                        self.a02_show_wealth,
+                        self.a03_show_stacked_liquid_investment]
 
 
         # call parent class __init__ method
@@ -61,34 +58,15 @@ class TabBalances(SubMenu.SubMenu):
         return True
 
 
+    # a02_show_wealth
+    def a02_show_wealth(self):
+
 
     # this function will be interesting to write.
     # I think I should keep a cumulative total of two balances - checkings/savings and investments
     # Then as I iterate across dates everytime there is a new entry I update that total and make a new record
-    def show_stacked_liquid_investment(self):
-        print("INFO: show_balances_graph running")
-
-        # create Frame
-        fr = tk.Frame(self.fr_rev_bal)
-        fr.grid(row=2, column=0, columnspan=3, rowspan=3)
-
-        # TODO: checkbox creation not working
-        # # create checkboxes for account type graph selection
-        # acc_types = ["Liquid", "Investment"]
-        # acc_type_sel = []
-        #
-        # i = 0
-        # for acc_t in acc_types:
-        #     print("Creating a checkbutton for account type: ", acc_t)
-        #
-        #     row = i
-        #     print("Placing at row:", str(row))
-        #
-        #     var1 = tk.IntVar()
-        #     acc_type_sel.append(var1)
-        #     tk.Checkbutton(self.frame, text=acc_t, variable=acc_type_sel[i], onvalue=1, offvalue=0,
-        #                command=lambda: self.set_acc_show_settings(acc_type_sel).grid(row=row, column=1))
-        #     i += 1
+    def a03_show_stacked_liquid_investment(self):
+        print("... showing all liquid and investment assets")
 
         # set params
         days_previous = 180  # half a year maybe?
@@ -96,8 +74,6 @@ class TabBalances(SubMenu.SubMenu):
 
         # get pyplot figure
         figure = graphing_analyzer.create_stacked_balances(days_previous, N)
-        canvas = FigureCanvasTkAgg(figure, fr)
-        canvas.get_tk_widget().grid(row=3, column=1, columnspan=2)
 
         # get data for displaying balances in tabular form
         spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
@@ -106,15 +82,9 @@ class TabBalances(SubMenu.SubMenu):
         print("Working with this for tabulated data conversion")
         print(recent_Bx)
 
-        # Update buttons frames idle tasks to let tkinter calculate sizes
-        # self.frame.update_idletasks()
 
     def show_liquid_over_time(self):
         print("INFO: show_liquid_over_time running")
-
-        # create Frame
-        fr = tk.Frame(self.fr_rev_bal)
-        fr.grid(row=2, column=0, columnspan=3, rowspan=3)
 
         # set params
         days_previous = 180  # half a year maybe?
@@ -122,8 +92,6 @@ class TabBalances(SubMenu.SubMenu):
 
         # get pyplot figure
         figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
-        canvas = FigureCanvasTkAgg(figure, fr)
-        canvas.get_tk_widget().grid(row=3, column=1, columnspan=2)
 
         # get data for displaying balances in tabular form
         spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
@@ -132,9 +100,5 @@ class TabBalances(SubMenu.SubMenu):
         print("Working with this for tabulated data conversion")
         print(recent_Bx)
 
-        # Update buttons frames idle tasks to let tkinter calculate sizes
-        # self.frame.update_idletasks()
 
-    def set_acc_show_settings(self, var):
-        print("Got this for var:", var)
-        return
+
