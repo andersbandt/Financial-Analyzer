@@ -20,11 +20,13 @@ class TabInvestment(SubMenu.SubMenu):
         # initialize information about sub menu options
         action_strings = ["Check investments",
                           "Add investment transaction",
-                          "Check accounts summary"]
+                          "Check accounts summary",
+                          "Show account snapshot value history"]
 
         action_funcs = [self.a01_check_investments,
                         self.a02_add_investment,
-                        self.a03_check_accounts]
+                        self.a03_check_accounts,
+                        self.a04_cur_value_history]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -124,11 +126,32 @@ class TabInvestment(SubMenu.SubMenu):
             acc_val_arr.append(account_value)
             # print(f"\t {acc_str}: {account_value}")
 
+        print("\n===== ACCOUNT SUMMARY =====")
         for i in range(0, len(inv_acc_id)):
             acc_str = dbh.account.get_account_name_from_id(inv_acc_id[i])
             print(f"\t {acc_str}: {acc_val_arr[i]}")
 
         return True
+
+
+    def a04_cur_value_history(self):
+        print("... summarizing value history ...")
+
+        inv_acc_id = dbh.account.get_account_id_by_type(4)
+
+        acc_val_arr = []
+        for account_id in inv_acc_id:
+            account_value = invh.summarize_account(account_id, printmode=True)
+            acc_str = dbh.account.get_account_name_from_id(account_id)
+            acc_val_arr.append(account_value)
+            # print(f"\t {acc_str}: {account_value}")
+
+        print("\n===== ACCOUNT SUMMARY =====")
+        for i in range(0, len(inv_acc_id)):
+            acc_str = dbh.account.get_account_name_from_id(inv_acc_id[i])
+            print(f"\t {acc_str}: {acc_val_arr[i]}")
+
+
 
 
     ##############################################################################
