@@ -11,7 +11,7 @@ from loguru import logger
 
 import analysis.analyzer_helper as analyzer_helper
 import analysis.graphing_helper as graphing_helper
-import analysis.inv_h as inv_h
+import analysis.investment_helper as inv_h
 from tools import date_helper
 from utils import logfn
 

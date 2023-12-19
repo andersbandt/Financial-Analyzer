@@ -71,11 +71,13 @@ def spinput(prompt, inp_type="text"):
     # handle user prompts to either quit command or terminate program
     if inp == 'q':
         return False
+    elif inp == 'quit':
+        return False
     elif inp == "exit":
-        return -1
+        return False
 
     # TYPE: (int)
-    if type == "int":
+    if inp_type == "int":
         try:
             inp = int(inp)
         except ValueError as e:
@@ -84,11 +86,11 @@ def spinput(prompt, inp_type="text"):
             return -1
 
     # TYPE: (text)
-    if type == "text":
+    if inp_type == "text":
         return inp
 
     # TYPE: (float)
-    if type == "float":
+    if inp_type == "float":
         return float(inp)
 
     # TYPE: (yes or no)
@@ -100,7 +102,7 @@ def spinput(prompt, inp_type="text"):
 
 # promptYesNo: function for prompting user for a YES or NO input
 def promptYesNo(prompt):
-    res = input(prompt + "\n\t(y or n):")
+    res = input(prompt + "\n\t(y or n): ")
     if 'y' in res:
         return True
     else:
@@ -156,6 +158,7 @@ def get_month_input():
     return int(month)
 
 
+# TODO: I think this function could be made SLIGHTLY easier to use (instead of manually typing dashes or something)
 def get_date_input(prompt_str):
     print(prompt_str)
     while True:
@@ -167,6 +170,12 @@ def get_date_input(prompt_str):
             return date_obj.date()  # Return only the date part, not the time
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
+
+
+
+##############################################################################
+####      CATEGORY INPUT FUNCTIONS    ########################################
+##############################################################################
 
 
 # returns -1 if bad prompt response
@@ -185,22 +194,6 @@ def category_prompt_all(prompt_str, display):
         return -1
     else:
         return cath.category_name_to_id(cat_inp)
-
-
-def account_prompt_all(prompt_str):
-    # get a list of all the accounts
-    accounts = dbh.account.get_account_names()
-
-    # check for empty accounts
-    if len(accounts) == 0:
-        logger.exception("Uh oh, no accounts found!")
-        return
-
-    ac_inp = inp_auto(prompt_str, accounts, echo=True)
-    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
-    return ac_inp_id
-
-
 
 # category_prompt: walks the user through selecting a Category from given array input
 # TODO: this function can be broken into at least one other function FOR SURE
@@ -279,8 +272,6 @@ def category_tree_prompt():
         cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True, exact_match=False)
 
 
-
-
 # TODO: I think I should refactor this to be outside cli_helper
 # get_category_input: this function should display a transaction to the user and prompt them through categorization
 #   with the end result being returning the associated category_id with the transaction in question
@@ -321,5 +312,40 @@ def get_category_input(transaction, mode=2):
 
     # return newly associated Category ID so upper layer can properly change Transaction data
     return cat
+
+
+
+##############################################################################
+####      CATEGORY INPUT FUNCTIONS    ########################################
+##############################################################################
+
+def account_prompt_type(prompt_str, acc_type):
+    # get a list of all the accounts
+    accounts = dbh.account.get_account_names_by_type(acc_type)
+
+    # check for empty accounts
+    if len(accounts) == 0:
+        logger.exception("Uh oh, no accounts found!")
+        return
+
+    ac_inp = inp_auto(prompt_str, accounts, echo=True)
+    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    return ac_inp_id
+
+
+def account_prompt_all(prompt_str):
+    # get a list of all the accounts
+    accounts = dbh.account.get_account_names()
+
+    # check for empty accounts
+    if len(accounts) == 0:
+        logger.exception("Uh oh, no accounts found!")
+        return
+
+    ac_inp = inp_auto(prompt_str, accounts, echo=True)
+    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    return ac_inp_id
+
+
 
 

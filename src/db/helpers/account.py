@@ -99,6 +99,14 @@ def get_account_names_by_type(acc_type):
     return account_names
 
 
+def get_account_id_by_type(acc_type):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT account_id FROM account WHERE type=?", (acc_type,))
+        account_names = [x[0] for x in cur.fetchall()]
+    return account_names
+
+
 def get_account_ledger_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()

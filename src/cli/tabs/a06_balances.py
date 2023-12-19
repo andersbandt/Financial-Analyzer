@@ -21,12 +21,12 @@ class TabBalances(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 
         # initialize information about sub menu options
-        action_strings = ["Add balance",
-                          "Show current wealth",
+        action_strings = ["Show executive wealth summary",
+                          "Add balance",
                           "Show ALL wealth trends"]
 
-        action_funcs = [self.a01_add_balance,
-                        self.a02_show_wealth,
+        action_funcs = [self.a01_show_wealth,
+                        self.a02_add_balance,
                         self.a03_show_stacked_liquid_investment]
 
 
@@ -37,9 +37,31 @@ class TabBalances(SubMenu.SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
-    # a01_add_balance: inserts data for an account balance record into the SQL database
+    # a01_show_wealth
+    def a01_show_wealth(self):
+        balance_by_type = []
+
+        # iterate across account types
+        for acc_type in range(1, 4+1):
+            acc_sum = 0
+            acc_id_by_type = dbh.account.get_account_id_by_type(acc_type)
+
+            for acc_id in acc_id_by_type:
+                print("Checking acc_id: " + str(acc_id))
+                bal = dbh.balance.get_recent_balance(acc_id)
+                print("Got balance of " + str(bal))
+                acc_sum += bal
+
+            balance_by_type.append(acc_sum)
+
+        print("Here is your recent balance history by account type")
+        print(balance_by_type)
+
+
+    # a02_add_balance: inserts data for an account balance record into the SQL database
     # TODO: add error checking for multiple balances per account on SAME day
-    def a01_add_balance(self):
+    # TODO: add printout of what is being added after addition to the database
+    def a02_add_balance(self):
         print("... adding a balance entry ...")
 
         # prompt user for account ID
@@ -56,10 +78,6 @@ class TabBalances(SubMenu.SubMenu):
                                            bal_amount,
                                            bal_date)
         return True
-
-
-    # a02_show_wealth
-    def a02_show_wealth(self):
 
 
     # this function will be interesting to write.
