@@ -102,17 +102,20 @@ def summarize_account(account_id, printmode=True):
 ##############################################################################
 
 @logfn
-def create_investment_dicts():
+def create_active_investment_dict():
     inv_data = []
-    inv_ledge = dbh.investments.get_inv_ledge_data()
+
+
+    inv_ledge = dbh.investments.get_active_ticker()
 
     for ledge in inv_ledge:
         ledge_dict = {
-            "ticker": ledge[3],
-            "account": ledge[2],
-            "shares": ledge[4],
+            "ticker": ledge[0],
+            "account": ledge[1],
+            "shares": ledge[2],
             "type": ledge[7],
         }
         inv_data.append(ledge_dict)
     return inv_data
+
 

@@ -72,7 +72,9 @@ def get_active_ticker(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT ticker, SUM(CASE WHEN shares > 0 THEN shares
+            SELECT ticker,
+            account,
+            SUM(CASE WHEN shares > 0 THEN shares
                                    WHEN shares < 0 THEN shares
                                    ELSE 0 END) as net_shares
             FROM investment
