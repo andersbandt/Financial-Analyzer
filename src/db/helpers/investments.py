@@ -73,7 +73,7 @@ def get_active_ticker(account_id):
         cur = conn.cursor()
         cur.execute("""
             SELECT ticker,
-            account,
+            account_id,
             SUM(CASE WHEN shares > 0 THEN shares
                                    WHEN shares < 0 THEN shares
                                    ELSE 0 END) as net_shares

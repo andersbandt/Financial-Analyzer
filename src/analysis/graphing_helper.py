@@ -56,18 +56,27 @@ def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
 
 
 @logfn
-def get_line_chart(x_axis, y_axis, title=None, legend=False):
+def get_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     # clear current plot
     plt.clf()
 
     # make plot
-    plt.plot(x_axis, y_axis)
+    # plt.plot(x_axis, y_axis)
+    plt.plot(x_axis, y_axis, marker='o', linestyle='-', color='blue', label='Investment Data')
+
+    # format y-axis as currency
+    if y_format == 'currency':
+        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
+
+    # add grid lines
+    plt.grid(True, linestyle='--', alpha=0.7)
 
     # add legend and title
     if legend:
-        pass
-        # plt.legend(patches, labels, loc="best")
+        plt.legend(loc="best")
+
     plt.title(title)
+
 
 
 # @logfn
