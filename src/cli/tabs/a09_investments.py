@@ -179,6 +179,7 @@ class TabInvestment(SubMenu.SubMenu):
 
             i = 0
             for price in price_data["close"]:
+                shares = entry["shares"]
                 total_arr[i] += entry["shares"]*price
                 i += 1
 
