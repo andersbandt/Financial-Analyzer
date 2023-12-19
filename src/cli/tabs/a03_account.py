@@ -45,13 +45,13 @@ class TabAccount(SubMenu.SubMenu):
         print("... adding accounts ...")
 
         # get account information
-        name = clih.spinput("What is the name of this account?: ", type="text")
+        name = clih.spinput("What is the name of this account?: ", inp_type="text")
 
         # print out account type classification breakdown
         for j in range(1, ah.get_num_acc_type()+1):
             print("\t" + str(j) + "= " + ah.get_acc_type_mapping(j))
 
-        type_int = clih.spinput("What is the type of this account ?? (please enter INTEGER): ", type="int")
+        type_int = clih.spinput("What is the type of this account ?? (please enter INTEGER): ", inp_type="int")
         if type_int == -1:
             print("Bad int received. Won't insert account")
             return False

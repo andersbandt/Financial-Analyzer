@@ -55,6 +55,8 @@ def get_account_id_from_name(account_name):
             ]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
+            print("Can't convert account ID to name")
+            return
     return account_id
 
 
