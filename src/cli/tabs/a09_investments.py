@@ -171,15 +171,11 @@ class TabInvestment(SubMenu.SubMenu):
             price_data = invh.get_ticker_price_data(entry["ticker"],
                                                     dateh.get_date_previous(days_prev),
                                                     datetime.datetime.now(),
-                                                    interval)
-
-            # print out the raw historical price data
-            # print(type(price_data))
-            # print(price_data)
+                                                    interval,
+                                                    filter_weekdays=True)
 
             i = 0
             for price in price_data["close"]:
-                shares = entry["shares"]
                 total_arr[i] += entry["shares"]*price
                 i += 1
 
