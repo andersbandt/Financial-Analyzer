@@ -1,9 +1,10 @@
+
 # import needed modules
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
-import json
 
 import yahoo_fin.stock_info as si
 
+# import user created modules
 import db.helpers as dbh
 from utils import logfn
 
@@ -11,8 +12,20 @@ from utils import logfn
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
 ##############################################################################
 
+
+def validate_ticker(ticker):
+    print(" ... validating ticker for ticker: ", ticker)
+    try:
+        price = si.get_live_price(ticker)
+    except AssertionError as e:
+        print(e)
+        return False
+    print("Found ticker with price: ", price)
+    return True
+
+
 # print_ticker_info: prints the info for a certain ticker to the console
-@logfn
+# @logfn
 def print_ticker_info(ticker):
     print("printing ticker info for ticker: ", ticker)
 
@@ -27,7 +40,7 @@ def print_ticker_info(ticker):
 
 
 # get_ticker_price: returns the current live price for a certain ticker
-@logfn
+# @logfn
 def get_ticker_price(ticker):
     price = si.get_live_price(ticker)
     return price
@@ -53,6 +66,41 @@ def get_ticker_price_data(ticker, start_date, end_date, interval):
 ##############################################################################
 
 
+# summarize_account: this function is for showcasing account view and holdings
+# @logfn
+def summarize_account(account_id, printmode=True):
+    transactions = dbh.investments.get_active_ticker(account_id)
+    print("\n\t ",
+          dbh.account.get_account_name_from_id(account_id),
+          ": "
+          )
+
+    account_value = 0
+    for transaction in transactions:
+        ticker = transaction[0]
+        shares = transaction[1]
+
+        # calculate the value of the asset ticker
+        price = get_ticker_price(ticker)
+        value = shares*price
+
+        if printmode:
+            # print("\n======================================= ")
+            # print("\tticker: ", ticker)
+            # print("\tshares: ", shares)
+            # print("\tvalue: ", value)
+
+            print(f"Ticker: {ticker}, Quantity: {shares}, Value: {value}")
+
+        account_value += value
+
+    return account_value
+
+
+##############################################################################
+######      DATABASE CONVERSION FUNCTIONS      ###############################
+##############################################################################
+
 @logfn
 def create_investment_dicts():
     inv_data = []
@@ -67,3 +115,4 @@ def create_investment_dicts():
         }
         inv_data.append(ledge_dict)
     return inv_data
+

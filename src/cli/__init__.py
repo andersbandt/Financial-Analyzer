@@ -89,8 +89,10 @@ class MainApplication:
 
                 try:
                     self.tabs[choice_int-1].run()
-                except IndexError:
+                except IndexError as e:
                     print("\n\n\n!!! List choice out of range !!!")
+                    # TODO: figure out how to make it so if I type 55 or something and that's not an option the program won't crash
+                    raise(e) # if I don't raise an exception possibly an exception within the run() statement won't be caught
 
 
 

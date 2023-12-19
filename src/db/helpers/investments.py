@@ -24,16 +24,15 @@ def insert_investment(date, account_id, ticker, shares, inv_type, value, descrip
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO investment (trans_date, \
+            "INSERT INTO investment (date, \
             account_id, \
             ticker, \
             shares, \
-            inv_type, \
+            trans_type, \
             value, \
             description, \
-            name, \
             note, \
-            date_added) VALUES(?, ?, ?, ?, ?, ?, ?)",
+            date_added) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (date,
              account_id,
              ticker,
@@ -56,18 +55,31 @@ def get_account_ticker(account_id):
     return ledger_data
 
 
+# def get_active_ticker(account_id):
+#     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+#         cur = conn.cursor()
+#         cur.execute("""
+#             SELECT ticker FROM investment
+#                 SUM(CASE WHEN shares > 0 then shares
+#                 WHEN shares < 0 THEN shares
+#                 ELSE 0 END) as net_shares
+#             WHERE account_id = ?""", account_id)
+#         ledger_data = cur.fetchall()
+#     return ledger_data
+
+
 def get_active_ticker(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("""
-            SELECT ticker,
-                SUM(CASE WHEN shares > 0 then shares
-                WHEN shares < 0 THEN shares
-                ELSE 0 END) as net_shares
-            WHERE account_id = ?""", account_id)
+            SELECT ticker, SUM(CASE WHEN shares > 0 THEN shares
+                                   WHEN shares < 0 THEN shares
+                                   ELSE 0 END) as net_shares
+            FROM investment
+            WHERE account_id = ?
+            GROUP BY ticker""", (account_id,))
         ledger_data = cur.fetchall()
     return ledger_data
-
 
 
 def get_investment_ledge_data():

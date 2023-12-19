@@ -16,6 +16,21 @@ def insert_account_balance(account_id, amount, date):
     return True
 
 
+def get_recent_balance(account_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM balance WHERE account_id=? ORDER BY bal_date ASC",
+            (account_id,),
+        )
+        balances_data = cur.fetchall()
+    try:
+        rec_bal = balances_data[-1][2]
+    except IndexError:
+        rec_bal = 0
+    return rec_bal
+
+
 # gets balance data for ALL the balances in a certain date range
 #   note: date must be in the format of year-month-date
 def get_balances_between_date(date_start, date_end):
