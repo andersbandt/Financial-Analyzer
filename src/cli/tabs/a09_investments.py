@@ -5,11 +5,16 @@
 
 """
 
+# import needed modules
+import datetime
+import matplotlib.pyplot as plt
 
 # import user defined modules
 import cli.cli_helper as clih
 from cli.tabs import SubMenu
 from analysis import investment_helper as invh
+from analysis import graphing_helper as grah
+from tools import date_helper as dateh
 import db.helpers as dbh
 
 
@@ -137,22 +142,55 @@ class TabInvestment(SubMenu.SubMenu):
     def a04_cur_value_history(self):
         print("... summarizing value history ...")
 
-        inv_acc_id = dbh.account.get_account_id_by_type(4)
+        # set some parameters and populate my "active" investment data
+        days_prev = 1000
+        interval = "1d"
+        act_inv_dict = invh.create_active_investment_dict()
 
-        acc_val_arr = []
-        for account_id in inv_acc_id:
-            account_value = invh.summarize_account(account_id, printmode=True)
-            acc_str = dbh.account.get_account_name_from_id(account_id)
-            acc_val_arr.append(account_value)
-            # print(f"\t {acc_str}: {account_value}")
+        # populate dummy totals and dates
+        # total_arr = list(range(days_prev))
+        total_arr = []
+        date_arr = []
+        dummy_ticker_price_data = invh.get_ticker_price_data("AAPL",
+                                                dateh.get_date_previous(days_prev),
+                                                datetime.datetime.now(),
+                                                interval)
 
-        print("\n===== ACCOUNT SUMMARY =====")
-        for i in range(0, len(inv_acc_id)):
-            acc_str = dbh.account.get_account_name_from_id(inv_acc_id[i])
-            print(f"\t {acc_str}: {acc_val_arr[i]}")
+        for ticker_date_entry in dummy_ticker_price_data["date"]:
+            date_arr.append(ticker_date_entry)
+            total_arr.append(0)
 
+        # iterate through all ticker entries in my deemed "active" summary
+        for entry in act_inv_dict:
+            print("\n")
+            print(entry)
 
+            price_data = invh.get_ticker_price_data(entry["ticker"],
+                                                    dateh.get_date_previous(days_prev),
+                                                    datetime.datetime.now(),
+                                                    interval)
 
+            # print out the raw historical price data
+            # print(type(price_data))
+            # print(price_data)
+
+            i = 0
+            for price in price_data["close"]:
+                total_arr[i] += entry["shares"]*price
+                i += 1
+
+        print(date_arr)
+        print(total_arr)
+
+        #  create and return figure
+        grah.get_line_chart(date_arr,
+                            total_arr,
+                            title="Historical price data of portfolio snapshot",
+                            y_format='currency'
+                            )
+        plt.show()
+
+        print("Done running a04_cur_value_history with days previous of: ", days_prev)
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

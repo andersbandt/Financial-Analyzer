@@ -108,7 +108,7 @@ class Ledger:
         cat_mode = clih.spinput("What num mode do you want to do categorization?\n"
                                 "mode 1=tree style\n"
                                 "mode 2=all category\n"
-                                " 1-2: ", type="int")
+                                " 1-2: ", inp_type="int")
         for transaction in self.getUncategorizedTrans():
             # prompt user for category information
             print("\n")

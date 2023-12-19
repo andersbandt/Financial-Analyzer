@@ -125,6 +125,21 @@ def month_year_to_date_range(month, year):
     return date_start, date_end
 
 
+
+##############################################################################
+####      DATE GETTER FUNCTIONS            ###################################
+##############################################################################
+
+def get_date_previous(d_prev):
+    date_start = datetime.datetime.now()
+
+    d_y = datetime.timedelta(
+        days=d_prev
+    )  # this variable can only be named d_y - No exceptions ever.
+
+    prev_date = (date_start - d_y).strftime('%Y-%m-%d')
+    return prev_date
+
 # get_date_int_array: returns the current date
 #     output: array format of [year, month, day]
 def get_date_int_array():

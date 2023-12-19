@@ -57,7 +57,6 @@ def get_ticker_price_data(ticker, start_date, end_date, interval):
         index_as_date=False,
         interval=interval,
     )
-    print(hist_price_data)
     return hist_price_data
 
 
@@ -78,7 +77,7 @@ def summarize_account(account_id, printmode=True):
     account_value = 0
     for transaction in transactions:
         ticker = transaction[0]
-        shares = transaction[1]
+        shares = transaction[2]
 
         # calculate the value of the asset ticker
         price = get_ticker_price(ticker)
@@ -103,17 +102,18 @@ def summarize_account(account_id, printmode=True):
 
 @logfn
 def create_active_investment_dict():
+    inv_acc_id = dbh.account.get_account_id_by_type(4)
+    inv_ledge = []
+    for account_id in inv_acc_id:
+        inv_ledge.extend(dbh.investments.get_active_ticker(account_id))
+
+
     inv_data = []
-
-
-    inv_ledge = dbh.investments.get_active_ticker()
-
     for ledge in inv_ledge:
         ledge_dict = {
             "ticker": ledge[0],
             "account": ledge[1],
             "shares": ledge[2],
-            "type": ledge[7],
         }
         inv_data.append(ledge_dict)
     return inv_data

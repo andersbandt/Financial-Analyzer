@@ -256,36 +256,3 @@ def create_asset_alloc_chart():
     return fig
 
 
-# create_asset_alloc_chart: creates a pie chart representing asset allocation
-@logfn
-def create_hist_price_data_line_chart(days_prev=180):
-    # get list of investment dict objects
-    inv_dict = inv_h.create_investment_dicts()
-
-    # set up array to handle historical price data
-    total = []
-
-    # set up date based on days_prev
-    end_date = date.today()
-    start_date = date_helper.get_date_days_prev(end_date, days_prev)
-
-    # populate array holding dates (x-axis of chart)
-    dates = list(range(days_prev))
-
-    # iterate through list and add to totals
-    for investment in inv_dict:
-        logger.info(f"Retrieving historical stock price data for portfolio")
-        logger.debug(f"Starting date: {start_date}")
-        logger.debug(f"Ending date: {end_date}")
-        hist_data = inv_h.get_ticker_price_data(  # TODO: not being used
-            investment["ticker"], start_date, end_date, interval="1d"
-        )
-
-    totals = list(range(days_prev))
-
-    #  create and return figure
-    fig = plt.figure(1)
-    graphing_helper.get_line_chart(
-        dates, totals, title="Historical Portfolio Performance"
-    )
-    return fig
