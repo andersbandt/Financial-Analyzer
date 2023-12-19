@@ -1,26 +1,28 @@
+import datetime
 
 # import needed modules
+import numpy as np
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
-
 import yahoo_fin.stock_info as si
+import yfinance as yf
 
 # import user created modules
 import db.helpers as dbh
+from tools import date_helper as dath
 from utils import logfn
 
 ##############################################################################
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
 ##############################################################################
 
-
 def validate_ticker(ticker):
     print(" ... validating ticker for ticker: ", ticker)
-    try:
-        price = si.get_live_price(ticker)
-    except AssertionError as e:
-        print(e)
+
+    price = get_ticker_price(ticker)
+    if price is False:
         return False
-    print("Found ticker with price: ", price)
+
+    print("Valid ticker found with price: ", price)
     return True
 
 
@@ -42,7 +44,27 @@ def print_ticker_info(ticker):
 # get_ticker_price: returns the current live price for a certain ticker
 # @logfn
 def get_ticker_price(ticker):
-    price = si.get_live_price(ticker)
+    # attempt to get live price using yahoo_fin
+    try:
+        price = si.get_live_price(ticker)
+    except AssertionError as e:
+        print(e)
+
+    # if yahoo_fin found ticker but price is nan, try using yfinance (yf)
+    if np.isnan(price):
+        print("Ticker found with si.get_live_price() but not valid price")
+        print("Trying another method")
+        data = yf.download(ticker,
+                           dath.get_date_previous(1),
+                           datetime.datetime.now())
+
+        if data.empty:
+            print("No data available for given ticker")
+            return False
+
+        # return last closing price as fallback method from live
+        price = data['Close'].iloc[-1]
+
     return price
 
 

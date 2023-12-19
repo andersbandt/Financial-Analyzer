@@ -51,6 +51,9 @@ class TabInvestment(SubMenu.SubMenu):
 
         # get account information
         account_id = clih.account_prompt_type("What is the corresponding account for this investment?: ", 4)
+        if account_id == False:
+            print("... exiting add investment")
+            return
 
         # get ticker information
         ticker = clih.spinput("\nWhat is the ticker of this investment?: ", inp_type="text")
