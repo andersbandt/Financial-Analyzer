@@ -12,9 +12,11 @@ import cli
 colors = ["blue", "cyan", "green", "magenta", "red", "yellow"]
 color_per_module = defaultdict(lambda: choice(colors))
 
+
 def formatter(record):
     color_tag = color_per_module[record["name"]]
     return "<" + color_tag + ">[{name}]</> <bold>{message}</>\n{exception}"
+
 
 logger.add(sys.stdout, colorize=True, format=formatter)
 

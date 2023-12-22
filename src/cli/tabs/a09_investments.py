@@ -171,13 +171,26 @@ class TabInvestment(SubMenu.SubMenu):
             price_data = invh.get_ticker_price_data(entry["ticker"],
                                                     dateh.get_date_previous(days_prev),
                                                     datetime.datetime.now(),
-                                                    interval)
+                                                    interval,
+                                                    include_weekdays=False)
 
             # print out the raw historical price data
             # print(type(price_data))
-            # print(price_data)
+            # for date in price_data["date"]:
+            #     print(date)
 
-            i = 0
+            # for i in range(0, len(cur_data)):
+            #     if cur_data[i] != prev_data[i]:
+            #         print(f"\nMISMATCH BELOW!")
+            #         print(f"\n{cur_data[i]} != {prev_data[i]}")
+
+
+            # do some verification of the length
+            if len(price_data["close"]) != len(total_arr):
+                print("Can't add current data because there is a mismatch in total dates")
+                continue
+
+            i = 0  # in this context i represents the dates
             for price in price_data["close"]:
                 shares = entry["shares"]
                 total_arr[i] += entry["shares"]*price
