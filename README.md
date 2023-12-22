@@ -34,7 +34,14 @@ Discord server [here](https://discord.gg/qRKYKUzy)
 
 There will be some filepaths to adjust in the code based on your machine.
 
-The first is in `src/db/__init__.py' and is the `DATABASE_DIRECTORY`
+The first is in `src/db/__init__.py` and is the `DATABASE_DIRECTORY`
+For example mine is edited to be 
+
+```python
+# setup database master file
+DATABASE_DIRECTORY = "C:/Users/ander/OneDrive/Code/python/financial_analyzer_CLI/src/db/financials.db" # tag:hardcode
+```
+
 The second is in the monthly statements base filepath
 
 #### Running application

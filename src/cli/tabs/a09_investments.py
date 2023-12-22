@@ -190,6 +190,7 @@ class TabInvestment(SubMenu.SubMenu):
                 print("Can't add current data because there is a mismatch in total dates")
                 continue
 
+
             i = 0  # in this context i represents the dates
             for price in price_data["close"]:
                 shares = entry["shares"]

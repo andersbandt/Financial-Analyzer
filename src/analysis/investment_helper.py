@@ -1,8 +1,10 @@
-import datetime
+
 
 # import needed modules
 import numpy as np
 import pandas as pd
+import datetime
+
 # from googlefinance import getQuotes - googlefinance yields HTTP 404 request
 import yahoo_fin.stock_info as si
 import yfinance as yf
@@ -72,7 +74,7 @@ def get_ticker_price(ticker):
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
 @logfn
-def get_ticker_price_data(ticker, start_date, end_date, interval, include_weekdays=True):
+def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekdays=False):
     hist_price_data = si.get_data(
         ticker,
         start_date=start_date,
@@ -81,10 +83,11 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, include_weekda
         interval=interval,
     )
 
-    if include_weekdays == False:
+
+    if filter_weekdays:
+        print("Filtering to weekdays ONLY for ticker: ", ticker)
         # Convert the 'date' column to datetime format
         hist_price_data['date'] = pd.to_datetime(hist_price_data['date'])
-
         # Filter data for weekdays (Monday=0, Sunday=6)
         hist_price_data = hist_price_data[hist_price_data['date'].dt.dayofweek < 5]
 
