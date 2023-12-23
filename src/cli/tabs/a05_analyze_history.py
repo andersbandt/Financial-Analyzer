@@ -1,15 +1,14 @@
-
-
 # import needed packages
 from functools import partial
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+from pprint import pprint
 
 # import user defined helper modules
 import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
-from analysis import graphing_analyzer
+from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
 from tools import date_helper
 from account import account_helper
@@ -74,12 +73,10 @@ class TabSpendingHistory(SubMenu.SubMenu):
             print("ERROR: analyze_history: Recalled 0 transactions. Exiting")
             raise Exception("Can't analyze history. Invalid transaction data recalled.")
 
-
         # EXEC 1: plot data from previous timeframe
         self.exec_summary_01(accounts,
-                             1000, # number of days previous
-                             6) # number of bins (N)
-
+                             1000,  # number of days previous
+                             6)  # number of bins (N)
 
         # EXEC 2: current categories with a big delta to past averages
 
@@ -87,7 +84,6 @@ class TabSpendingHistory(SubMenu.SubMenu):
         ledger_stats = anah.return_ledger_exec_dict(transactions)
         print("Got this for ledger statistics")
         print(ledger_stats)
-
 
     def a02_print_db_trans(self):
         transactions = anah.recall_transaction_data()
@@ -124,11 +120,9 @@ class TabSpendingHistory(SubMenu.SubMenu):
             self.transactions, cath.load_categories()
         )
 
-
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
     ##############################################################################
-
 
     def exec_summary_01(self, accounts, days_prev, num_slices):
         # LOAD CATEGORIES
@@ -136,21 +130,18 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         # EXEC 1: total spending trend month to month for the last 12 months
         date_bin_trans, edge_codes = anah.sum_date_binned_transaction(accounts,  # a list of Transaction objects
-                                                          days_prev,  # number of previous days
-                                                          num_slices)  # n = 12 different slices
+                                                                      days_prev,  # number of previous days
+                                                                      num_slices)  # n = 12 different slices
 
-        # set up graphing stuff
-        plt.rcdefaults()
-        fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
-
-
+        date_bin_dict_arr = []  # this will be an array of dictionaries
         print("Analyzing spending on top categories for date binned transactions")
         i = 0
         for trans in date_bin_trans:
             print("\n\n")
             top_cat_str, amounts = anah.create_top_category_amounts_array(trans, categories, count_NA=False)
             # do some post-processing on top-level categories and amounts
-            to_remove = ["INCOME", "INTERNAL"]
+            # TODO: this removing could maybe be a little more elegant
+            to_remove = ["INCOME", "INTERNAL", "INVESTMENT"]
             for j in range(0, len(top_cat_str)):
                 if top_cat_str[j] in to_remove:
                     print("Removing " + top_cat_str[j] + " from top categories list at index: " + str(j))
@@ -160,23 +151,41 @@ class TabSpendingHistory(SubMenu.SubMenu):
                     if len(to_remove) == 0:
                         break
 
-            print(top_cat_str)
-            print(amounts)
-
-            # add each plot to graph for date bin
-            # add bar chart to axes for subplot
-            grah.get_bar_chart(ax,
-                               i,
-                               top_cat_str,
-                               amounts,
-                               title=edge_codes[i] + " to " + edge_codes[i+1])
+            # append dict to an array of all date ranges
+            date_bin_dict_arr.append(
+                {"date_range": edge_codes[i] + " to " + edge_codes[i+1],
+                 "amounts": amounts,
+                 }
+            )
             i += 1
 
-        # Set common labels
-        # ax[i].set_xlabel("Amount ($)")
-        fig.text(0.5, 0.04, 'Categories', ha='center', va='center')
-        fig.text(0.06, 0.5, 'Amount ($)', ha='center', va='center', rotation='vertical')
+        # print our created array
+        pprint(date_bin_dict_arr)
 
-        plt.show()
+        top_cat_dict = {}
+        for cat_str in top_cat_str:
+            top_cat_dict[cat_str] = []
 
+        x_ax = []
+        for d_bin in date_bin_dict_arr:
+            x_ax.append(d_bin["date_range"])
+            i = 0
+            for amount in d_bin["amounts"]:
+                top_cat_dict[top_cat_str[i]].append(amount)
+                i += 1
+
+        pprint(top_cat_dict)
+
+        # populate array of y axis values (needed for graphing_analyzer function)
+        y_axis_arr = []
+        for cat_str in top_cat_str:
+            y_axis_arr.append(top_cat_dict[cat_str])
+
+        # set up graphing stuff
+        grapa.create_mul_line_chart(x_ax,
+                                    y_axis_arr,
+                                    title="Top categories across time",
+                                    labels=top_cat_str,
+                                    legend=True,
+                                    y_format='currency')
 

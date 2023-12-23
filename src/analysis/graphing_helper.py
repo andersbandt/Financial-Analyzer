@@ -56,29 +56,17 @@ def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
 
 
 @logfn
-def get_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
-    # clear current plot
-    plt.clf()
-
+def get_line_chart(x_axis, y_axis, label=None, color=None):
     # make plot
     # plt.plot(x_axis, y_axis)
-    plt.plot(x_axis, y_axis, marker='o', linestyle='-', color='blue', label='Investment Data')
-
-    # format y-axis as currency
-    if y_format == 'currency':
-        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
-
-    # add grid lines
-    plt.grid(True, linestyle='--', alpha=0.7)
-
-    # add legend and title
-    if legend:
-        plt.legend(loc="best")
-
-    plt.title(title)
+    plt.plot(x_axis, y_axis, marker='o', linestyle='-', color=None, label=label)
 
 
 
+
+
+# @usage  fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
+#           pass in 'ax' as variable, then use plt.show() as normal
 # @logfn
 def get_bar_chart(ax, i, labels, amounts, title=None):
     y_pos = np.arange(len(labels))
@@ -189,27 +177,4 @@ def format_expenses(amounts):
     return amounts
 
 
-##############################################################################
-####      CONSOLE PRINTING FUNCTIONS     #####################################
-##############################################################################
 
-# getSpaces: gets the number of spaces needed for pretty printing in straight columns
-@logfn
-def get_spaces(length, trim):
-    spaces = ""
-    for i in range(trim - length):
-        spaces += " "
-    return spaces
-
-
-# print_category_amount
-@logfn
-def print_category_amount(category, amount):
-    string_to_print = (
-        "CATEGORY: "
-        + category.name
-        + get_spaces(len(category.name), 16)
-        + " || AMOUNT: "
-        + str(amount)
-    )
-    print(string_to_print)

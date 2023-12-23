@@ -5,14 +5,7 @@
 """
 
 
-# getSpaces: gets the number of spaces needed for pretty printing in straight columns
-# def getSpaces(self, length, trim):
-#     spaces = ""
-#     for i in range(trim - length):
-#         spaces += " "
-#     return spaces
-#
-#
+
 # # printTransaction: pretty prints a single transaction
 # def printTransaction(self, print_mode=True):
 #     stringToPrint = (
@@ -41,14 +34,53 @@
 #     return stringToPrint
 
 
+
+# this function will print some tabular financial data (commonly account names and balances)
+def print_balances(names, values):
+    # check for length mismatch
+    if len(names) != len(values):
+        print("Can't print desired array! Mismatched lengths in program")
+        return False
+
+    for i in range(0, len(names)):
+        formatted_value = "${:,.2f}".format(values[i])
+        print(f"{names[i].ljust(25)}: {formatted_value}")
+
+
+
 # this function will generally print an array of data
+# TODO: complete this printing function - will be useful for printing transactions, categories, etc.
 def print_tagged_array_data(labels, values):
     if len(labels) != len(values):
-            print("Can't print desired array! Mismatched lengths in program!")
-            quit()
-
+        print("Can't print desired array! Mismatched lengths in program!")
+        return False
 
     for label in labels:
         print("f")
 
     pass
+
+
+
+##############################################################################
+####      CONSOLE PRINTING FUNCTIONS     #####################################
+##############################################################################
+
+# getSpaces: gets the number of spaces needed for pretty printing in straight columns
+def get_spaces(length, trim):
+    spaces = ""
+    for i in range(trim - length):
+        spaces += " "
+    return spaces
+
+
+# print_category_amount
+def print_category_amount(category, amount):
+    string_to_print = (
+        "CATEGORY: "
+        + category.name
+        + get_spaces(len(category.name), 16)
+        + " || AMOUNT: "
+        + str(amount)
+    )
+    print(string_to_print)

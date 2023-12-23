@@ -83,7 +83,6 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
         interval=interval,
     )
 
-
     if filter_weekdays:
         print("Filtering to weekdays ONLY for ticker: ", ticker)
         # Convert the 'date' column to datetime format

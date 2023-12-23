@@ -4,19 +4,12 @@
 
 """
 
-# TODO: I need to add a method to delete keywords
-
-# import needed packages
-import os
-from prompt_toolkit import prompt
-
 # import user defined modules
 from categories import categories_helper as cath
 import cli.cli_helper as clih
 from cli.tabs import SubMenu
 
 import db.helpers as dbh
-from tools import load_helper as loadh
 
 
 class TabCategory(SubMenu.SubMenu):
@@ -29,14 +22,16 @@ class TabCategory(SubMenu.SubMenu):
                           "Add keyword",
                           "Print keywords",
                           "Delete category",
-                          "Update parent of category"]
+                          "Update parent of category",
+                          "Delete a keyword"]
 
         action_funcs = [self.a01_add_category,
                         self.a02_check_category,
                         self.a03_manage_keywords,
                         self.a04_print_keywords,
                         self.a05_delete_category,
-                        self.a06_move_parent]
+                        self.a06_move_parent,
+                        self.a07_delete_keyword]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -149,6 +144,15 @@ class TabCategory(SubMenu.SubMenu):
 
         print(f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
 
+
+    # TODO: finish this function to delete a keyword
+    def a07_delete_keyword(self):
+        print("... deleting keyword ...")
+
+        res = clih.promptYesNo("Do you want to delete keyword (y or n)?: ")
+        if not res:
+            print("Ok not deleting keyword")
+            return
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

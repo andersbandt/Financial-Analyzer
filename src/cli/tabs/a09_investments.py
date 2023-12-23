@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 # import user defined modules
 import cli.cli_helper as clih
+import cli.cli_printer as clip
 from cli.tabs import SubMenu
 from analysis import investment_helper as invh
 from analysis import graphing_helper as grah
@@ -125,20 +126,25 @@ class TabInvestment(SubMenu.SubMenu):
     def a03_check_accounts(self):
         print("... checking investment data for each account ...")
 
+        # populate array of accounts with type=4
         inv_acc_id = dbh.account.get_account_id_by_type(4)
 
+        # populate arrays
+        acc_str_arr = []
         acc_val_arr = []
         for account_id in inv_acc_id:
-            account_value = invh.summarize_account(account_id, printmode=True)
+            acc_val = invh.summarize_account(account_id, printmode=True)
+            acc_val_arr.append(acc_val)
+
             acc_str = dbh.account.get_account_name_from_id(account_id)
-            acc_val_arr.append(account_value)
-            # print(f"\t {acc_str}: {account_value}")
+            acc_str_arr.append(acc_str)
 
+        # use cli_printer to pretty print balances
         print("\n===== ACCOUNT SUMMARY =====")
-        for i in range(0, len(inv_acc_id)):
-            acc_str = dbh.account.get_account_name_from_id(inv_acc_id[i])
-            print(f"\t {acc_str}: {acc_val_arr[i]}")
-
+        clip.print_balances(
+            acc_str_arr,
+            acc_val_arr
+        )
         return True
 
 
@@ -172,7 +178,7 @@ class TabInvestment(SubMenu.SubMenu):
                                                     dateh.get_date_previous(days_prev),
                                                     datetime.datetime.now(),
                                                     interval,
-                                                    include_weekdays=False)
+                                                    filter_weekdays=False)
 
             # print out the raw historical price data
             # print(type(price_data))

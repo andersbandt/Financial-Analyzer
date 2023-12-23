@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 from loguru import logger
 
 import analysis.analyzer_helper as analyzer_helper
-import analysis.graphing_helper as graphing_helper
+import analysis.graphing_helper as grah
 import analysis.investment_helper as inv_h
 from tools import date_helper
 from utils import logfn
 
 
-# TODO: I think I should phase out this module. A better decoupling of analysis and graphing functions would be ideal
+# TODO: This module can remain, but needs a lot of cleanup
 
 ##############################################################################
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
@@ -136,6 +136,35 @@ def create_bar_chart(transactions, categories):
     ax.set_title("Financial Bar Chart")
 
     plt.show()
+
+
+# create_mul_line_chart: creates multiple
+def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, legend=False, y_format=None):
+    plt.rcdefaults()
+    plt.clf()
+
+    i = 0
+    for y_axis in y_axis_arr:
+        grah.get_line_chart(x_axis,
+                            y_axis,
+                            color='blue',
+                            label=labels[i])
+        i += 1
+
+    # format y-axis as currency
+    if y_format == 'currency':
+        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
+
+    # add legend and title
+    if legend:
+        plt.legend(loc="best")
+
+    # add grid lines
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    plt.title(title)
+    plt.show()
+
 
 
 @logfn
