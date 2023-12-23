@@ -133,7 +133,7 @@ class TabCategory(SubMenu.SubMenu):
                                " to parent " + \
                                cath.category_id_to_name(new_parent_id) + \
                                " ? (y) or (n): ",
-                               type="text")
+                               inp_type="text")
 
         if confirm != 'y':
             print("Ok, aborting category parent move")

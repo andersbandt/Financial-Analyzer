@@ -36,12 +36,10 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         # initialize information about sub menu options
         action_strings = ["Executive summary",
-                          "Print database transactions",
-                          "Show top level pie"]
+                          "Print database transactions"]
 
         action_funcs = [self.a01_exec_summary,
-                        self.a02_print_db_trans,
-                        self.show_top_pie_chart]
+                        self.a02_print_db_trans]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -75,7 +73,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         # EXEC 1: plot data from previous timeframe
         self.exec_summary_01(accounts,
-                             1000,  # number of days previous
+                             800,  # number of days previous
                              6)  # number of bins (N)
 
         # EXEC 2: current categories with a big delta to past averages
@@ -91,34 +89,6 @@ class TabSpendingHistory(SubMenu.SubMenu):
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement()
 
-    # show_pie_chart: shows a pie chart of all category and amount data in current loaded Ledger
-    def show_pie_chart(self):
-        # check for data load status and error handle
-        self.check_data_load_status()
-        # get pyplot figure, patches, and texts
-        figure, categories, amounts = graphing_analyzer.create_pie_chart(
-            self.transactions, cath.load_categories(), printmode="debug"
-        )
-        figure.show()
-
-    # TODO: normalize and report as percent
-    def show_top_pie_chart(self):
-        # check for data load status and error handle
-        self.check_data_load_status()
-        # get pyplot figure
-        figure = graphing_analyzer.create_top_pie_chart(
-            self.ledger.transactions, cath.load_categories()
-        )
-        figure.show()
-
-    def show_budget_diff_chart(self):
-        # check for data load status and error handle
-        self.check_data_load_status()
-
-        # get pyplot figure
-        figure = graphing_analyzer.create_top_pie_chart(
-            self.transactions, cath.load_categories()
-        )
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
@@ -139,17 +109,9 @@ class TabSpendingHistory(SubMenu.SubMenu):
         for trans in date_bin_trans:
             print("\n\n")
             top_cat_str, amounts = anah.create_top_category_amounts_array(trans, categories, count_NA=False)
+
             # do some post-processing on top-level categories and amounts
-            # TODO: this removing could maybe be a little more elegant
-            to_remove = ["INCOME", "INTERNAL", "INVESTMENT"]
-            for j in range(0, len(top_cat_str)):
-                if top_cat_str[j] in to_remove:
-                    print("Removing " + top_cat_str[j] + " from top categories list at index: " + str(j))
-                    to_remove.remove(top_cat_str[j])
-                    del top_cat_str[j]
-                    del amounts[j]
-                    if len(to_remove) == 0:
-                        break
+            top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
 
             # append dict to an array of all date ranges
             date_bin_dict_arr.append(

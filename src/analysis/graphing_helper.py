@@ -139,15 +139,15 @@ def strip_non_graphical_transactions(categories, amounts):
 # strip_non_graphical_transactions: strips certain transactions that are part of categories
 #   that don't graph well
 @logfn
-def strip_non_expense_categories(categories, amounts):
-    non_expense = ["INCOME"]
+def strip_non_expense_categories(cat_str_arr, amounts):
+    to_remove = ["INCOME", "INTERNAL", "INVESTMENT", "MISC FINANCE"]
 
     new_categories = []
     new_amounts = []
 
-    for j in range(0, len(categories)):
-        if categories[j].name not in non_expense:
-            new_categories.append(categories[j])
+    for j in range(0, len(cat_str_arr)):
+        if cat_str_arr[j] not in to_remove:
+            new_categories.append(cat_str_arr[j])
             new_amounts.append(amounts[j])
 
     return new_categories, new_amounts

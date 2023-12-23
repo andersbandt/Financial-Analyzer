@@ -165,12 +165,14 @@ def create_Tree(categories, cat_type="id"):
     logger.debug("create_Tree: populating children node Categories")
     for category in categories:
         if category.parent != 1:
-            nodes = t.search_nodes(name=category.parent)
+            if cat_type == "id":
+                nodes = t.search_nodes(name=category.parent)
+            elif cat_type == "name":
+                nodes = t.search_nodes(name=category_id_to_name(category.parent))
             for node in nodes:
                 if cat_type == "id":
                     node.add_child(name=category.id)
                 elif cat_type == "name":
                     node.add_child(name=category.name)
-
 
     return t
