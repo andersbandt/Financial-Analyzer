@@ -74,11 +74,11 @@ And so on for as many years as you want to create.
 
 ## How to load in data in application
 
-1.	Select year and month, then select file from dropdown of that menu
-2.	Then select account from another dropdown
-3.	Hit a button to load in the file
-4.	A statement object will be created on the GUI depending on what type of account it is
-5.	All transaction data will be loaded
+1.	Upon running `python main.py` - will be presented with main menu
+2.	Press `4` and enter for the "Load Data" menu.
+3.	Enter `1` in the keyboard to load in data from certain year/month
+4.	You will be prompted for the date to locate the correct folder path.
+5.	After finding file in folder path, loading will begin!
 
 
 ## Resources
