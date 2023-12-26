@@ -3,8 +3,6 @@ This project is meant for analysis of personal financial data in a CLI (command 
 
 This project used to leverage the Tkinter GUI framework for Python. However, the GUI slows down development time tremendously. A CLI is much easier to work with.
 
-**TO ANYONE JOINING RECENTLY**
-Discord server [here](https://discord.gg/qRKYKUzy)
 
 ## Setup Information
 
