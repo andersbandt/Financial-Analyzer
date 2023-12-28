@@ -34,9 +34,10 @@
 #     return stringToPrint
 
 
-
 # this function will print some tabular financial data (commonly account names and balances)
-def print_balances(names, values):
+def print_balances(names, values, title):
+    print(f"========= {title} =========")
+
     # check for length mismatch
     if len(names) != len(values):
         print("Can't print desired array! Mismatched lengths in program")
@@ -44,7 +45,7 @@ def print_balances(names, values):
 
     for i in range(0, len(names)):
         formatted_value = "${:,.2f}".format(values[i])
-        print(f"{names[i].ljust(25)}: {formatted_value}")
+        print(f"\t{names[i].ljust(25)}: {formatted_value}")
 
 
 

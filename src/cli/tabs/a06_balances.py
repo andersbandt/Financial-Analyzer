@@ -5,9 +5,10 @@
 # import user defined modules
 import db.helpers as dbh
 from analysis import analyzer_helper, graphing_analyzer
-from categories import categories_helper
+import analysis.balance_helper as balh
 
 import cli.cli_helper as clih
+import cli.cli_printer as clip
 from cli.tabs import SubMenu
 from tools import date_helper
 
@@ -39,24 +40,19 @@ class TabBalances(SubMenu.SubMenu):
 
     # a01_show_wealth
     def a01_show_wealth(self):
-        balance_by_type = []
+        acc_balances = []
+        acc_id_arr = dbh.account.get_all_account_ids()
 
-        # iterate across account types
-        for acc_type in range(1, 4+1):
-            acc_sum = 0
-            acc_id_by_type = dbh.account.get_account_id_by_type(acc_type)
+        for acc_id in acc_id_arr:
+            bal_amount = balh.get_account_balance(acc_id)
+            acc_balances.append(bal_amount)
 
-            for acc_id in acc_id_by_type:
-                print("Checking acc_id: " + str(acc_id))
-                bal = dbh.balance.get_recent_balance(acc_id)
-                print("Got balance of " + str(bal))
-                acc_sum += bal
-
-            balance_by_type.append(acc_sum)
-
-        print("Here is your recent balance history by account type")
-        print(balance_by_type)
-
+        # use cli_printer to print a table of balances
+        clip.print_balances(
+            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
+            acc_balances,
+            "BALANCE SUMMARY"
+        )
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
     # TODO: add error checking for multiple balances per account on SAME day - on second thought is this needed?
@@ -124,6 +120,26 @@ class TabBalances(SubMenu.SubMenu):
 
         print("Working with this for tabulated data conversion")
         print(recent_Bx)
+
+
+    # def show_wealth_by_type(self):
+    #     balance_by_type = []
+    #
+    #     # iterate across account types
+    #     for acc_type in range(1, 4 + 1):
+    #         acc_sum = 0
+    #         acc_id_by_type = dbh.account.get_account_id_by_type(acc_type)
+    #
+    #         for acc_id in acc_id_by_type:
+    #             print("Checking acc_id: " + str(acc_id))
+    #             bal = dbh.balance.get_recent_balance(acc_id)
+    #             print("Got balance of " + str(bal))
+    #             acc_sum += bal
+    #
+    #         balance_by_type.append(acc_sum)
+    #
+    #     print("Here is your recent balance history by account type")
+    #     print(balance_by_type)
 
 
 

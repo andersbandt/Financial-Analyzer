@@ -159,6 +159,8 @@ def get_month_input():
 
 
 # TODO: I think this function could be made SLIGHTLY easier to use (instead of manually typing dashes or something)
+#   one option for above ^^ is to basically clean the input (remove all non digits), check the resulting YYYYMMDD
+#   and then pass in a cleaned version of YYYY-MM-DD to the date time function. Allows user to type YYYYMMDD or YYYY/MM/DD. Idk.
 def get_date_input(prompt_str):
     print(prompt_str)
     while True:

@@ -140,13 +140,12 @@ class TabInvestment(SubMenu.SubMenu):
             acc_str_arr.append(acc_str)
 
         # use cli_printer to pretty print balances
-        print("\n===== ACCOUNT SUMMARY =====")
         clip.print_balances(
             acc_str_arr,
-            acc_val_arr
+            acc_val_arr,
+            "INVESTMENT ACCOUNT VALUES"
         )
         return True
-
 
     def a04_cur_value_history(self):
         print("... summarizing value history ...")

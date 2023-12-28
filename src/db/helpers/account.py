@@ -80,7 +80,8 @@ def get_all_account_ids():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("SELECT account_id FROM account")
-        return cur.fetchall()
+        account_id = [x[0] for x in cur.fetchall()]
+        return account_id
 
 
 
