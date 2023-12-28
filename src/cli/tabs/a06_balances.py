@@ -59,8 +59,7 @@ class TabBalances(SubMenu.SubMenu):
 
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
-    # TODO: add error checking for multiple balances per account on SAME day
-    # TODO: add printout of what is being added after addition to the database
+    # TODO: add error checking for multiple balances per account on SAME day - on second thought is this needed?
     def a02_add_balance(self):
         print("... adding a balance entry ...")
 
@@ -68,15 +67,23 @@ class TabBalances(SubMenu.SubMenu):
         account_id = clih.account_prompt_all("What account do you want to add balance to?")
 
         # prompt for balance amount
-        bal_amount = clih.spinput("What is the amount for balance entry? (no $): ", inp_type="int")
+        bal_amount = clih.spinput("\nWhat is the amount for balance entry? (no $): ",
+                                  inp_type="float")
 
         # prompt user for date
-        bal_date = clih.get_date_input("and what date is this balance record for?")
+        bal_date = clih.get_date_input("\nand what date is this balance record for?")
+        if bal_date is False:
+            print("Ok, quitting add balance")
+            return False
 
         # insert_category: inserts a category into the SQL database
         dbh.balance.insert_account_balance(account_id,
                                            bal_amount,
                                            bal_date)
+
+        # print out balance addition confirmation
+        print(f"Great, inserted a balance of {bal_amount} for account {account_id} on date {bal_date}")
+
         return True
 
 

@@ -130,6 +130,8 @@ def month_year_to_date_range(month, year):
 ####      DATE GETTER FUNCTIONS            ###################################
 ##############################################################################
 
+# TODO: for the below functions I should really audit other places I'm using date and make sure I'm using these functions!!!
+
 def get_date_previous(d_prev):
     date_start = datetime.datetime.now()
 

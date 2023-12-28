@@ -164,8 +164,12 @@ def get_date_input(prompt_str):
     while True:
         date_str = input("Enter the date (YYYY-MM-DD): ")
 
+        # handle QUIT commands
+        if (date_str == "q") or (date_str == "quit"):
+            return False
+
+        # try to convert into datetime object
         try:
-            # Convert the input string to a datetime object
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             return date_obj.date()  # Return only the date part, not the time
         except ValueError:
