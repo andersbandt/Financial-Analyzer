@@ -2,7 +2,6 @@
 
 # import needed modules
 from datetime import datetime
-import numpy as np
 
 
 # import user defined modules
@@ -27,11 +26,9 @@ class AnalyzerHelperError(Exception):
         return self.msg
 
 
-
 ##############################################################################
 ####      DATA ANALYSIS FUNCTIONS       ######################################
 ##############################################################################
-
 
 # @param   N is the number of bins to form across dates
 def sum_date_binned_transaction(accounts, days_prev, N):
@@ -71,6 +68,7 @@ def sum_individual_category(transactions, category_id):
 
 
 # create_category_amounts_array: returns the dollar ($) total of all categories in a statement
+# @param categories               this is a Category object
 # @logfn
 def create_category_amounts_array(transactions, categories):
     category_amounts = []  # form 1D array of amounts to return
@@ -114,11 +112,17 @@ def create_top_category_amounts_array(transactions, categories, count_NA=True):
     return top_cat_str, category_amounts
 
 
+
+def compare_transaction_trend(transactions):
+    pass
+
+
 ##############################################################################
 ####      DATA GETTER FUNCTIONS       ########################################
 ##############################################################################
 
 # return_ledger_exec_summary: returns a dictionary containing a summary of critical information about an array of Transactions
+# TODO: audit where this function is used. Either delete or cleanup/audit
 # @logfn
 def return_ledger_exec_dict(transactions):
     expenses = 0
@@ -139,7 +143,8 @@ def return_ledger_exec_dict(transactions):
             elif trans_amount > 0:
                 incomes += trans_amount
 
-    exec_summary = {"expenses": expenses, "incomes": incomes}
+    exec_summary = {"expenses": expenses,
+                    "incomes": incomes}
 
     return exec_summary
 
@@ -318,12 +323,3 @@ def gen_bin_A_matrix(spl_Bx, *args):
 
     return [investment, liquid]
 
-
-##############################################################################
-####      BUDGET ANALYSIS FUNCTIONS    #######################################
-##############################################################################
-
-
-@logfn
-def compare_trans_vs_budget(transactions, budget_filename):
-    pass

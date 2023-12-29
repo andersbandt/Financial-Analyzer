@@ -122,9 +122,7 @@ def get_account_type(account_id):
         cur = conn.cursor()
         cur.execute("SELECT type FROM account WHERE account_id=?", [account_id])
         try:
-            account_type = cur.fetchall()[0][
-                0
-            ]  # have to get the first tuple element in array of results
+            account_type = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
     return account_type

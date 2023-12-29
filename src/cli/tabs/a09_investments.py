@@ -44,15 +44,17 @@ class TabInvestment(SubMenu.SubMenu):
 
     def a01_check_investments(self):
         print("... checking investment data ...")
+        print("Anders you gotta finish this function!")
         return True
 
 
+    # TODO: this function is so long. Can I possible make it smaller?
     def a02_add_investment(self):
         print("... adding investment transaction ...")
 
         # get account information
         account_id = clih.account_prompt_type("What is the corresponding account for this investment?: ", 4)
-        if account_id == False:
+        if account_id is False: # TODO: I don't think clih.account_prompt_type properly returns False upon entering 'q'
             print("... exiting add investment")
             return
 

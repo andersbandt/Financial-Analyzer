@@ -41,11 +41,13 @@ class TabBalances(SubMenu.SubMenu):
     # a01_show_wealth
     def a01_show_wealth(self):
         acc_balances = []
+        acc_dates = []
         acc_id_arr = dbh.account.get_all_account_ids()
 
         for acc_id in acc_id_arr:
-            bal_amount = balh.get_account_balance(acc_id)
+            bal_amount, bal_date = balh.get_account_balance(acc_id)
             acc_balances.append(bal_amount)
+            acc_dates.append(bal_date)
 
         # use cli_printer to print a table of balances
         clip.print_balances(
@@ -53,6 +55,8 @@ class TabBalances(SubMenu.SubMenu):
             acc_balances,
             "BALANCE SUMMARY"
         )
+
+        print(acc_dates)
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
     # TODO: add error checking for multiple balances per account on SAME day - on second thought is this needed?

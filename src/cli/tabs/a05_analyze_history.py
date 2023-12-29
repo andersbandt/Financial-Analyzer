@@ -1,20 +1,18 @@
+
+
 # import needed packages
-from functools import partial
-import numpy as np
-import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from pprint import pprint
 
 # import user defined helper modules
+import db.helpers as dbh
 import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
 from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
-from tools import date_helper
-from account import account_helper
+from tools import date_helper as dateh
 
 # import user defined modules
-import cli.cli_helper as clih
 from cli.tabs import SubMenu
 from statement_types import Ledger
 
@@ -54,7 +52,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         one_year_ago = today - timedelta(days=365)
 
         # error handle no accounts
-        accounts = account_helper.get_all_account_ids()
+        accounts = dbh.account.get_all_account_ids()
         print("Got below for accounts")
         print(accounts)
 
@@ -72,20 +70,23 @@ class TabSpendingHistory(SubMenu.SubMenu):
             raise Exception("Can't analyze history. Invalid transaction data recalled.")
 
         # EXEC 1: plot data from previous timeframe
-        self.exec_summary_01(accounts,
-                             800,  # number of days previous
-                             6)  # number of bins (N)
+        # self.exec_summary_01(accounts,
+        #                      800,  # number of days previous
+        #                      6)  # number of bins (N)
 
         # EXEC 2: current categories with a big delta to past averages
+        self.exec_summary_02(3)
 
         # get gross statistics
         ledger_stats = anah.return_ledger_exec_dict(transactions)
         print("Got this for ledger statistics")
         print(ledger_stats)
 
+
+# a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
         transactions = anah.recall_transaction_data()
-        tmp_ledger = Ledger.Ledger("All StatementData")
+        tmp_ledger = Ledger.Ledger("All Statement Data")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement()
 
@@ -98,7 +99,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         # LOAD CATEGORIES
         categories = cath.load_categories()
 
-        # EXEC 1: total spending trend month to month for the last 12 months
+        # get transactions between certain "edge codes"
         date_bin_trans, edge_codes = anah.sum_date_binned_transaction(accounts,  # a list of Transaction objects
                                                                       days_prev,  # number of previous days
                                                                       num_slices)  # n = 12 different slices
@@ -133,6 +134,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             x_ax.append(d_bin["date_range"])
             i = 0
             for amount in d_bin["amounts"]:
+                amount = -1 * amount
                 top_cat_dict[top_cat_str[i]].append(amount)
                 i += 1
 
@@ -151,3 +153,57 @@ class TabSpendingHistory(SubMenu.SubMenu):
                                     legend=True,
                                     y_format='currency')
 
+
+
+# exec_summary_02:
+# TODO: to allow for 'comp_month_prev' to be > 12 I can use the mod % operator on it and then subtract from year
+    # @brief 02 of my analysis spending history
+    # @desc this function will compare the previous month to some predetermined date range of previous month spending
+    # @param    comp_month_prev    this variable will determine how many months back to use as comparison "baseline"
+    def exec_summary_02(self, comp_month_prev):
+        print("... comparing previous month spending to running averages ...")
+
+        # STEP 1: get transactions from previous month
+        cur_date_arr = dateh.get_date_int_array()
+        prev_year = cur_date_arr[0] # index 0 dateh.get_date_int_array() is YEAR
+        prev_month = cur_date_arr[1] - 1  # index 1 of dateh.get_date_int_array() is MONTH then less 1 for PREV MONTH
+        if prev_month < 1:
+            prev_month = 12
+            prev_year -= 1
+        prev_month_range = dateh.month_year_to_date_range(
+            prev_year,
+            prev_month
+        )
+
+        prev_month_trans = anah.recall_transaction_data(
+            prev_month_range[0],
+            prev_month_range[1],
+            dbh.account.get_all_account_ids()
+        )
+
+        # STEP 2: get transactions from baseline data (before previous month)
+        baseline_month_start = prev_month - comp_month_prev
+        baseline_month_end = prev_month - 1
+        if baseline_month_start < 1:
+            baseline_month_start += 13
+            prev_year -= 1
+        if baseline_month_end < 1:
+            baseline_month_end = 12
+            prev_year -= 1
+        baseline_range_start = dateh.month_year_to_date_range(
+            prev_year,
+            baseline_month_start
+        )
+        baseline_range_end = dateh.month_year_to_date_range(
+            prev_year,
+            baseline_month_end
+        )
+
+        baseline_trans = anah.recall_transaction_data(
+            baseline_range_start[0],
+            baseline_range_end[1],
+            dbh.account.get_all_account_ids()
+        )
+
+        print(f"Done retrieving transactions from previous month\n\t {prev_month_range[0]} TO {prev_month_range[1]}")
+        print(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")

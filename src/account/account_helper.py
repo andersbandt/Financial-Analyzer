@@ -22,13 +22,4 @@ def get_num_acc_type():
     return len(types)
 
 
-def get_all_account_ids():
-    account_id_ledge_data = dbh.account.get_all_account_ids()
-
-    account_ids = []
-    for item in account_id_ledge_data:
-        account_ids.append(item[0])
-
-    return account_ids
-
 

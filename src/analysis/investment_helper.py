@@ -99,6 +99,8 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
 
 
 # summarize_account: this function is for showcasing account view and holdings
+# TODO: I think I should consider having this function store 'account_value' into the recent balance in the account table
+#   would ease computation effort when running summary in a06_balances
 # @logfn
 def summarize_account(account_id, printmode=True):
     transactions = dbh.investments.get_active_ticker(account_id)

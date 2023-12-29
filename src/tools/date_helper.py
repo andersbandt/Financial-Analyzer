@@ -1,6 +1,13 @@
+
+
+
 # import needed modules
-import datetime
+from datetime import datetime, timedelta
 import re
+
+# import logger
+from loguru import logger
+from utils import logfn
 
 ##############################################################################
 ####      DATE VERIFICATION FUNCTIONS        #################################
@@ -30,6 +37,7 @@ def check_sql_date_format(date_string):
 ##############################################################################
 
 # monthToInt: converts a month string to an integer
+# TODO: I bet this function actually is not used anywhere since switching to a CLI
 def month2Int(month):
     if month == "January":
         return 1
@@ -94,33 +102,19 @@ def conv_two_digit_date(date):
 
 # month_year_to_date_range: converts a string representation of a month and int of year
 #   into the format needed for SQL storage (YYYY-MM-DD)
-#   EXAMPLE: (10, 2022) --> ["2022-10-01", "2022-10-31"]
-def month_year_to_date_range(month, year):
-    month = month2Int(month)
+#   EXAMPLE: (2022, 10) --> ["2022-10-01", "2022-10-31"]
+@logfn
+def month_year_to_date_range(year, month):
+    # Check if the month is valid
+    if not (1 <= month <= 12):
+        raise ValueError("Invalid month")
 
-    month_28 = [2]
-    month_30 = [4, 6, 9, 11]
-    month_31 = [1, 3, 5, 7, 8, 10, 12]
+    # Calculate the last day of the month
+    last_day_of_month = (datetime(year, month % 12 + 1, 1) - timedelta(days=1)).day
 
-    date_end = False
-
-    if month in month_28:
-        if month < 10:
-            month = "0" + str(month)
-        date_end = str(year) + "-" + str(month) + "-28"
-    elif month in month_30:
-        if month < 10:
-            month = "0" + str(month)
-        date_end = str(year) + "-" + str(month) + "-30"
-    elif month in month_31:
-        if month < 10:
-            month = "0" + str(month)
-        date_end = str(year) + "-" + str(month) + "-31"
-
-    if not date_end:
-        return False
-
-    date_start = str(year) + "-" + str(month) + "-01"
+    # Format the start and end dates
+    date_start = f"{year}-{month:02d}-01"
+    date_end = f"{year}-{month:02d}-{last_day_of_month}"
 
     return date_start, date_end
 
@@ -142,11 +136,18 @@ def get_date_previous(d_prev):
     prev_date = (date_start - d_y).strftime('%Y-%m-%d')
     return prev_date
 
+# TODO: audit usage and possible combine with previous function
+def get_date_days_prev(date_start, days_prev):
+    d_y = datetime.timedelta(days=days_prev)
+    date_prev = date_start - d_y
+    return date_prev
+
+
 # get_date_int_array: returns the current date
 #     output: array format of [year, month, day]
 def get_date_int_array():
     # using now() to get current time
-    current_time = datetime.datetime.now()
+    current_time = datetime.now()
 
     return [current_time.year, current_time.month, current_time.day]
 
@@ -173,7 +174,4 @@ def get_edge_code_dates(date_start, days_prev, N):
     return edge_code_date
 
 
-def get_date_days_prev(date_start, days_prev):
-    d_y = datetime.timedelta(days=days_prev)
-    date_prev = date_start - d_y
-    return date_prev
+
