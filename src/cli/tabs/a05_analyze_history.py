@@ -13,6 +13,7 @@ from tools import date_helper as dateh
 
 # import user defined modules
 from cli.tabs import SubMenu
+import cli.cli_helper as clih
 from statement_types import Ledger
 
 
@@ -33,10 +34,12 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         # initialize information about sub menu options
         action_strings = ["Executive summary",
-                          "Print database transactions"]
+                          "Print database transactions",
+                          "Search transactions"]
 
         action_funcs = [self.a01_exec_summary,
-                        self.a02_print_db_trans]
+                        self.a02_print_db_trans,
+                        self.a03_search_trans]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -46,39 +49,25 @@ class TabSpendingHistory(SubMenu.SubMenu):
     def a01_exec_summary(self):
         print(" ... showing executive summary ...")
 
-        # form Ledger with data from the past 12 months
+        # EXEC 1: plot data from previous timeframe
+        self.exec_summary_01(
+            800,  # number of days previous
+            6)  # number of bins (N)
+
+        # EXEC 2: current categories with a big delta to past averages
+        self.exec_summary_02(6)
+
+        # EXEC 3: get gross stats
         today = datetime.today()
         one_year_ago = today - timedelta(days=365)
-
-        # error handle no accounts
-        accounts = dbh.account.get_all_account_ids()
-        print("Got below for accounts")
-        print(accounts)
-
-        if len(accounts) == 0:
-            print("Error with recalling data", "No accounts selected.", "error")
 
         # LOAD IN TRANSACTIONS FROM 12 MONTHS AGO
         transactions = anah.recall_transaction_data(
             one_year_ago.strftime('%Y-%m-%d'),
-            today.strftime('%Y-%m-%d'),
-            accounts)
+            today.strftime('%Y-%m-%d'))
 
-        if transactions is None:
-            print("ERROR: analyze_history: Recalled 0 transactions. Exiting")
-            raise Exception("Can't analyze history. Invalid transaction data recalled.")
-
-        # EXEC 1: plot data from previous timeframe
-        # self.exec_summary_01(accounts,
-        #                      800,  # number of days previous
-        #                      6)  # number of bins (N)
-
-        # EXEC 2: current categories with a big delta to past averages
-        self.exec_summary_02(3)
-
-        # get gross statistics
         ledger_stats = anah.return_ledger_exec_dict(transactions)
-        print("Got this for ledger statistics")
+        print("Got this for ledger statistics for past 12 months")
         print(ledger_stats)
 
 
@@ -90,17 +79,31 @@ class TabSpendingHistory(SubMenu.SubMenu):
         tmp_ledger.print_statement()
 
 
+# a03_search_trans: performs a search of transaction database
+    def a03_search_trans(self):
+        print("... searching transactions ...")
+
+        # get transaction description keyword
+        desc_keyword_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
+                                        "text")
+
+        transactions = anah.recall_transaction_desc_keyword(desc_keyword_str)
+        tmp_ledger = Ledger.Ledger(f"Transactions with description keyword {desc_keyword_str}")
+        tmp_ledger.set_statement_data(transactions)
+        tmp_ledger.print_statement()
+
+
+
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
     ##############################################################################
 
-    def exec_summary_01(self, accounts, days_prev, num_slices):
+    def exec_summary_01(self, days_prev, num_slices):
         # LOAD CATEGORIES
         categories = cath.load_categories()
 
         # get transactions between certain "edge codes"
-        date_bin_trans, edge_codes = anah.sum_date_binned_transaction(accounts,  # a list of Transaction objects
-                                                                      days_prev,  # number of previous days
+        date_bin_trans, edge_codes = anah.sum_date_binned_transaction(days_prev,  # number of previous days
                                                                       num_slices)  # n = 12 different slices
 
         date_bin_dict_arr = []  # this will be an array of dictionaries
@@ -176,7 +179,6 @@ class TabSpendingHistory(SubMenu.SubMenu):
         prev_month_trans = anah.recall_transaction_data(
             prev_month_range[0],
             prev_month_range[1],
-            dbh.account.get_all_account_ids()
         )
 
         # STEP 2: get transactions from baseline data (before previous month)
@@ -200,7 +202,6 @@ class TabSpendingHistory(SubMenu.SubMenu):
         baseline_trans = anah.recall_transaction_data(
             baseline_range_start[0],
             baseline_range_end[1],
-            dbh.account.get_all_account_ids()
         )
 
         print(f"Done retrieving transactions from previous month\n\t {prev_month_range[0]} TO {prev_month_range[1]}")

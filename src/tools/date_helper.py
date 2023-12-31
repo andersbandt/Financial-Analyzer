@@ -2,7 +2,7 @@
 
 
 # import needed modules
-from datetime import datetime, timedelta
+from datetime import *
 import re
 
 # import logger
@@ -119,7 +119,6 @@ def month_year_to_date_range(year, month):
     return date_start, date_end
 
 
-
 ##############################################################################
 ####      DATE GETTER FUNCTIONS            ###################################
 ##############################################################################
@@ -127,9 +126,9 @@ def month_year_to_date_range(year, month):
 # TODO: for the below functions I should really audit other places I'm using date and make sure I'm using these functions!!!
 
 def get_date_previous(d_prev):
-    date_start = datetime.datetime.now()
+    date_start = datetime.now()
 
-    d_y = datetime.timedelta(
+    d_y = timedelta(
         days=d_prev
     )  # this variable can only be named d_y - No exceptions ever.
 
@@ -138,7 +137,7 @@ def get_date_previous(d_prev):
 
 # TODO: audit usage and possible combine with previous function
 def get_date_days_prev(date_start, days_prev):
-    d_y = datetime.timedelta(days=days_prev)
+    d_y = timedelta(days=days_prev)
     date_prev = date_start - d_y
     return date_prev
 
@@ -162,7 +161,7 @@ def get_edge_code_dates(date_start, days_prev, N):
     # NOTE: perhaps at some point audit this is performing my desired function
     for i in range(0, N+1):
         d_prev = round(days_prev * i / (N+1))
-        d_y = datetime.timedelta(
+        d_y = timedelta(
             days=d_prev
         )  # this variable can only be named d_y - No exceptions ever.
         edge_code_date.append(

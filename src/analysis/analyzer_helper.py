@@ -31,7 +31,7 @@ class AnalyzerHelperError(Exception):
 ##############################################################################
 
 # @param   N is the number of bins to form across dates
-def sum_date_binned_transaction(accounts, days_prev, N):
+def sum_date_binned_transaction(days_prev, N):
     # create the DATETIME objects from the previous days in N groups
     edge_code_date = date_helper.get_edge_code_dates(
         datetime.today(),
@@ -45,7 +45,7 @@ def sum_date_binned_transaction(accounts, days_prev, N):
     date_binned_transactions = []
 
     for i in range(0, N):
-        cur_trans = recall_transaction_data(edge_code_date[i], edge_code_date[i+1], accounts=accounts)
+        cur_trans = recall_transaction_data(edge_code_date[i], edge_code_date[i+1])
         date_binned_transactions.append(cur_trans)
 
     return date_binned_transactions, edge_code_date
@@ -152,9 +152,9 @@ def return_ledger_exec_dict(transactions):
 # recall_transaction_data: loads up an array of Transaction objects based on date range and accounts
 #     @param date_start - the starting date for search
 #     @param date_end - the ending date for search
-#     @param accounts - array of which accounts to search
 # @logfn
-def recall_transaction_data(date_start=-1, date_end=-1, accounts=None):
+def recall_transaction_data(date_start=-1, date_end=-1):
+    # TODO: delete following lines post audit. I highly doubt I am using it?
     if date_start != -1 and date_end != -1:
         print("Recalling transactions between " + date_start + " and " + date_end)
         ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
@@ -162,27 +162,7 @@ def recall_transaction_data(date_start=-1, date_end=-1, accounts=None):
         print("getting ALL transactions")
         ledger_data = dbh.ledger.get_transactions_ledge_data()
 
-    # create an array of Transaction objects with the database data
-    transactions = []  # clear transactions
-    for item in ledger_data:
-        if accounts is not None: # only add transactions that are in the supplied accounts list
-            if item[2] in accounts:
-                add_flag = 1
-        else:
-            add_flag = 1
-
-        if add_flag:
-            transactions.append(
-                Transaction.Transaction(
-                    item[1], # date
-                    item[2], # account ID
-                    item[3], # category ID
-                    item[4], # amount
-                    item[5], # description
-                    note=item[7], # note
-                    sql_key=item[0] # SQL key
-                )
-            )
+    transactions = convert_ledge_to_transactions(ledger_data)
 
     if len(transactions) == 0:
         logger.exception(
@@ -195,9 +175,35 @@ def recall_transaction_data(date_start=-1, date_end=-1, accounts=None):
     return transactions
 
 
+
+def recall_transaction_desc_keyword(desc_keyword):
+    ledger_data = dbh.transactions.get_transactions_description_keyword(desc_keyword)
+    transactions = convert_ledge_to_transactions(ledger_data)
+    return transactions
+
+
 ##############################################################################
 ####      DATA MANIPULATION FUNCTIONS    #####################################
 ##############################################################################
+
+# @logfn
+def convert_ledge_to_transactions(ledger_data):
+    # create an array of Transaction objects with the database data
+    transactions = []  # clear transactions
+    for item in ledger_data:
+        transactions.append(
+            Transaction.Transaction(
+                item[1], # date
+                item[2], # account ID
+                item[3], # category ID
+                item[4], # amount
+                item[5], # description
+                note=item[7], # note
+                sql_key=item[0] # SQL key
+            )
+        )
+    return transactions
+
 
 # gen_Bx_matrix: generate 'Bx_matrix'
 #     this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data

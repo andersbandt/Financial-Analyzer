@@ -65,7 +65,7 @@ def get_statement_folder(base_filepath, year, month):
 # spinput: really general input function to help with flow control
 
 # type (int)  === will return any POSITIVE VALUE (will return -1 on bad input)
-def spinput(prompt, inp_type="text"):
+def spinput(prompt, inp_type):
     inp = input(prompt)
 
     # handle user prompts to either quit command or terminate program
@@ -84,17 +84,20 @@ def spinput(prompt, inp_type="text"):
             print("was that really an int?")
             print(e)
             return -1
-
     # TYPE: (text)
-    if inp_type == "text":
+    elif inp_type == "text":
         return inp
 
     # TYPE: (float)
-    if inp_type == "float":
+    elif inp_type == "float":
         return float(inp)
 
     # TYPE: (yes or no)
     # if type == 'yn':
+
+    # UNKNOWN TYPE!
+    else:
+        raise Exception("Unknown clih.spinput type!")
 
 
     return inp

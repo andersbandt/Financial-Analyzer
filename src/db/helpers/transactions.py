@@ -13,6 +13,10 @@ from db import DATABASE_DIRECTORY
 from statement_types.Transaction import Transaction
 
 
+##############################################################################
+####      DATABASE MODIFICATION FUNCTIONS    #################################
+##############################################################################
+
 # insert_transaction: inserts a Transaction object into the SQL database
 def insert_transaction(transaction: Transaction) -> bool:
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
@@ -52,6 +56,10 @@ def delete_transaction(sql_key: str) -> bool:
     return True
 
 
+##############################################################################
+####      DATABASE RETRIEVAL FUNCTIONS    ####################################
+##############################################################################
+
 def get_transaction(transaction: Transaction):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -76,7 +84,6 @@ def get_transactions_between_date(date_start, date_end):
             (date_start, date_end),
         )
         ledger_data = cur.fetchall()
-        conn.set_trace_callback(None)
     return ledger_data
 
 
@@ -88,6 +95,14 @@ def get_uncategorized_transactions():
         ledger_data = cur.fetchall()
     return ledger_data
 
+
+# get_uncategorized_transactions:
+def get_transactions_description_keyword(desc_str):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM transactions WHERE description LIKE ? ORDER BY date ASC", (f"%{desc_str}%",))
+        ledger_data = cur.fetchall()
+    return ledger_data
 
 
 # gets ledger data for a certain account's transactions in a certain date range
