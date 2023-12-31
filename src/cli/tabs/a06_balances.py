@@ -1,16 +1,17 @@
 
 # import needed packages
-
+from pprint import pprint
 
 # import user defined modules
 import db.helpers as dbh
-from analysis import analyzer_helper, graphing_analyzer
+import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
+import analysis.graphing_analyzer as grapa
 
 import cli.cli_helper as clih
 import cli.cli_printer as clip
 from cli.tabs import SubMenu
-from tools import date_helper
+import tools.date_helper as dateh
 
 
 # TODO: add some slots for tabular data
@@ -24,7 +25,7 @@ class TabBalances(SubMenu.SubMenu):
         # initialize information about sub menu options
         action_strings = ["Show executive wealth summary",
                           "Add balance",
-                          "Show ALL wealth trends"]
+                          "Show stacked liquid investment"]
 
         action_funcs = [self.a01_show_wealth,
                         self.a02_add_balance,
@@ -91,21 +92,43 @@ class TabBalances(SubMenu.SubMenu):
     # I think I should keep a cumulative total of two balances - checkings/savings and investments
     # Then as I iterate across dates everytime there is a new entry I update that total and make a new record
     def a03_show_stacked_liquid_investment(self):
-        print("... showing all liquid and investment assets")
+        print("... showing all liquid and investment assets ...")
 
-        # set params
-        days_previous = 180  # half a year maybe?
+        # set parameters
+        days_previous = 365
         N = 5
 
-        # get pyplot figure
-        figure = graphing_analyzer.create_stacked_balances(days_previous, N)
+        # generate matrix of Bx values
+        spl_Bx, edge_code_date = anah.gen_Bx_matrix(
+            dateh.get_cur_date(),
+            days_previous,
+            N)
 
-        # get data for displaying balances in tabular form
-        spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
-        recent_Bx = spl_Bx[-1]
+        # error handling on amount of binning done to balances
+        if len(spl_Bx) != N:
+            logger.debug(f"Length of spl_Bx: {len(spl_Bx)}")
+            logger.debug(f"N is:{str(N)}")
+            # raise GraphingAnalyzerError(
+            #     f"YOUR spl_Bx array is not of length N it is length {len(spl_Bx)}"
+            # )
 
-        print("Working with this for tabulated data conversion")
-        print(recent_Bx)
+        print("\nspl_Bx matrix below\n")
+        pprint(spl_Bx)
+
+        print("\nEdge code date below")
+        pprint(edge_code_date)
+
+        investment, liquid = anah.gen_bin_A_matrix(spl_Bx)
+
+        # set graph title and x labels
+        title = "Total of Balances for previous " + str(days_prev) + " days"
+
+
+        # resize investment data based on scale factor
+        scale_factor = 1000
+        for i in range(0, len(investment)):
+            investment[i] = investment[i] / scale_factor
+            liquid[i] = liquid[i] / scale_factor
 
 
     def show_liquid_over_time(self):

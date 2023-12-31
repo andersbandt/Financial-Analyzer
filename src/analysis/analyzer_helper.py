@@ -8,7 +8,7 @@ from datetime import datetime
 import db.helpers as dbh
 from categories import categories_helper as cath
 from statement_types import Transaction
-from tools import date_helper
+import tools.date_helper as dateh
 
 # import logger
 from loguru import logger
@@ -207,26 +207,19 @@ def convert_ledge_to_transactions(ledger_data):
 
 # gen_Bx_matrix: generate 'Bx_matrix'
 #     this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
-#     B is an array of balance data between now and a previous day
 # @logfn
-def gen_Bx_matrix(days_prev, N, printmode="None"):
-    # init today date object
-    today = date.today()
-
+def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date object 'days_prev' less
-    d = datetime.timedelta(
-        days=days_prev
-    )  # this variable can only be named d. No exceptions. Ever.
-    a = today - d  # compute the date (today - timedelta)
+    date_range_start = dateh.get_date_days_prev(date_range_end, days_prev)
 
     # get balance data
-    B = dbh.balances.get_balances_between_date(a, today)
+    balance_data = dbh.balance.get_balances_between_date(date_range_start, date_range_end)
 
     # populate arrays for displaying data. All of length N
     spl_Bx = []  # this is also the length of N
 
     # init date edge limits
-    edge_code_date = date_helper.get_edge_code_dates(today, days_prev, N)
+    edge_code_date = dateh.get_edge_code_dates(date_range_end, days_prev, N)
 
     # init A vector
     a_A = {}
@@ -243,7 +236,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
         # iterate through all balances data
         # TODO: could figure out a way to optimize this binning of balance data into date bins
         #     current method of deleting doesn't seem optimal (searches past edge code do nothing)
-        for bx in B:
+        for bx in balance_data:
             # bx outline
             # bx[0] = sql key
             # bx[1] = account_id
@@ -252,7 +245,7 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
 
             # grab date of balance 'bx' item and error handle
             try:
-                bx_datetime = datetime.datetime.strptime(bx[3], "%Y-%m-%d")
+                bx_datetime = datetime.strptime(bx[3], "%Y-%m-%d")
                 bx_date = bx_datetime.date()
             except ValueError as e:
                 logger.exception(
@@ -261,8 +254,8 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
                 raise AnalyzerHelperError("Can't proceed with populating Bx A vector")
 
             # if date is less than edge code (in the date bin)
-            if bx_date < edge_code_date[i]:
-                B.remove(bx)  # remove so it doesn't appear in next searches
+            if bx_date < datetime.strptime(edge_code_date[i], "%Y-%m-%d").date():
+                balance_data.remove(bx)  # remove so it doesn't appear in next searches
                 # NOTE: took out below code so the current code is just adding latest ones
                 # if the balance is higher than what we currently have than replace Bx in spl_Bx
                 #    in this way we get the 'dominant' vector (high value)
@@ -275,20 +268,20 @@ def gen_Bx_matrix(days_prev, N, printmode="None"):
         spl_Bx.append(a_A)
 
     # go through last bin (past final edge code)
-    for bx in B:  # iterate through all balances data - probably not the most efficient?
+    for bx in balance_data:  # iterate through all balances data - probably not the most efficient?
         # if the balance is higher than what we currently have than replace Bx in spl_Bx
         if bx[2] > a_A[bx[1]]:
             a_A[bx[1]] = bx[2]
     spl_Bx.append(a_A)
 
-    return spl_Bx
+    return spl_Bx, edge_code_date
 
 
 @logfn
-def gen_bin_A_matrix(spl_Bx, *args):
+def gen_bin_A_matrix(spl_Bx):
     # set which type number corresponds to which type of account
-    inv_acc = [3]
-    liquid_acc = [0, 1, 2, 4]
+    inv_acc = [4]
+    liquid_acc = [0, 1, 2, 3]
 
     # create containers for final totals
     investment = []

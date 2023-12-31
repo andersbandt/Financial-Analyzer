@@ -1,6 +1,5 @@
 
 
-
 # import needed modules
 from datetime import *
 import re
@@ -125,6 +124,17 @@ def month_year_to_date_range(year, month):
 
 # TODO: for the below functions I should really audit other places I'm using date and make sure I'm using these functions!!!
 
+
+def get_cur_date():
+    return datetime.now()
+    # return datetime.now().date()
+
+
+def get_cur_str_date():
+    return datetime.now().strftime('%Y-%m-%d')
+
+
+# TODO: I think this is the function that can be deleted. The one below is used
 def get_date_previous(d_prev):
     date_start = datetime.now()
 
@@ -135,7 +145,8 @@ def get_date_previous(d_prev):
     prev_date = (date_start - d_y).strftime('%Y-%m-%d')
     return prev_date
 
-# TODO: audit usage and possible combine with previous function
+
+# get_date_days_prev: gets the date a previous
 def get_date_days_prev(date_start, days_prev):
     d_y = timedelta(days=days_prev)
     date_prev = date_start - d_y

@@ -171,50 +171,9 @@ def create_summation_vs_time(transactions, categories):
 #     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
 @logfn
 def create_stacked_balances(days_prev, N):
-
-    # generate matrix of Bx values
-    spl_Bx = analyzer_helper.gen_Bx_matrix(days_prev, N)
-
-    ##################################################################################
-    ### SET WHICH ACCOUNT_IDS CORRESPOND TO WHAT TYPE OF ACCOUNT
-    inv_acc = [3]
-    liquid_acc = [0, 1]
-    ##################################################################################
-
-    # error handling on amount of binning done to balances
-    if len(spl_Bx) != N:
-        logger.debug(f"Length of spl_Bx: {len(spl_Bx)}")
-        logger.debug(f"N is:{str(N)}")
-        raise GraphingAnalyzerError(
-            f"YOUR spl_Bx array is not of length N it is length {len(spl_Bx)}"
-        )
-
-    # investment = []  # array for investment assets+  !NOTE!THIS MUST BE THE LENGTH OF N
-    # liquid = []  # array for liquid assets !NOTE! THIS BUST THE LENGTH OF N
-
-    investment, liquid = analyzer_helper.gen_bin_A_matrix(spl_Bx, inv_acc, liquid_acc)
-
-    # set graph params
-    ind = np.arange(N)
-    width = 0.5
-    scale_factor = 1000
-
-    # set graph title and x labels
-    title = "Total of Balances for previous " + str(days_prev) + " days"
-
-    date_ticks = []  # this array should be of length N
-    for edge in date_helper.get_edge_code_dates(date.today(), days_prev, N):
-        date_ticks.append(edge.strftime("%Y-%m-%d"))
-    date_ticks.append(date.today().strftime("%Y-%m-%d"))  # add today
-
-    # resize investment data based on scale factor
-    for i in range(0, len(investment)):
-        investment[i] = investment[i] / scale_factor
-        liquid[i] = liquid[i] / scale_factor
-
     # create the stacked bar chart figure
     fig = plt.figure(1)
-    graphing_helper.get_stacked_bar_chart(
+    grah.get_stacked_bar_chart(
         ind, investment, liquid, title, width, scale_factor, x_ticks=date_ticks
     )
     return fig
