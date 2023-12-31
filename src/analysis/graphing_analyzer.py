@@ -1,30 +1,21 @@
 
 # import needed modules
 import numpy as np
-
-# matplotlib.use("TkAgg")
-
 from datetime import date
-
 import matplotlib.pyplot as plt
-from loguru import logger
 
-import analysis.analyzer_helper as analyzer_helper
+# import user created modules
+import analysis.analyzer_helper as anah
 import analysis.graphing_helper as grah
-import analysis.investment_helper as inv_h
+import analysis.investment_helper as invh
 from tools import date_helper
+
+# import logger
 from utils import logfn
+from loguru import logger
 
 
 # TODO: This module can remain, but needs a lot of cleanup
-
-##############################################################################
-####      SPENDING PLOTTING FUNCTIONS    #####################################
-##############################################################################
-
-# piChartExpenseSummary: plots a pie chart of expenses
-#    input: statement
-#    output: none (plots pie chart)
 
 
 @logfn
@@ -37,6 +28,13 @@ class GraphingAnalyzerError(Exception):
 
     def __str__(self):
         return self.msg
+
+
+
+
+##############################################################################
+####      SPENDING PLOTTING FUNCTIONS    #####################################
+##############################################################################
 
 
 @logfn
@@ -113,32 +111,20 @@ def create_top_pie_chart(transactions, categories, printmode=None):
 
 # create_bar_chart:
 @logfn
-def create_bar_chart(transactions, categories):
+def create_bar_chart(labels, values, xlabel=None, title=None):
     logger.debug("Running graphing_analyzer: create_pie_chart")
-
-    categories, amounts = analyzer_helper.create_category_amounts_array(
-        transactions, categories
-    )
-    categories, amounts = graphing_helper.strip_non_graphical_transactions(
-        categories, amounts
-    )
-
     plt.rcdefaults()
     fig, ax = plt.subplots()
+    grah.get_bar_chart([ax], 0, labels, values, title)
 
-    y_pos = np.arange(len(categories))
-
-    ax.barh(y_pos, amounts, align="center", color="green", ecolor="black")
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(categories)
-    ax.invert_yaxis()  # labels read top-to-bottom
-    ax.set_xlabel("Amount ($)")
-    ax.set_title("Financial Bar Chart")
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
 
     plt.show()
 
 
 # create_mul_line_chart: creates multiple
+# THIS FUNCTION WORKS IN CLI VERSIoN
 def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, legend=False, y_format=None):
     plt.rcdefaults()
     plt.clf()
@@ -164,7 +150,6 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, legend=Fa
 
     plt.title(title)
     plt.show()
-
 
 
 @logfn
@@ -249,7 +234,7 @@ def create_liquid_over_time(days_prev, N):
 @logfn
 def create_asset_alloc_chart():
     # get list of investment dict objects
-    inv_dict = inv_h.create_investment_dicts()
+    inv_dict = invh.create_investment_dicts()
 
     # set up investment types to track totals
     t_1 = 0
@@ -261,19 +246,19 @@ def create_asset_alloc_chart():
     # iterate through list and add to totals
     for investment in inv_dict:
         if investment["type"] == 1:
-            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
             t_1 += value
         elif investment["type"] == 2:
-            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
             t_2 += value
         elif investment["type"] == 3:
-            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
             t_3 += value
         elif investment["type"] == 4:
-            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
             t_4 += value
         elif investment["type"] == 5:
-            value = investment["shares"] * inv_h.get_ticker_price(investment["ticker"])
+            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
             t_5 += value
 
     amounts = [t_1, t_2, t_3, t_4, t_5]
@@ -281,7 +266,7 @@ def create_asset_alloc_chart():
 
     #  create and return figure
     fig = plt.figure(1)
-    graphing_helper.get_pie_plot(amounts, labels, explode=0.1, title="Asset Allocation")
+    grah.get_pie_plot(amounts, labels, explode=0.1, title="Asset Allocation")
     return fig
 
 

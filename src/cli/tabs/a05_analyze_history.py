@@ -1,5 +1,4 @@
 
-
 # import needed packages
 from datetime import datetime, timedelta
 from pprint import pprint
@@ -116,7 +115,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
             # append dict to an array of all date ranges
             date_bin_dict_arr.append(
-                {"date_range": edge_codes[i] + " to " + edge_codes[i+1],
+                {"date_range": edge_codes[i] + " to " + edge_codes[ i +1],
                  "amounts": amounts,
                  }
             )
@@ -152,7 +151,6 @@ class TabSpendingHistory(SubMenu.SubMenu):
                                     labels=top_cat_str,
                                     legend=True,
                                     y_format='currency')
-
 
 
 # exec_summary_02:
@@ -207,3 +205,35 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         print(f"Done retrieving transactions from previous month\n\t {prev_month_range[0]} TO {prev_month_range[1]}")
         print(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")
+
+        # STEP 3: extract totals and make comparison
+        top_cat_str, prev_amounts = anah.create_top_category_amounts_array(prev_month_trans,
+                                                                           cath.load_categories(),
+                                                                           count_NA=False)
+        top_cat_str, baseline_amounts = anah.create_top_category_amounts_array(baseline_trans,
+                                                                               cath.load_categories(),
+                                                                               count_NA=False)
+
+        # do some division on baseline to "normalize" it
+        baseline_amounts = [x / comp_month_prev for x in baseline_amounts]
+
+        percent_diffs = []
+        for i in range(0, len(prev_amounts)):
+            if baseline_amounts[i] == 0:
+                delta = -1
+            else:
+                delta = prev_amounts[i] / baseline_amounts[i]
+                delta = delta - 1
+                delta = delta * 100
+            percent_diffs.append(delta)
+
+            # do some printout
+            print(f"\t{top_cat_str[i]}\n\t\t{delta}\n\t\t{baseline_amounts[i]} vs. {prev_amounts[i]}")
+
+        title = f"Delta from past {comp_month_prev} months"
+        grapa.create_bar_chart(
+            top_cat_str,
+            percent_diffs,
+            xlabel="% difference",
+            title=title)
+

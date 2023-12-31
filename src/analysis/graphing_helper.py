@@ -1,7 +1,10 @@
+
+
 # import needed modules
 import matplotlib.pyplot as plt
 import numpy as np
 
+# import logger
 from utils import logfn
 
 ##############################################################################
@@ -62,9 +65,6 @@ def get_line_chart(x_axis, y_axis, label=None, color=None):
     plt.plot(x_axis, y_axis, marker='o', linestyle='-', color=None, label=label)
 
 
-
-
-
 # @usage  fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
 #           pass in 'ax' as variable, then use plt.show() as normal
 # @logfn
@@ -79,12 +79,9 @@ def get_bar_chart(ax, i, labels, amounts, title=None):
         ax[i].set_title(title)
 
 
-
 # get_stacked_bar_chart: creates a bar chart with multiple 'stacked' values on the y axis
 @logfn
-def get_stacked_bar_chart(
-    x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None
-):
+def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None):
     # clear current plot
     plt.clf()
 
