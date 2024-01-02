@@ -9,7 +9,6 @@ Transaction represents a single transaction on any statement
 import db.helpers as dbh
 import statement_types.Ledger as Ledger
 import cli.cli_helper as clih
-import categories.categories_helper as cath
 
 
 class Statement(Ledger.Ledger):
@@ -89,20 +88,18 @@ class Statement(Ledger.Ledger):
     ####      DATA SAVING FUNCTIONS    ###########################################
     ##############################################################################
 
-    # TODO: make green/red checkmarks update upon completion of this (for Statement only)
-    #   also - make Category dropdowns on transactions lines change into written text that can be double clicked
     # save_statement: saves a categorized statement as a csv
     def save_statement(self):
         print("Attempting to save statement...")
 
-        # check statement "save status" and ask user for save verificaiton
+        # check statement "save status" and ask user for save verification
         if self.check_statement_status(self.transactions):
             response = clih.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
             if response is False:
                 print("Ok, not saving statement")
                 return False
 
-        # iterate through transactions and  insert into database
+        # iterate through transactions and insert into database
         error_status = 0
         for transaction in self.transactions:
             success = dbh.ledger.insert_transaction(transaction)

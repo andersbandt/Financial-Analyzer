@@ -5,7 +5,6 @@
 """
 
 # import needed packages
-import os
 import csv
 
 # import user defined modules
@@ -31,13 +30,9 @@ class TabLoadData(SubMenu.SubMenu):
         super().__init__(title, basefilepath, action_strings, action_funcs)
 
 
-    ##############################################################################
-    ####      "FLOW" FUNCTIONS           #########################################
-    ##############################################################################
-
-    def run(self):
-        super().run()
-        return self.statement
+    # def run(self):
+    #     super().run()
+    #     return self.statement
 
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
@@ -61,7 +56,7 @@ class TabLoadData(SubMenu.SubMenu):
 
         statement_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
         print("\nCreating master Ledger object for all files in {year}-{month}")
-        self.statement = loadh.create_master_ledger(statement_list)
+        self.statement = loadh.create_master_ledger(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
         self.statement.print_statement()
 
         print("Statement loaded successfully, can continue with load process")
@@ -96,6 +91,7 @@ class TabLoadData(SubMenu.SubMenu):
 
 ##### BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN
 
+    # a03_categorize_statement: helps user categorize currently loaded statement data
     def a03_categorize_statement(self):
         print("\n\na03: Automatically categorizing Statement")
         categories = categories_helper.load_categories()
@@ -111,11 +107,14 @@ class TabLoadData(SubMenu.SubMenu):
             print("Ok, leaving statement with just automatic categorization applied")
 
 
+    # a04_print_statement_summary: prints a summary of the currently loaded statement
+    # TODO: I think I can phase this function out? Probably just needed during program bringup?
     def a04_print_statement_summary(self):
         for statement in self.statement_list:
             print(statement.title)
 
 
+    # a05_save_statement_csv: saves the currently loaded statement to a .csv file
     def a05_save_statement_csv(self):
         print("... saving statement to .csv")
         try:
@@ -146,11 +145,14 @@ class TabLoadData(SubMenu.SubMenu):
             print("Can't save statement: ", e)
 
 
+    # a06_print_ledger: prints the currently loaded ledger
     def a06_print_ledger(self):
         print(" ... printing current Ledger object")
         self.statement.sort_date_desc()
         self.statement.print_statement()
 
+
+    # a07_sort_ledger: sorts the ledger by some metric
     def a07_sort_ledger(self):
         print(" ... sorting Ledger object")
         # method = ["$ up", "$ down", "date up", "date down"]

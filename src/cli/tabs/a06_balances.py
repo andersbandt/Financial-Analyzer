@@ -1,4 +1,3 @@
-
 # import needed packages
 from pprint import pprint
 
@@ -13,10 +12,10 @@ import cli.cli_printer as clip
 from cli.tabs import SubMenu
 import tools.date_helper as dateh
 
-
 # import logger
 from loguru import logger
 from utils import logfn
+
 
 # TODO: add some slots for tabular data
 #   for example:
@@ -64,7 +63,6 @@ class TabBalances(SubMenu.SubMenu):
 
         print(acc_dates)
 
-
     # a02_add_balance: inserts data for an account balance record into the SQL database
     # TODO: add input for if the account is a retirement account or not
     def a02_add_balance(self):
@@ -83,20 +81,10 @@ class TabBalances(SubMenu.SubMenu):
             print("Ok, quitting add balance")
             return False
 
-        # insert_category: inserts a category into the SQL database
-        dbh.balance.insert_account_balance(account_id,
-                                           bal_amount,
-                                           bal_date)
+        # add balance
+        status = balh.add_account_balance(account_id, bal_amount, bal_date)
+        return status
 
-        # print out balance addition confirmation
-        print(f"Great, inserted a balance of {bal_amount} for account {account_id} on date {bal_date}")
-
-        return True
-
-
-    # this function will be interesting to write.
-    # I think I should keep a cumulative total of two balances - checkings/savings and investments
-    # Then as I iterate across dates everytime there is a new entry I update that total and make a new record
     def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
 
@@ -116,16 +104,17 @@ class TabBalances(SubMenu.SubMenu):
             logger.debug(f"N is:{str(N)}")
 
         account_id_array = list(spl_Bx[0].keys())
+        account_names_array = [dbh.account.get_account_name_from_id(account_id) for account_id in account_id_array]
         values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
 
-# TODO: stacked line chart improvements. 1-sort account order by size? type?  2-
+        # TODO: stacked line chart improvements. 1-sort account order by size? type?  2-
         grapa.create_stackline_chart(edge_code_date[1:],
-                                    values_array,
-                                    title=f"Balances per account since {edge_code_date[0]}",
-                                    y_format='currency')
+                                     values_array,
+                                     title=f"Balances per account since {edge_code_date[0]}",
+                                     label=account_names_array,
+                                     y_format='currency')
 
-
-# TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
+    # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
         acc_id_arr, acc_balances = balh.produce_retirement_balances()
 
@@ -150,15 +139,15 @@ class TabBalances(SubMenu.SubMenu):
         real_annual_return = (1 + annual_return) / (1 + inflation_rate) - 1
 
         retirement_age_balance = retirement_sum * (1 + real_annual_return) ** num_years
-        print(f"\n\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {num_years} years, you are estimated to have: {retirement_age_balance}")
+        print(
+            f"\n\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {num_years} years, you are estimated to have: {retirement_age_balance}")
 
         # CALCULATE monthly withdrawal in retirement
         years_retired = 95 - 63
-        r = real_annual_return/12 # monthly interest rate (adjusted for inflation)
+        r = real_annual_return / 12  # monthly interest rate (adjusted for inflation)
         monthly_withdrawal = (retirement_age_balance * r) / (1 - pow((1 + r), -1 * 12 * years_retired))
-        print(f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
-
-
+        print(
+            f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
     def show_liquid_over_time(self):
         print("INFO: show_liquid_over_time running")
@@ -176,7 +165,6 @@ class TabBalances(SubMenu.SubMenu):
 
         print("Working with this for tabulated data conversion")
         print(recent_Bx)
-
 
     # def show_wealth_by_type(self):
     #     balance_by_type = []
@@ -196,6 +184,3 @@ class TabBalances(SubMenu.SubMenu):
     #
     #     print("Here is your recent balance history by account type")
     #     print(balance_by_type)
-
-
-

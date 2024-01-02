@@ -4,14 +4,14 @@
 import numpy as np
 import pandas as pd
 import datetime
-
-# from googlefinance import getQuotes - googlefinance yields HTTP 404 request
 import yahoo_fin.stock_info as si
 import yfinance as yf
 
 # import user created modules
 import db.helpers as dbh
-from tools import date_helper as dath
+from tools import date_helper as dateh
+
+# import logger
 from utils import logfn
 
 ##############################################################################
@@ -58,7 +58,7 @@ def get_ticker_price(ticker):
         print("Ticker found with si.get_live_price() but not valid price")
         print("Trying another method")
         data = yf.download(ticker,
-                           dath.get_date_previous(1),
+                           dateh.get_date_previous(1),
                            datetime.datetime.now())
 
         if data.empty:
@@ -119,11 +119,6 @@ def summarize_account(account_id, printmode=True):
         value = shares*price
 
         if printmode:
-            # print("\n======================================= ")
-            # print("\tticker: ", ticker)
-            # print("\tshares: ", shares)
-            # print("\tvalue: ", value)
-
             print(f"Ticker: {ticker}, Quantity: {shares}, Value: {value}")
 
         account_value += value
@@ -141,7 +136,6 @@ def create_active_investment_dict():
     inv_ledge = []
     for account_id in inv_acc_id:
         inv_ledge.extend(dbh.investments.get_active_ticker(account_id))
-
 
     inv_data = []
     for ledge in inv_ledge:

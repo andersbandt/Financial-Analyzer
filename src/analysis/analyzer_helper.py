@@ -231,8 +231,6 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
     added_sql_key = []
     # search through edge code limits to add N bin A vectors
     for i in range(0, N):
-        logger.debug("Balance data is now below (at START of for loop)")
-        pprint(balance_data)
 
         a_A = {}
         # init A vector

@@ -181,6 +181,7 @@ class Ledger:
             for transaction in self.transactions:
 
                 # check if statement is already loaded and add a "duplicate ?" tag to notes
+                # TODO: add some confirmation if user actually wants to add transaction for duplicates
                 loaded = load_helper.check_transaction_load_status(transaction)
                 if loaded:
                     transaction.note = "duplicate ?"

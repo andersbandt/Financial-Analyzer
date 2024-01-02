@@ -36,6 +36,18 @@ def get_recent_balance(account_id, add_date=False):
         return rec_bal
 
 
+
+def get_balance_on_date(account_id, date):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM balance WHERE account_id=? AND bal_date=?",
+            (account_id, date),
+        )
+        balances_data = cur.fetchall()
+    return balances_data
+
+
 # gets balance data for ALL the balances in a certain date range
 #   note: date must be in the format of year-month-date
 def get_balances_between_date(date_start, date_end):

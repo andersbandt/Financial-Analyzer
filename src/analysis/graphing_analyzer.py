@@ -123,14 +123,18 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     plt.show()
 
 
-def create_stackline_chart(x_axis, y_axis, title=None, y_format=None):
-    plt.stackplot(x_axis, y_axis)
+# TODO: add support for labels
+@logfn
+def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None):
+    plt.stackplot(x_axis, y_axis, labels=label)
     plt.title(title)
     plt.axis("tight")
 
     # format y-axis as currency
     if y_format == 'currency':
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
+
+    plt.legend(loc="best")
 
     # plt.show()
     plt.show(block=False)
