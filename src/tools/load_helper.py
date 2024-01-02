@@ -14,7 +14,9 @@ from cli import cli_helper as clih
 from statement_types import Ledger
 import statement_types as st
 
-
+# import logger
+from loguru import logger
+from utils import logfn
 
 
 ##############################################################################
@@ -88,10 +90,53 @@ def check_account_load_status(account_id, month, year, printmode=None):
         return 0
 
 
+
+# get_statement_folder: returns formatted folder of where the statement is. year and month are ints
+@logfn
+def get_statement_folder(base_filepath, year, month):
+    # TODO: I am not sure what this is checking really?
+    if month not in range(0, 12+1):
+        month = date_helper.month2Int(month)
+
+    if month == 1:
+        month_string = "01-January/"
+    elif month == 2:
+        month_string = "02-February/"
+    elif month == 3:
+        month_string = "03-March/"
+    elif month == 4:
+        month_string = "04-April/"
+    elif month == 5:
+        month_string = "05-May/"
+    elif month == 6:
+        month_string = "06-June/"
+    elif month == 7:
+        month_string = "07-July/"
+    elif month == 8:
+        month_string = "08-August/"
+    elif month == 9:
+        month_string = "09-September/"
+    elif month == 10:
+        month_string = "10-October/"
+    elif month == 11:
+        month_string = "11-November/"
+    elif month == 12:
+        month_string = "12-December/"
+    else:
+        print("Bad month int stored in statement: " + str(month))
+        return
+
+    statement_folder = (
+        base_filepath + "/" + str(year) + "/monthly_statements/" + month_string # tag:HARDCODE
+    )
+    return statement_folder
+
+
 # TODO: get this basefilepath out of there
+@logfn
 def get_year_month_files(basefilepath, year, month):
     # look in the folder to determine loaded files
-    dir_path = clih.get_statement_folder(basefilepath, year, month)
+    dir_path = get_statement_folder(basefilepath, year, month)
     print("Looking at path: " + dir_path)
     dir_list = os.listdir(dir_path)
     if len(dir_list) == 0:

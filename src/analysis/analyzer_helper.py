@@ -33,7 +33,7 @@ class AnalyzerHelperError(Exception):
 # @param   N is the number of bins to form across dates
 def sum_date_binned_transaction(days_prev, N):
     # create the DATETIME objects from the previous days in N groups
-    edge_code_date = date_helper.get_edge_code_dates(
+    edge_code_date = dateh.get_edge_code_dates(
         datetime.today(),
         days_prev,
         N) # have to add +2 here because we want N to be the number of bins not indices
@@ -180,6 +180,11 @@ def recall_transaction_desc_keyword(desc_keyword):
     transactions = convert_ledge_to_transactions(ledger_data)
     return transactions
 
+
+def recall_transaction_category(category_id):
+    ledger_data = dbh.transactions.get_transactions_by_category_id(category_id)
+    transactions = convert_ledge_to_transactions(ledger_data)
+    return transactions
 
 ##############################################################################
 ####      DATA MANIPULATION FUNCTIONS    #####################################

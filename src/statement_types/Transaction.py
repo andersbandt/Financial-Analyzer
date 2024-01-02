@@ -157,15 +157,15 @@ class Transaction:
             + "".join(str(self.amount))
             + self.getSpaces(len(str(self.amount)), 8)
             + " || DESC: "
-            + "".join(self.description[0:70])
-            + self.getSpaces(len(self.description), 70)
+            + "".join(self.description[0:80])
+            + self.getSpaces(len(self.description), 80)
         )
         if self.category_id is not None:
             category_name = dbh.category.get_category_name_from_id(self.category_id)
-            stringToPrint = stringToPrint + " || CATEGORY: " + str(category_name) + self.getSpaces(len(str(category_name)), 30)
+            stringToPrint = stringToPrint + " || CATEGORY: " + str(category_name) + self.getSpaces(len(str(category_name)), 15)
 
         stringToPrint = stringToPrint + " || ACCOUNT: " + "".join(
-            dbh.account.get_account_name_from_id(self.account_id)) + self.getSpaces(len(str(self.account_id)), 30)
+            dbh.account.get_account_name_from_id(self.account_id)) + self.getSpaces(len(str(self.account_id)), 18)
 
         if self.note is not None:
             stringToPrint = stringToPrint + " || NOTE: " + self.note

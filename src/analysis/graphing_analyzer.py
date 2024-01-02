@@ -132,7 +132,8 @@ def create_stackline_chart(x_axis, y_axis, title=None, y_format=None):
     if y_format == 'currency':
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
-    plt.show()
+    # plt.show()
+    plt.show(block=False)
 
 
 def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):

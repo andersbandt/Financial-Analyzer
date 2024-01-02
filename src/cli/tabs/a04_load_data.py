@@ -68,6 +68,7 @@ class TabLoadData(SubMenu.SubMenu):
         self.update_listing()
 
 
+# TODO: audit that this function works on month 12 (December). Adjusted 'for month in range(1, 12) statement
     def a01b_load_all_data(self):
         print("... loading in ALL financial data")
 
@@ -76,7 +77,7 @@ class TabLoadData(SubMenu.SubMenu):
         year_range = ["2020", "2021", "2022", "2023"]
 
         for year in year_range:
-            for month in range(1, 12):
+            for month in range(1, 12+1):
                 tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
                 statement_list.extend(tmp_list)
 

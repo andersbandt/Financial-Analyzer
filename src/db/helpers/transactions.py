@@ -105,6 +105,14 @@ def get_transactions_description_keyword(desc_str):
     return ledger_data
 
 
+def get_transactions_by_category_id(category_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM transactions WHERE category_id=? ORDER BY date ASC", (category_id,))
+        ledger_data = cur.fetchall()
+    return ledger_data
+
+
 # gets ledger data for a certain account's transactions in a certain date range
 def get_account_transactions_between_date(account_id, date_start, date_end):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

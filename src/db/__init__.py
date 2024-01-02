@@ -31,7 +31,8 @@ class TableStatements:
                     type                    INT(10),
                     balance                 NUMERIC(10,2), 
                     algorithm               INT(10),
-                    balance_updated_date    DATE
+                    balance_updated_date    DATE,
+                    retirement              BOOLEAN,
                     savings_goal            INT(10));"""
     category = """CREATE TABLE category
                     (category_id            INTEGER PRIMARY KEY AUTOINCREMENT,

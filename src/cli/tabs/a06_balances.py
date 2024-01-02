@@ -125,6 +125,7 @@ class TabBalances(SubMenu.SubMenu):
                                     y_format='currency')
 
 
+# TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
         acc_id_arr, acc_balances = balh.produce_retirement_balances()
 
@@ -145,16 +146,17 @@ class TabBalances(SubMenu.SubMenu):
         # CALCULATE my account balance starting at age 59.5
         num_years = 59.5 - 24
         annual_return = .04
+        inflation_rate = 0.02
+        real_annual_return = (1 + annual_return) / (1 + inflation_rate) - 1
 
-        retirement_age_balance = retirement_sum*pow(1+annual_return, num_years)
-        print(f"\n\nAt an annual return of {annual_return} for {num_years} years your estimated to have: {retirement_age_balance}")
+        retirement_age_balance = retirement_sum * (1 + real_annual_return) ** num_years
+        print(f"\n\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {num_years} years, you are estimated to have: {retirement_age_balance}")
 
         # CALCULATE monthly withdrawal in retirement
         years_retired = 93 - 59.5
-        r = annual_return/12 # monthly interest rate (annual rate divided by 12)
-        monthly_withdrawal = (retirement_age_balance*r) / (1-pow((1+r),-1*12*years_retired*12))
-        print(f"\n\nThis allows a monthly withdrawl of {monthly_withdrawal} for {years_retired} years")
-
+        r = real_annual_return/12 # monthly interest rate (adjusted for inflation)
+        monthly_withdrawal = (retirement_age_balance * r) / (1 - pow((1 + r), -1 * 12 * years_retired))
+        print(f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
 
 

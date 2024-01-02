@@ -83,15 +83,26 @@ class TabSpendingHistory(SubMenu.SubMenu):
     def a03_search_trans(self):
         print("... searching transactions ...")
 
-        # get transaction description keyword
-        desc_keyword_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
-                                        "text")
+        # get input on what type of search to do
+        search_options = ["DESCRIPTION, CATEGORY"]
+        # TODO: auto complete parameters are wrong
+        search_type = clih.inp_auto("What type of search to do?: ", search_options, disp_options=True, echo=True)
 
-        transactions = anah.recall_transaction_desc_keyword(desc_keyword_str)
-        tmp_ledger = Ledger.Ledger(f"Transactions with description keyword {desc_keyword_str}")
+        # get transaction description keyword
+        if search_type == "DESCRIPTION":
+            search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
+                                            "text")
+            transactions = anah.recall_transaction_desc_keyword(search_str)
+        elif search_type == "CATEGORY":
+            search_str = clih.category_prompt_all("What is the category to search for?", False)
+            transactions = anah.recall_transaction_category(search_str)
+
+        tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type} with parameter {search_str}")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement()
 
+        ledger_exec = anah.return_ledger_exec_dict(transactions)
+        pprint(ledger_exec)
 
 
     ##############################################################################

@@ -18,43 +18,6 @@ from categories import Category
 import db.helpers as dbh
 
 
-# get_statement_folder: returns formatted folder of where the statement is. year and month are ints
-def get_statement_folder(base_filepath, year, month):
-    if month not in range(0, 12):
-        month = date_helper.month2Int(month)
-
-    if month == 1:
-        month_string = "01-January/"
-    elif month == 2:
-        month_string = "02-February/"
-    elif month == 3:
-        month_string = "03-March/"
-    elif month == 4:
-        month_string = "04-April/"
-    elif month == 5:
-        month_string = "05-May/"
-    elif month == 6:
-        month_string = "06-June/"
-    elif month == 7:
-        month_string = "07-July/"
-    elif month == 8:
-        month_string = "08-August/"
-    elif month == 9:
-        month_string = "09-September/"
-    elif month == 10:
-        month_string = "10-October/"
-    elif month == 11:
-        month_string = "11-November/"
-    elif month == 12:
-        month_string = "12-December/"
-    else:
-        print("Bad month int stored in statement: " + str(month))
-        return
-
-    statement_folder = (
-        base_filepath + "/" + str(year) + "/monthly_statements/" + month_string # tag:HARDCODE
-    )
-    return statement_folder
 
 
 
@@ -129,9 +92,10 @@ def autocomplete(input_text, word_list):
 
 # inp_auto: user input with autocomplete function on a provided array of strings
 # TODO: make this function case INSENSITIVE --> actually less sure if that is a priority
-# @param prompt        gets printed
-# @param stat          not sure what this is doing
-# @param disp_options  toggles all the possible array getting printed or not
+# @param prompt_str      gets printed
+# @param string_arr      array of options for user to have autocomplete run on
+# @param echo            echo confirmation of selection?
+# @param disp_options    toggles all the possible array getting printed or not
 def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
     # IF USER SELECTED DISPLAY OPTIONS
     if disp_options:
