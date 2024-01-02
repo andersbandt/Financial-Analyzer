@@ -95,8 +95,8 @@ def check_account_load_status(account_id, month, year, printmode=None):
 @logfn
 def get_statement_folder(base_filepath, year, month):
     # TODO: I am not sure what this is checking really?
-    if month not in range(0, 12+1):
-        month = date_helper.month2Int(month)
+    # if month not in range(0, 12+1):
+    #     month = date_helper.month2Int(month)
 
     if month == 1:
         month_string = "01-January/"
