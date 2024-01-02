@@ -123,6 +123,18 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     plt.show()
 
 
+def create_stackline_chart(x_axis, y_axis, title=None, y_format=None):
+    plt.stackplot(x_axis, y_axis)
+    plt.title(title)
+    plt.axis("tight")
+
+    # format y-axis as currency
+    if y_format == 'currency':
+        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
+
+    plt.show()
+
+
 def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     plt.clf()
 

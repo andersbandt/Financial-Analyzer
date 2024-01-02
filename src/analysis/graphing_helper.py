@@ -65,6 +65,7 @@ def get_line_chart(x_axis, y_axis, label=None, color=None):
     plt.plot(x_axis, y_axis, marker='o', linestyle='-', color=None, label=label)
 
 
+
 # @usage  fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
 #           pass in 'ax' as variable, then use plt.show() as normal
 # @logfn

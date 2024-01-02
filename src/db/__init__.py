@@ -113,6 +113,10 @@ def populate_tables(database_directory: str):
         insert into `category` (`category_id`, `name`, `parent_id`) values (1000000005, 'SHOPPING', 1);
     """
 
+    # alter_statement = """
+    #     ALTER TABLE account ADD COLUMN retirement BOOLEAN;
+    # """
+
     statements = [account_statement, categories_statement, keyword_statement]
     with sqlite3.connect(database_directory) as conn:
         conn.set_trace_callback(print)
@@ -120,6 +124,6 @@ def populate_tables(database_directory: str):
         for statement in statements:
             try:
                 cursor.executescript(statement)
-            except sqlite3.OperationalError as e:
+            except sqlite3.IntegrityError as e:
                 print(e)
         conn.set_trace_callback(None)

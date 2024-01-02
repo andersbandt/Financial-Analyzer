@@ -44,6 +44,32 @@ def insert_account(account_name, type_int):
             return new_account_id
 
 
+##############################################################################
+####      GETTER FUNCTIONS           #########################################
+##############################################################################
+
+# def get_account_retirement(account_id):
+#     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+#         cur = conn.cursor()
+#         cur.execute("SELECT retirement FROM account WHERE account_id=?", [account_id])
+#         try:
+#             retirement = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+#         except IndexError as e:
+#             print("ERROR (probably no results found for SQL query): ", e)
+#     return retirement
+
+
+def get_account_type(account_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT type FROM account WHERE account_id=?", [account_id])
+        try:
+            account_type = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+        except IndexError as e:
+            print("ERROR (probably no results found for SQL query): ", e)
+    return account_type
+
+
 
 def get_account_id_from_name(account_name):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
@@ -110,6 +136,14 @@ def get_account_id_by_type(acc_type):
     return account_names
 
 
+def get_retirement_accounts(retirement_flag):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT account_id FROM account WHERE retirement=?", (retirement_flag,))
+        retirement_account_id = [x[0] for x in cur.fetchall()]
+    return retirement_account_id
+
+
 def get_account_ledger_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -117,12 +151,5 @@ def get_account_ledger_data():
     return cur.fetchall()
 
 
-def get_account_type(account_id):
-    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT type FROM account WHERE account_id=?", [account_id])
-        try:
-            account_type = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
-        except IndexError as e:
-            print("ERROR (probably no results found for SQL query): ", e)
-    return account_type
+
+

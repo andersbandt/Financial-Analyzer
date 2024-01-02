@@ -29,12 +29,13 @@ class TabBalances(SubMenu.SubMenu):
         # initialize information about sub menu options
         action_strings = ["Show executive wealth summary",
                           "Add balance",
-                          "Show stacked liquid investment"]
+                          "Graph balances per account",
+                          "Retirement modeling"]
 
         action_funcs = [self.a01_show_wealth,
                         self.a02_add_balance,
-                        self.a03_show_stacked_liquid_investment]
-
+                        self.a03_graph_account_balance,
+                        self.a04_retirement_modeling]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -65,6 +66,7 @@ class TabBalances(SubMenu.SubMenu):
 
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
+    # TODO: add input for if the account is a retirement account or not
     def a02_add_balance(self):
         print("... adding a balance entry ...")
 
@@ -95,11 +97,11 @@ class TabBalances(SubMenu.SubMenu):
     # this function will be interesting to write.
     # I think I should keep a cumulative total of two balances - checkings/savings and investments
     # Then as I iterate across dates everytime there is a new entry I update that total and make a new record
-    def a03_show_stacked_liquid_investment(self):
+    def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
 
         # set parameters
-        days_previous = 365
+        days_previous = 560
         N = 5
 
         # generate matrix of Bx values
@@ -112,37 +114,47 @@ class TabBalances(SubMenu.SubMenu):
         if len(spl_Bx) != N:
             logger.debug(f"Length of spl_Bx: {len(spl_Bx)}")
             logger.debug(f"N is:{str(N)}")
-            # raise GraphingAnalyzerError(
-            #     f"YOUR spl_Bx array is not of length N it is length {len(spl_Bx)}"
-            # )
-
-        print("\nspl_Bx matrix below\n")
-        pprint(spl_Bx)
-
-        print("\nEdge code date below")
-        pprint(edge_code_date)
 
         account_id_array = list(spl_Bx[0].keys())
-
         values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
-        # values_array = []
-        # for account_id in account_id_array:
-        #     tmp_values = []
-        #     for a_A in spl_Bx:
-        #         tmp_values.append(a_A[account_id])
-        #     # for key, value in a_A.items():
-        #     #     account_id_array.append(key)
-        #     #     tmp_values.append(value)
-        #     values_array.append(tmp_values)
 
-        print("Keys:", account_id_array)
-        print("Values:", values_array)
-
-        grapa.create_mul_line_chart(edge_code_date[1:],
+# TODO: stacked line chart improvements. 1-sort account order by size? type?  2-
+        grapa.create_stackline_chart(edge_code_date[1:],
                                     values_array,
-                                    title=None,
-                                    labels=account_id_array,
+                                    title=f"Balances per account since {edge_code_date[0]}",
                                     y_format='currency')
+
+
+    def a04_retirement_modeling(self):
+        acc_id_arr, acc_balances = balh.produce_retirement_balances()
+
+        # use cli_printer to print a table of balances
+        clip.print_balances(
+            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
+            acc_balances,
+            "RETIREMENT ACCOUNT BALANCE SUMMARY"
+        )
+
+        # CALCULATE the current sum of retirement specific accounts
+        retirement_sum = 0
+        for balance in acc_balances:
+            retirement_sum += balance
+
+        print(f"\n\nYou have this much saved in retirement specific accounts: {retirement_sum}")
+
+        # CALCULATE my account balance starting at age 59.5
+        num_years = 59.5 - 24
+        annual_return = .04
+
+        retirement_age_balance = retirement_sum*pow(1+annual_return, num_years)
+        print(f"\n\nAt an annual return of {annual_return} for {num_years} years your estimated to have: {retirement_age_balance}")
+
+        # CALCULATE monthly withdrawal in retirement
+        years_retired = 93 - 59.5
+        r = annual_return/12 # monthly interest rate (annual rate divided by 12)
+        monthly_withdrawal = (retirement_age_balance*r) / (1-pow((1+r),-1*12*years_retired*12))
+        print(f"\n\nThis allows a monthly withdrawl of {monthly_withdrawal} for {years_retired} years")
+
 
 
 

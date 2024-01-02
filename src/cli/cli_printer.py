@@ -34,9 +34,26 @@
 #     return stringToPrint
 
 
+# TODO: complete this function. Will be used to "pretty print" transactions and other things in tabular format
+def print_variable_table(variable_names, values):
+    # do checking on same length input arrays
+    if len(variable_names) != len(values):
+        print("YIKES: can't print with different length inputs")
+        raise InterruptedError("Won't print variable table")
+
+    string_to_print = ""
+    for i in range(0, len(variable_names)):
+        string_to_print += variable_names[i] + \
+                           "".join(values[i]) + \
+                           get_spaces(len(variable_names[i]), 30) # WILL NEED TO ADJUST THIS TRIM VALUE
+
+    print(string_to_print)
+
+
+
 # this function will print some tabular financial data (commonly account names and balances)
 def print_balances(names, values, title):
-    print(f"========= {title} =========")
+    print(f"\n\n========= {title} =========")
 
     # check for length mismatch
     if len(names) != len(values):

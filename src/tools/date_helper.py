@@ -122,14 +122,13 @@ def month_year_to_date_range(year, month):
 ####      DATE GETTER FUNCTIONS            ###################################
 ##############################################################################
 
-# TODO: for the below functions I should really audit other places I'm using date and make sure I'm using these functions!!!
-
 
 def get_cur_date():
     return datetime.now()
     # return datetime.now().date()
 
 
+# TODO: I believe this function returns a date that is sometimes ahead by 1 day?
 def get_cur_str_date():
     return datetime.now().strftime('%Y-%m-%d')
 

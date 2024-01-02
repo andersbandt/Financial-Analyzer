@@ -22,8 +22,25 @@ def get_account_balance(account_id):
     return bal, bal_date
 
 
+
+
+
+
 # TODO: complete this function and migrate any "manual additions" I have to here
 def add_account_balance(account_id, balance, balance_date):
     pass
 
+
+
+
+# a01_show_wealth
+def produce_retirement_balances():
+    acc_balances = []
+    acc_id_arr = dbh.account.get_retirement_accounts(1)
+
+    for acc_id in acc_id_arr:
+        bal_amount, bal_date = get_account_balance(acc_id)
+        acc_balances.append(bal_amount)
+
+    return acc_id_arr, acc_balances
 

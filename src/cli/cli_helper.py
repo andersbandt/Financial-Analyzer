@@ -78,6 +78,7 @@ def spinput(prompt, inp_type):
 
     # TYPE: (int)
     if inp_type == "int":
+        # TODO: add some checking for if the user enters commas
         try:
             inp = int(inp)
         except ValueError as e:
@@ -90,6 +91,7 @@ def spinput(prompt, inp_type):
 
     # TYPE: (float)
     elif inp_type == "float":
+        # TODO: add some checking for if the user enters commas
         return float(inp)
 
     # TYPE: (yes or no)
