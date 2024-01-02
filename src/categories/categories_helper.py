@@ -142,7 +142,6 @@ def get_category_children_obj(category):
     return cat_child
 
 
-
 # create_Tree: creates a Tree object of the categories
 # @logfn
 def create_Tree(categories, cat_type="id"):

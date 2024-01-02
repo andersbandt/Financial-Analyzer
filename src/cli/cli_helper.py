@@ -19,8 +19,6 @@ import db.helpers as dbh
 
 
 
-
-
 ##############################################################################
 ####      GENERAL INPUT FUNCTIONS        #####################################
 ##############################################################################
@@ -28,8 +26,8 @@ import db.helpers as dbh
 # spinput: really general input function to help with flow control
 
 # type (int)  === will return any POSITIVE VALUE (will return -1 on bad input)
-def spinput(prompt, inp_type):
-    inp = input(prompt)
+def spinput(prompt_str, inp_type):
+    inp = input(prompt_str)
 
     # handle user prompts to either quit command or terminate program
     if inp == 'q':
@@ -69,12 +67,25 @@ def spinput(prompt, inp_type):
 
 
 # promptYesNo: function for prompting user for a YES or NO input
-def promptYesNo(prompt):
-    res = input(prompt + "\n\t(y or n): ")
+def promptYesNo(prompt_str):
+    res = input(prompt_str + "\n\t(y or n): ")
     if 'y' in res:
         return True
     else:
         return False
+
+
+# prompt_num_options: prompts an array of string options with a corresponding int response
+def prompt_num_options(prompt_str):
+    print("\n\n")
+    i = 1
+    for pro in prompt_str:
+        print(f"{i} - {pro}")
+        i += 1
+    res = input("What is your choice? (int) : ")
+    if int(res) > len(prompt_str):
+        print("Uh oh I think your choice was out of bounds!")
+    return int(res)
 
 
 # prompt date function below in another section
@@ -91,12 +102,12 @@ def autocomplete(input_text, word_list):
 
 
 # inp_auto: user input with autocomplete function on a provided array of strings
-# TODO: make this function case INSENSITIVE --> actually less sure if that is a priority
 # @param prompt_str      gets printed
 # @param string_arr      array of options for user to have autocomplete run on
 # @param echo            echo confirmation of selection?
 # @param disp_options    toggles all the possible array getting printed or not
 def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
+    print("\n\n")
     # IF USER SELECTED DISPLAY OPTIONS
     if disp_options:
         for string in strings_arr:
