@@ -14,6 +14,10 @@ from cli.tabs import SubMenu
 import tools.date_helper as dateh
 
 
+# import logger
+from loguru import logger
+from utils import logfn
+
 # TODO: add some slots for tabular data
 #   for example:
 #       -latest balance record for each account along with date it was recorded on and type
@@ -59,8 +63,8 @@ class TabBalances(SubMenu.SubMenu):
 
         print(acc_dates)
 
+
     # a02_add_balance: inserts data for an account balance record into the SQL database
-    # TODO: add error checking for multiple balances per account on SAME day - on second thought is this needed?
     def a02_add_balance(self):
         print("... adding a balance entry ...")
 
@@ -118,17 +122,29 @@ class TabBalances(SubMenu.SubMenu):
         print("\nEdge code date below")
         pprint(edge_code_date)
 
-        investment, liquid = anah.gen_bin_A_matrix(spl_Bx)
+        account_id_array = []
+        for key, values in spl_Bx[0].items():
+            account_id_array.append(key)
 
-        # set graph title and x labels
-        title = "Total of Balances for previous " + str(days_prev) + " days"
+        values_array = []
+        for account_id in account_id_array:
+            tmp_values = []
+            for a_A in spl_Bx:
+                tmp_values.append(a_A[account_id])
+            # for key, value in a_A.items():
+            #     account_id_array.append(key)
+            #     tmp_values.append(value)
+            values_array.append(tmp_values)
 
+        print("Keys:", account_id_array)
+        print("Values:", values_array)
 
-        # resize investment data based on scale factor
-        scale_factor = 1000
-        for i in range(0, len(investment)):
-            investment[i] = investment[i] / scale_factor
-            liquid[i] = liquid[i] / scale_factor
+        grapa.create_mul_line_chart(edge_code_date[1:],
+                                    values_array,
+                                    title=None,
+                                    labels=account_id_array,
+                                    y_format='currency')
+
 
 
     def show_liquid_over_time(self):

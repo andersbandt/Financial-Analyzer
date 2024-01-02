@@ -22,3 +22,8 @@ def get_account_balance(account_id):
     return bal, bal_date
 
 
+# TODO: complete this function and migrate any "manual additions" I have to here
+def add_account_balance(account_id, balance, balance_date):
+    pass
+
+

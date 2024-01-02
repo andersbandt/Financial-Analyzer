@@ -2,7 +2,7 @@
 
 # import needed modules
 from datetime import datetime
-
+from pprint import pprint
 
 # import user defined modules
 import db.helpers as dbh
@@ -175,7 +175,6 @@ def recall_transaction_data(date_start=-1, date_end=-1):
     return transactions
 
 
-
 def recall_transaction_desc_keyword(desc_keyword):
     ledger_data = dbh.transactions.get_transactions_description_keyword(desc_keyword)
     transactions = convert_ledge_to_transactions(ledger_data)
@@ -206,8 +205,11 @@ def convert_ledge_to_transactions(ledger_data):
 
 
 # gen_Bx_matrix: generate 'Bx_matrix'
-#     this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
-# @logfn
+#       this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
+#       @return    spl_Bx             an array of dictionary entries with entry[account_id] = balance amount
+#       @return    edge_code_date     date edge codes (string format YYYY-MM-DD)
+@logfn
+# TODO: I could change my "get_balances" function to already date bin balance data. Similiar to way I handle transactions
 def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date object 'days_prev' less
     date_range_start = dateh.get_date_days_prev(date_range_end, days_prev)
@@ -221,21 +223,18 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date edge limits
     edge_code_date = dateh.get_edge_code_dates(date_range_end, days_prev, N)
 
-    # init A vector
-    a_A = {}
-    for account_id in dbh.account.get_all_account_ids():
-        a_A[account_id] = 0
+    added_sql_key = []
+    # search through edge code limits to add N bin A vectors
+    for i in range(0, N):
+        logger.debug("Balance data is now below (at START of for loop)")
+        pprint(balance_data)
 
-    # search through edge code limits to add first (N-1) bin A vectors
-    for i in range(0, N - 1):
-        # add T/F checker for if value has been updated
-        bal_added = {}
+        a_A = {}
+        # init A vector
         for account_id in dbh.account.get_all_account_ids():
-            bal_added[account_id] = False
+            a_A[account_id] = 0
 
         # iterate through all balances data
-        # TODO: could figure out a way to optimize this binning of balance data into date bins
-        #     current method of deleting doesn't seem optimal (searches past edge code do nothing)
         for bx in balance_data:
             # bx outline
             # bx[0] = sql key
@@ -254,25 +253,17 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
                 raise AnalyzerHelperError("Can't proceed with populating Bx A vector")
 
             # if date is less than edge code (in the date bin)
-            if bx_date < datetime.strptime(edge_code_date[i], "%Y-%m-%d").date():
-                balance_data.remove(bx)  # remove so it doesn't appear in next searches
+            if bx_date < datetime.strptime(edge_code_date[i+1], "%Y-%m-%d").date():
+                if bx[0] not in added_sql_key:
+                    a_A[bx[1]] = bx[2]
+                    added_sql_key.append(bx[0])
                 # NOTE: took out below code so the current code is just adding latest ones
                 # if the balance is higher than what we currently have than replace Bx in spl_Bx
                 #    in this way we get the 'dominant' vector (high value)
                 # if bx[2] > a_A[bx[1]]:
-                #    a_A[bx[1]] = bx[2]
 
-        # set Bx to dominant A vector after search is complete
-        logger.debug("Dominant A vector appears to be {a_A}")
         # append vector to spl_Bx after search for 'dominant' vector is complete
         spl_Bx.append(a_A)
-
-    # go through last bin (past final edge code)
-    for bx in balance_data:  # iterate through all balances data - probably not the most efficient?
-        # if the balance is higher than what we currently have than replace Bx in spl_Bx
-        if bx[2] > a_A[bx[1]]:
-            a_A[bx[1]] = bx[2]
-    spl_Bx.append(a_A)
 
     return spl_Bx, edge_code_date
 

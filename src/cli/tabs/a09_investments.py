@@ -14,7 +14,7 @@ import cli.cli_helper as clih
 import cli.cli_printer as clip
 from cli.tabs import SubMenu
 from analysis import investment_helper as invh
-from analysis import graphing_helper as grah
+import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
 
@@ -26,13 +26,15 @@ class TabInvestment(SubMenu.SubMenu):
         # initialize information about sub menu options
         action_strings = ["Check investments",
                           "Add investment transaction",
-                          "Check accounts summary",
-                          "Show account snapshot value history"]
+                          "Check account balances/summary",
+                          "Show account snapshot value history",
+                          "Add balances to .db"]
 
         action_funcs = [self.a01_check_investments,
                         self.a02_add_investment,
                         self.a03_check_accounts,
-                        self.a04_cur_value_history]
+                        self.a04_cur_value_history,
+                        self.a05_add_inv_balances]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -207,15 +209,35 @@ class TabInvestment(SubMenu.SubMenu):
         print(date_arr)
         print(total_arr)
 
-        #  create and return figure
-        grah.get_line_chart(date_arr,
-                            total_arr,
-                            title="Historical price data of portfolio snapshot",
-                            y_format='currency'
-                            )
-        plt.show()
+        grapa.create_line_chart(date_arr,
+                                    total_arr,
+                                    title="Historical price data of portfolio snapshot",
+                                    y_format='currency')
 
         print("Done running a04_cur_value_history with days previous of: ", days_prev)
+
+
+    def a05_add_inv_balances(self):
+        print("... adding investment balances to financials database ...")
+        # populate array of accounts with type=4
+        inv_acc_id = dbh.account.get_account_id_by_type(4)
+        # populate arrays
+        acc_val_arr = []
+        for account_id in inv_acc_id:
+            acc_val = invh.summarize_account(account_id, printmode=True)
+            acc_val_arr.append(acc_val)
+        # add balances
+        bal_date = dateh.get_cur_str_date()
+        for i in range(0, len(inv_acc_id)):
+            # insert_category: inserts a category into the SQL database
+            dbh.balance.insert_account_balance(inv_acc_id[i],
+                                               acc_val_arr[i],
+                                               bal_date)
+
+            # print out balance addition confirmation
+            print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
+
+
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

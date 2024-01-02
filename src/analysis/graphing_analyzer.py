@@ -123,11 +123,33 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     plt.show()
 
 
+def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
+    plt.clf()
+
+    grah.get_line_chart(x_axis,
+                        y_axis,
+                        color='purple')
+
+    # format y-axis as currency
+    if y_format == 'currency':
+        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
+
+    # add legend and title
+    if legend:
+        plt.legend(loc="best")
+
+    # add grid lines
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    plt.title(title)
+    plt.show()
+
+
 # create_mul_line_chart: creates multiple
 # THIS FUNCTION WORKS IN CLI VERSIoN
-def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, legend=False, y_format=None):
-    plt.rcdefaults()
-    plt.clf()
+def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=[], legend=False, y_format=None):
+    plt.rcdefaults() # sets rc defaults
+    plt.clf() # clears the entire current figure with all its axes
 
     i = 0
     for y_axis in y_axis_arr:
