@@ -122,19 +122,18 @@ class TabBalances(SubMenu.SubMenu):
         print("\nEdge code date below")
         pprint(edge_code_date)
 
-        account_id_array = []
-        for key, values in spl_Bx[0].items():
-            account_id_array.append(key)
+        account_id_array = list(spl_Bx[0].keys())
 
-        values_array = []
-        for account_id in account_id_array:
-            tmp_values = []
-            for a_A in spl_Bx:
-                tmp_values.append(a_A[account_id])
-            # for key, value in a_A.items():
-            #     account_id_array.append(key)
-            #     tmp_values.append(value)
-            values_array.append(tmp_values)
+        values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
+        # values_array = []
+        # for account_id in account_id_array:
+        #     tmp_values = []
+        #     for a_A in spl_Bx:
+        #         tmp_values.append(a_A[account_id])
+        #     # for key, value in a_A.items():
+        #     #     account_id_array.append(key)
+        #     #     tmp_values.append(value)
+        #     values_array.append(tmp_values)
 
         print("Keys:", account_id_array)
         print("Values:", values_array)
