@@ -7,7 +7,8 @@ from pprint import pprint
 # import user defined modules
 import db.helpers as dbh
 from categories import categories_helper as cath
-from statement_types import Transaction
+import analysis.transaction_helper as transh
+import analysis.data_recall.transaction_recall as transaction_recall
 import tools.date_helper as dateh
 
 # import logger
@@ -30,30 +31,70 @@ class AnalyzerHelperError(Exception):
 ####      DATA ANALYSIS FUNCTIONS       ######################################
 ##############################################################################
 
-# @param   N is the number of bins to form across dates
-def sum_date_binned_transaction(days_prev, N):
-    # create the DATETIME objects from the previous days in N groups
-    edge_code_date = dateh.get_edge_code_dates(
-        datetime.today(),
-        days_prev,
-        N) # have to add +2 here because we want N to be the number of bins not indices
+# return_ledger_exec_summary: returns a dictionary containing a summary of critical information about an array of Transactions
+# @logfn
+def return_ledger_exec_dict(transactions):
+    expenses = 0
+    incomes = 0
 
-    print("Got this for transactions edge codes")
-    for edge in edge_code_date:
-        print(edge)
+    not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
 
-    date_binned_transactions = []
+    for transaction in transactions:
+        trans_category = cath.category_id_to_name(transaction.category_id)
 
-    for i in range(0, N):
-        cur_trans = recall_transaction_data(edge_code_date[i], edge_code_date[i+1])
-        date_binned_transactions.append(cur_trans)
+        if trans_category not in not_counted:
+            trans_amount = transaction.getAmount()
 
-    return date_binned_transactions, edge_code_date
+            # if the transaction was an expense
+            if trans_amount < 0:
+                expenses += trans_amount
+            # if the transaction was an income
+            elif trans_amount > 0:
+                incomes += trans_amount
+
+    exec_summary = {"expenses": expenses,
+                    "incomes": incomes}
+
+    return exec_summary
 
 
-# sum_individual_category: returns the dollar ($) total of a certain category in a statement
-# inputs: transactions- list of Transaction objects, category_id- category_id of interest
-# output: dollar total
+# month_bin_transaction_total: takes in a list of transactions and counts total for each month
+@logfn
+def month_bin_transaction_total(transactions, months_prev):
+    # get current month
+    [cur_year, cur_month, cur_day] = dateh.get_date_int_array()
+
+    # iterate through previous months
+    if cur_month - months_prev < 1:
+        start_year = cur_year - int(months_prev/12)
+        if months_prev % 12 > 0:
+            start_year = cur_year - (months_prev % 12) # TODO: finish this calculation of year change
+        start_month = cur_month - months_prev + 12
+    else:
+        start_year = cur_year
+
+    end_month = cur_month + 12*int(months_prev / 12)
+    logger.debug(f"\nStarting month bin of transaction from {start_month} to {end_month}")
+    logger.debug(f"\tyear to begin at is {start_year}")
+    month_totals = []
+    for month in range(start_month, end_month + 1):
+        if month > 12:
+            month = month % 12
+            date_range = dateh.month_year_to_date_range(start_year + int(month/12), month)
+        else:
+            date_range = dateh.month_year_to_date_range(start_year, month)
+
+        # filter transactions by range and sum and add to running array total
+        month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])
+        month_totals.append(
+            transh.sum_transaction_total(month_transactions)
+        )
+    return month_totals
+
+
+# sum_individual_category: returns the dollar ($) total of a certain category in an array of transactions
+#   @param   transactions    list of Transaction objects, category_id- category_id of interest
+#   @return  total_amount    $ dollar total of category
 # @logfn
 def sum_individual_category(transactions, category_id):
     total_amount = 0
@@ -79,7 +120,6 @@ def create_category_amounts_array(transactions, categories):
 
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
-# TODO: add NA (cat ID of 0) as an option to add to the array
 # @logfn
 def create_top_category_amounts_array(transactions, categories, count_NA=True):
     tree = cath.create_Tree(categories, cat_type="id")
@@ -112,101 +152,45 @@ def create_top_category_amounts_array(transactions, categories, count_NA=True):
     return top_cat_str, category_amounts
 
 
-
-def compare_transaction_trend(transactions):
-    pass
-
-
 ##############################################################################
 ####      DATA GETTER FUNCTIONS       ########################################
 ##############################################################################
 
-# return_ledger_exec_summary: returns a dictionary containing a summary of critical information about an array of Transactions
-# TODO: audit where this function is used. Either delete or cleanup/audit
+# @param   N is the number of bins to form across dates
+def get_date_binned_transaction(days_prev, N):
+    # create the DATETIME objects from the previous days in N groups
+    edge_code_date = dateh.get_edge_code_dates(
+        datetime.today(),
+        days_prev,
+        N) # have to add +2 here because we want N to be the number of bins not indices
+
+    print("Got this for transactions edge codes")
+    for edge in edge_code_date:
+        print(edge)
+
+    date_binned_transactions = []
+
+    for i in range(0, N):
+        cur_trans = transaction_recall.recall_transaction_data(edge_code_date[i], edge_code_date[i+1])
+        date_binned_transactions.append(cur_trans)
+
+    return date_binned_transactions, edge_code_date
+
+
 # @logfn
-def return_ledger_exec_dict(transactions):
-    expenses = 0
-    incomes = 0
-
-    not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
-
+def filter_transactions_date(transactions, date_start, date_end):
+    logger.debug(f"Filtering transactions between {date_start} TO {date_end}")
+    filtered_transactions = []
     for transaction in transactions:
-        trans_category = cath.category_id_to_name(transaction.category_id)
-
-        if trans_category not in not_counted:
-            trans_amount = transaction.getAmount()
-
-            # if the transaction was an expense
-            if trans_amount < 0:
-                expenses += trans_amount
-            # if the transaction was an income
-            elif trans_amount > 0:
-                incomes += trans_amount
-
-    exec_summary = {"expenses": expenses,
-                    "incomes": incomes}
-
-    return exec_summary
-
-
-# recall_transaction_data: loads up an array of Transaction objects based on date range and accounts
-#     @param date_start - the starting date for search
-#     @param date_end - the ending date for search
-# @logfn
-def recall_transaction_data(date_start=-1, date_end=-1):
-    # TODO: delete following lines post audit. I highly doubt I am using it?
-    if date_start != -1 and date_end != -1:
-        print("Recalling transactions between " + date_start + " and " + date_end)
-        ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
-    else:
-        print("getting ALL transactions")
-        ledger_data = dbh.ledger.get_transactions_ledge_data()
-
-    transactions = convert_ledge_to_transactions(ledger_data)
-
-    if len(transactions) == 0:
-        logger.exception(
-            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
-        )
-        raise AnalyzerHelperError(
-            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
-        )
-
-    return transactions
-
-
-def recall_transaction_desc_keyword(desc_keyword):
-    ledger_data = dbh.transactions.get_transactions_description_keyword(desc_keyword)
-    transactions = convert_ledge_to_transactions(ledger_data)
-    return transactions
-
-
-def recall_transaction_category(category_id):
-    ledger_data = dbh.transactions.get_transactions_by_category_id(category_id)
-    transactions = convert_ledge_to_transactions(ledger_data)
-    return transactions
+        if dateh.date_between(date_start, date_end, transaction.date):
+            filtered_transactions.append(transaction)
+    return filtered_transactions
 
 ##############################################################################
 ####      DATA MANIPULATION FUNCTIONS    #####################################
 ##############################################################################
 
-# @logfn
-def convert_ledge_to_transactions(ledger_data):
-    # create an array of Transaction objects with the database data
-    transactions = []  # clear transactions
-    for item in ledger_data:
-        transactions.append(
-            Transaction.Transaction(
-                item[1], # date
-                item[2], # account ID
-                item[3], # category ID
-                item[4], # amount
-                item[5], # description
-                note=item[7], # note
-                sql_key=item[0] # SQL key
-            )
-        )
-    return transactions
+
 
 
 # gen_Bx_matrix: generate 'Bx_matrix'
@@ -269,6 +253,7 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
         spl_Bx.append(a_A)
 
     return spl_Bx, edge_code_date
+
 
 
 @logfn

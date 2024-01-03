@@ -149,6 +149,7 @@ class TabBalances(SubMenu.SubMenu):
         print(
             f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
+
     def show_liquid_over_time(self):
         print("INFO: show_liquid_over_time running")
 

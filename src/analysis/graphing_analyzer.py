@@ -120,7 +120,7 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     if xlabel is not None:
         ax.set_xlabel(xlabel)
 
-    plt.show()
+    plt.show(block=False)
 
 
 # TODO: add support for labels

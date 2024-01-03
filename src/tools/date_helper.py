@@ -19,6 +19,13 @@ def date_order(date1, date2):
     else:
         return False
 
+# date_between: returns True if date is in range, false otherwise (INCLUSIVE OF RANGE)
+def date_between(date_start, date_end, date_interest):
+    if date_start < date_interest:
+        if date_end > date_interest:
+            return True
+    return False
+
 
 # check_sql_date_format: checks if a date is properly formatted in YYYY-MM-DD string format
 def check_sql_date_format(date_string):

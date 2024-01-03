@@ -24,8 +24,7 @@ import db.helpers as dbh
 ##############################################################################
 
 # spinput: really general input function to help with flow control
-
-# type (int)  === will return any POSITIVE VALUE (will return -1 on bad input)
+#   @param   inp_type="int" === will return any POSITIVE VALUE (will return -1 on bad input)
 def spinput(prompt_str, inp_type):
     inp = input(prompt_str)
 
@@ -76,14 +75,15 @@ def promptYesNo(prompt_str):
 
 
 # prompt_num_options: prompts an array of string options with a corresponding int response
-def prompt_num_options(prompt_str):
-    print("\n\n")
+def prompt_num_options(prompt_str, prompt_string_arr):
     i = 1
-    for pro in prompt_str:
+    for pro in prompt_string_arr:
         print(f"{i} - {pro}")
         i += 1
-    res = input("What is your choice? (int) : ")
-    if int(res) > len(prompt_str):
+    res = input(prompt_str)
+    if res == 'q' or res == 'quit':
+        return False
+    if int(res) > len(prompt_string_arr):
         print("Uh oh I think your choice was out of bounds!")
     return int(res)
 
@@ -107,7 +107,7 @@ def autocomplete(input_text, word_list):
 # @param echo            echo confirmation of selection?
 # @param disp_options    toggles all the possible array getting printed or not
 def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
-    print("\n\n")
+    print("\n")
     # IF USER SELECTED DISPLAY OPTIONS
     if disp_options:
         for string in strings_arr:
@@ -121,7 +121,7 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
             return -1 # can't return -1 here because category NA has ID=0
 
     if echo:
-        print("Selected: " + user_input)
+        print("Selected: " + user_input + "\n")
     return user_input
 
 

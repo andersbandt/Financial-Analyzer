@@ -46,6 +46,7 @@ class SubMenu():
             # handle user action
             if usr_inp > len(self.action_funcs):
                 print("ERROR: wrong number command (too high)")
+                return
 
             self.run_sub_action(usr_inp)
 
@@ -53,7 +54,9 @@ class SubMenu():
     def run_sub_action(self, num):
         ind = num - 1 # take away 1 since menu starts at 1 but array starts at 0
         print("\n\nRunning: " + self.action_strings[ind])
-        self.action_funcs[ind]()
+        status = self.action_funcs[ind]()
+        print(f"Completed executing {self.action_strings[ind]} with exit code: ", status)
+        return status
 
 
     ##############################################################################

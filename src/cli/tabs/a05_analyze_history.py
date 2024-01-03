@@ -9,6 +9,7 @@ import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
 from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
+from analysis.data_recall import transaction_recall
 from tools import date_helper as dateh
 
 # import user defined modules
@@ -35,17 +36,18 @@ class TabSpendingHistory(SubMenu.SubMenu):
         # initialize information about sub menu options
         action_strings = ["Executive summary",
                           "Print database transactions",
-                          "Search transactions"]
+                          "Search transactions",
+                          "Graph category data"]
 
         action_funcs = [self.a01_exec_summary,
                         self.a02_print_db_trans,
-                        self.a03_search_trans]
+                        self.a03_search_trans,
+                        self.a04_graph_category]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
 
-    # a01_exec_summary:
-    #   in order to speed up debug this function should just do a bunch of key careabouts
+    # a01_exec_summary: creates a list of "executive summary items" about spending data
     def a01_exec_summary(self):
         print(" ... showing executive summary ...")
 
@@ -71,7 +73,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         print(ledger_stats)
 
 
-# a02_print_db_trans: prints EVERY transaction in ledger .db
+#    a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
         transactions = anah.recall_transaction_data()
         tmp_ledger = Ledger.Ledger("All Statement Data")
@@ -79,31 +81,45 @@ class TabSpendingHistory(SubMenu.SubMenu):
         tmp_ledger.print_statement()
 
 
-# a03_search_trans: performs a search of transaction database
+    # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
 
         # get input on what type of search to do
         search_options = ["DESCRIPTION", "CATEGORY"]
-        search_type = clih.inp_auto("What type of search to do?: ", search_options, disp_options=True, echo=True)
+        search_type = clih.prompt_num_options("What type of search do you want to perform?: ",
+                                              search_options)
+        if search_type is False:
+            print("Ok, quitting transaction search.\n")
+            return False
 
         # get transaction description keyword
-        if search_type == "DESCRIPTION":
+        if search_type == 1:
             search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
                                             "text")
             transactions = anah.recall_transaction_desc_keyword(search_str)
-        elif search_type == "CATEGORY":
+        elif search_type == 2:
             # determine user choice of type of category search
-            cat_search_type = clih.prompt_num_options(["recursive (children)", "individual"])
+            cat_search_type = clih.prompt_num_options("What type of category search?: ",
+                                                      ["recursive (children)", "individual"])
             if cat_search_type == 1:
-                search_str = clih.category_prompt_all("What is the category to search for?", False)
+                search_str = clih.category_prompt_all("What is the category to search for?: ", False)
                 children_id = cath.get_category_children(search_str)
-                transactions = anah.recall_transaction_category(search_str)
+                transactions = transaction_recall.recall_transaction_category(search_str)
                 for child_id in children_id:
-                    transactions.extend(anah.recall_transaction_category(child_id))
+                    transactions.extend(transaction_recall.recall_transaction_category(child_id))
             elif cat_search_type == 2:
-                search_str = clih.category_prompt_all("What is the category to search for?", False)
-                transactions = anah.recall_transaction_category(search_str)
+                search_str = clih.category_prompt_all("What is the category to search for?: ", False)
+                transactions = transaction_recall.recall_transaction_category(search_str)
+            elif cat_search_type is False:
+                print("Ok, quitting transaction search.\n")
+                return False
+            else:
+                print(f"Uh oh, bad category search type of: {cat_search_type}")
+                return False
+        else:
+            print(f"Can't perform search with search type of: {search_type}")
+            return False
 
         # form Ledger, print, and return executive summary
         tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type} with parameter {search_str}")
@@ -115,10 +131,31 @@ class TabSpendingHistory(SubMenu.SubMenu):
         pprint(ledger_exec)
 
 
+    # a04_graph_category: walks user through producing a graph of a certain category
+    def a04_graph_category(self):
+        # determine user choice of type of category graph
+        cat_graph_type = clih.prompt_num_options("What type of category graph?",
+                                                  ["recursive (children)", "individual"])
+
+        if cat_graph_type == 1:
+            pass
+        if cat_graph_type == 2:
+            category_id = clih.category_prompt_all("What is the category to graph?", False)
+            transactions = transaction_recall.recall_transaction_category(category_id)
+
+        months_prev = 12
+        month_totals = anah.month_bin_transaction_total(transactions, months_prev)
+        grapa.create_bar_chart([i for i in range(0, months_prev+1)],
+                               month_totals,
+                               xlabel="Months previous",
+                               title=f"Graph of category {cath.category_id_to_name(category_id)}")
+
+
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
     ##############################################################################
 
+    # exec_summary_01: produces a graph of the top-level categories over time
     def exec_summary_01(self, days_prev, num_slices):
         # LOAD CATEGORIES
         categories = cath.load_categories()
