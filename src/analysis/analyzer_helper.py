@@ -79,10 +79,11 @@ def month_bin_transaction_total(transactions, months_prev):
     month_totals = []
     for month in range(start_month, end_month + 1):
         if month > 12:
-            month = month % 12
-            date_range = dateh.month_year_to_date_range(start_year + int(month/12), month)
+            date_range = dateh.month_year_to_date_range(start_year + int((months_prev+month)/12) - 1,
+                                                        month % 12)
         else:
-            date_range = dateh.month_year_to_date_range(start_year, month)
+            date_range = dateh.month_year_to_date_range(start_year,
+                                                        month)
 
         # filter transactions by range and sum and add to running array total
         month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])

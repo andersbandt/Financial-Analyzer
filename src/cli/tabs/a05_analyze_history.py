@@ -145,10 +145,16 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
         months_prev = 12
         month_totals = anah.month_bin_transaction_total(transactions, months_prev)
-        grapa.create_bar_chart([i for i in range(0, months_prev+1)],
+        months = [i for i in range(0, months_prev+1)]
+        months.reverse()
+        grapa.create_bar_chart(months,
                                month_totals,
                                xlabel="Months previous",
                                title=f"Graph of category {cath.category_id_to_name(category_id)}")
+
+
+    def a05_make_sankey(self):
+        pass
 
 
     ##############################################################################

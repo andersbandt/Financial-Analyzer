@@ -21,8 +21,8 @@ def date_order(date1, date2):
 
 # date_between: returns True if date is in range, false otherwise (INCLUSIVE OF RANGE)
 def date_between(date_start, date_end, date_interest):
-    if date_start < date_interest:
-        if date_end > date_interest:
+    if date_start <= date_interest:
+        if date_end >= date_interest:
             return True
     return False
 
