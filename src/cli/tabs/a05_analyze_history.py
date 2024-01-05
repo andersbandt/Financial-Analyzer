@@ -64,7 +64,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         one_year_ago = today - timedelta(days=365)
 
         # LOAD IN TRANSACTIONS FROM 12 MONTHS AGO
-        transactions = anah.recall_transaction_data(
+        transactions = transaction_recall.recall_transaction_data(
             one_year_ago.strftime('%Y-%m-%d'),
             today.strftime('%Y-%m-%d'))
 
@@ -97,7 +97,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         if search_type == 1:
             search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
                                             "text")
-            transactions = anah.recall_transaction_desc_keyword(search_str)
+            transactions = transaction_recall.recall_transaction_desc_keyword(search_str)
         elif search_type == 2:
             # determine user choice of type of category search
             cat_search_type = clih.prompt_num_options("What type of category search?: ",
@@ -167,7 +167,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         categories = cath.load_categories()
 
         # get transactions between certain "edge codes"
-        date_bin_trans, edge_codes = anah.sum_date_binned_transaction(days_prev,  # number of previous days
+        date_bin_trans, edge_codes = anah.get_date_binned_transaction(days_prev,  # number of previous days
                                                                       num_slices)  # n = 12 different slices
 
         date_bin_dict_arr = []  # this will be an array of dictionaries
@@ -240,7 +240,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             prev_month
         )
 
-        prev_month_trans = anah.recall_transaction_data(
+        prev_month_trans = transaction_recall.recall_transaction_data(
             prev_month_range[0],
             prev_month_range[1],
         )
@@ -263,7 +263,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             baseline_month_end
         )
 
-        baseline_trans = anah.recall_transaction_data(
+        baseline_trans = transaction_recall.recall_transaction_data(
             baseline_range_start[0],
             baseline_range_end[1],
         )
