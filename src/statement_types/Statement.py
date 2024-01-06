@@ -9,6 +9,7 @@ Transaction represents a single transaction on any statement
 import db.helpers as dbh
 import statement_types.Ledger as Ledger
 import cli.cli_helper as clih
+import tools.load_helper as loadh
 
 
 class Statement(Ledger.Ledger):
@@ -96,18 +97,36 @@ class Statement(Ledger.Ledger):
         if self.check_statement_status(self.transactions):
             response = clih.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
             if response is False:
-                print("Ok, not saving statement")
+                print("Ok, aborting save statement")
                 return False
 
-        # iterate through transactions and insert into database
-        error_status = 0
+        # DATA INTEGRITY / ERROR CHECKING ON TRANSACTION
+        error_flag = 0
+        for transaction in self.transactions:
+            # TODO: add some confirmation if user actually wants to add transaction for duplicates
+            loaded = loadh.check_transaction_load_status(transaction)
+            if loaded:
+                transaction.note = "duplicate ?"
+                print("Uh oh, is this transaction already in the ledger??? --> " + transaction.printTransaction(
+                    False))  # the 'False' flag controls the actual function doing the printing
+                error_flag = 1
+
+        # USER CONFIRMATION
+        if error_flag == 1:
+            res = clih.promptYesNo("It looks like some duplicates or something were detected... are you sure you want to add this statement?")
+            if not res:
+                print("Ok, aborting save statement!")
+                return False
+
+        # INSERT TRANSACTION
+        error_flag = 0
         for transaction in self.transactions:
             success = dbh.ledger.insert_transaction(transaction)
             if success == 0:
-                error_status = 1
+                error_flag = 1
 
-        # error handling
-        if error_status == 1:
+        # FINAL ERROR HANDLING
+        if error_flag == 1:
             clih.alert_user(
                 "Error in ledger adding!",
                 "At least 1 thing went wrong adding to ledger",
@@ -116,3 +135,4 @@ class Statement(Ledger.Ledger):
         else:
             print("Saved statement")
         return True
+

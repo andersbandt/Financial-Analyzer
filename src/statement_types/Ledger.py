@@ -180,13 +180,6 @@ class Ledger:
             error_status = 0
             for transaction in self.transactions:
 
-                # check if statement is already loaded and add a "duplicate ?" tag to notes
-                # TODO: add some confirmation if user actually wants to add transaction for duplicates
-                loaded = load_helper.check_transaction_load_status(transaction)
-                if loaded:
-                    transaction.note = "duplicate ?"
-                    print("Uh oh, is this transaction already in the ledger??? --> " + transaction.printTransaction(False)) # the 'False' flag controls the actual function doing the printing
-
                 # INSERT TRANSACTION
                 success = dbh.transactions.insert_transaction(transaction)
                 if success == 0:

@@ -39,7 +39,7 @@ def add_account_balance(account_id, bal_amount, bal_date):
     bal_added = get_account_balance_on_date(account_id, bal_date)
     if bal_added is not False:
         print(f"\nCan't add balance! Already have an entry for date!!:  {bal_added}")
-        return
+        return False
 
     # insert_category: inserts a category into the SQL database
     dbh.balance.insert_account_balance(account_id,
@@ -48,6 +48,7 @@ def add_account_balance(account_id, bal_amount, bal_date):
 
     # print out balance addition confirmation
     print(f"Great, inserted a balance of {bal_amount} for account {account_id} on date {bal_date}")
+    return True
 
 
 

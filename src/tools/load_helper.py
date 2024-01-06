@@ -10,8 +10,7 @@ import os
 # import user created modules
 import db.helpers as dbh
 from tools import date_helper
-from cli import cli_helper as clih
-from statement_types import Ledger
+from statement_types import Statement
 import statement_types as st
 
 # import logger
@@ -228,7 +227,7 @@ def create_master_ledger(statement_list):
         if statement is not None:
             if statement.transactions is not None:
                 cum_trans_list.extend(statement.transactions)
-    statement = Ledger.Ledger("All Statement Ledger", transactions=cum_trans_list)
+    statement = Statement.Statement("All Statements Statement", transactions=cum_trans_list)
     return statement
 
 

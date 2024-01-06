@@ -1,6 +1,5 @@
 
 # import needed modules
-import sqlite3
 import sys
 from collections import defaultdict
 from random import choice
@@ -30,6 +29,10 @@ def db_init():
     """Create the database using the values of TableStatements."""
     from db import DATABASE_DIRECTORY, TableStatements, all_tables_init, populate_tables
 
+    print("NOTICE: you are currently using ...")
+    print(f"\t\t {DATABASE_DIRECTORY}")
+    print("... as your database directory!!!\n")
+
     # append every single variable string in class
     statements = []
     for value in TableStatements.__dict__.values():
@@ -39,11 +42,8 @@ def db_init():
             statements.append(value)
 
     # execute init sequence
-    try:
-        all_tables_init(statements, DATABASE_DIRECTORY)
-        populate_tables(DATABASE_DIRECTORY)
-    except sqlite3.Error: # I don't think this is needed as I added a try/except bblock in the db/__init__.py
-        logger.exception("Tables already in db file.")
+    all_tables_init(statements, DATABASE_DIRECTORY)
+    populate_tables(DATABASE_DIRECTORY)
 
 
 # thing that's gotta be here

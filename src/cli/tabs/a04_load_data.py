@@ -63,7 +63,7 @@ class TabLoadData(SubMenu.SubMenu):
         self.update_listing()
 
 
-# TODO: audit that this function works on month 12 (December). Adjusted 'for month in range(1, 12) statement
+
     def a01b_load_all_data(self):
         print("... loading in ALL financial data")
 
