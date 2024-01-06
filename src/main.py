@@ -42,11 +42,20 @@ def db_init():
             statements.append(value)
 
     # execute init sequence
-    all_tables_init(statements, DATABASE_DIRECTORY)
+    status = True
+    status = all_tables_init(statements, DATABASE_DIRECTORY)
+    if not status:
+        print("I don't think database file was able to be located!!!")
+        return False
+
     populate_tables(DATABASE_DIRECTORY)
 
 
 # thing that's gotta be here
 if __name__ == "__main__":
-    db_init() # only used if database doesn't exist
+    status = db_init() # only used if database doesn't exist
+    if not status:
+        print("Something went wrong with database. EXITING!")
+        sys.exit()
+
     main()

@@ -3,7 +3,7 @@
 import sqlite3
 
 # setup database master file
-DATABASE_DIRECTORY = "C:/Users/ander/OneDrive/Code/python/financial_analyzer_CLI/src/db/financials.db" # tag:hardcode
+DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/zrc/db/financials.db" # tag:hardcode
 
 
 """
@@ -81,16 +81,26 @@ dependency injection reasons.
 """
 def all_tables_init(statements: list, database_directory: str) -> bool:
     print("Initializing all tables in database .db file!!! Exciting!!!")
-    with sqlite3.connect(database_directory) as conn:
-        conn.set_trace_callback(print)
-        cursor = conn.cursor()
-        for statement in statements:
-            try:
-                cursor.execute(statement)
-            except sqlite3.OperationalError as e:
-                print(e)
-        conn.set_trace_callback(None)
+    try:
+        with sqlite3.connect(database_directory) as conn:
+            conn.set_trace_callback(print)
+            cursor = conn.cursor()
+            for statement in statements:
+                try:
+                    cursor.execute(statement)
+                except sqlite3.OperationalError as e:
+                    print(e)
+            conn.set_trace_callback(None)
+    except sqlite3.OperationalError as e:
+        print(f"\n{e}")
+        print(f"Yikes, couldn't open your database file")
+        print(f"\n\n##########################################################")
+        print(f"\n\tYour path is currently \n\t{database_directory}. ")
+        print(f"\n##########################################################")
+        print(f"\nPlease review filepath and make any needed adjustments in src/db/__init__.py. Around line 6 ish")
+        return False
     print("\n\n")
+    return True
 
 
 def populate_tables(database_directory: str):

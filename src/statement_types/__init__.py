@@ -3,12 +3,12 @@
 
 
 from statement_types import Ledger
+from statement_types import Statement
 from statement_types import csvStatement
 
 from statement_types import WellsChecking
 from statement_types import WellsCredit
 from statement_types import WellsSaving
-
 
 from statement_types import AppleCard
 from statement_types import ChaseCard
