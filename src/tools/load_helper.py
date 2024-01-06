@@ -18,30 +18,6 @@ from loguru import logger
 from utils import logfn
 
 
-##############################################################################
-####      LOADING FUNCTIONS    ###############################################
-##############################################################################
-
-def get_month_year_statement_list(basefilepath, year, month):
-    file_list = get_year_month_files(basefilepath, year, month)
-
-    statement_list = []
-    for file in file_list:
-        statement_list.append(create_statement(year, month, file))
-
-        if statement_list[-1] is not None:
-            print("... statement created, going to load in data")
-
-            try:
-                statement_list[-1].load_statement_data()
-            except Exception as e:
-                print("Something went wrong loading statement from filepath but the show MUST GO ON!!!")
-                print("\terror is: ", e)
-                raise (e)
-            statement_list[-1].print_statement()
-
-    return statement_list
-
 
 ##############################################################################
 ####      STATEMENT FILE FUNCTIONS    ########################################
@@ -221,13 +197,17 @@ def check_transaction_load_status(transaction):
         return True
 
 
-def create_master_ledger(statement_list):
+def create_master_statement(statement_list):
     cum_trans_list = []
     for statement in statement_list:
         if statement is not None:
             if statement.transactions is not None:
                 cum_trans_list.extend(statement.transactions)
-    statement = Statement.Statement("All Statements Statement", transactions=cum_trans_list)
+    statement = Statement.Statement("dummy account_id",
+                                    "dummy year",
+                                    "dummy month",
+                                    "dummy filepath",
+                                    transactions=cum_trans_list)
     return statement
 
 
@@ -288,3 +268,23 @@ def create_statement(year, month, filepath, account_id_prompt=False):
 
     return None
 
+
+def get_month_year_statement_list(basefilepath, year, month):
+    file_list = get_year_month_files(basefilepath, year, month)
+
+    statement_list = []
+    for file in file_list:
+        statement_list.append(create_statement(year, month, file))
+
+        if statement_list[-1] is not None:
+            print("... statement created, going to load in data")
+
+            try:
+                statement_list[-1].load_statement_data()
+            except Exception as e:
+                print("Something went wrong loading statement from filepath but the show MUST GO ON!!!")
+                print("\terror is: ", e)
+                raise (e)
+            statement_list[-1].print_statement()
+
+    return statement_list

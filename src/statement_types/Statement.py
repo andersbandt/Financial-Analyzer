@@ -15,7 +15,7 @@ import tools.load_helper as loadh
 class Statement(Ledger.Ledger):
     def __init__(self, account_id, year, month, filepath, transactions=None):
         # set Statement title based on account_id and date info
-        self.title = str(year) + "-" + str(month) + " :" + str(account_id)
+        self.title = f"{year}-{month} for {account_id}"
 
         # call parent class __init__ method
         # super(Ledger.Ledger, self).__init__(master, title, row_num, column_num, *args, **kwargs)
@@ -27,20 +27,12 @@ class Statement(Ledger.Ledger):
         self.month = month
         self.filepath = filepath
 
-
     ##############################################################################
     ####      DATA LOADING FUNCTIONS    ##########################################
     ##############################################################################
 
     # create_statement_data: combines and automatically categorizes transactions across all raw account statement data
     def create_statement_data(self):
-        if self.check_statement_status(self.load_statement_data()):
-                print("Uh oh, looks like data already exists for this particular statement")
-                res = clih.promptYesNo("Data might already be loaded in for this statement... do you want to continue?")
-                if res is False:
-                    print("Ok, not loading in statement")
-                    return
-
         print("Creating statement data for", self.title)
         self.transactions.extend(self.load_statement_data())
 
@@ -59,31 +51,6 @@ class Statement(Ledger.Ledger):
     def load_statement_data(self):
         pass
 
-    # TODO: failing when I try to load in Marcus statement data... however it is loading in erroneously
-    # check_statement_status: returns True if data already exists for this statement, False otherwise
-    def check_statement_status(self, current_transactions):
-        # handle leading 0 for months less than 10 (before October)
-        if self.month >= 10:
-            month_start = str(self.year) + "-" + str(self.month) + "-" + "01"
-            month_end = str(self.year) + "-" + str(self.month) + "-" + "31"
-        else:
-            month_start = str(self.year) + "-" + "0" + str(self.month) + "-" + "01"
-            month_end = str(self.year) + "-" + "0" + str(self.month) + "-" + "31"
-
-        loaded_transactions = dbh.ledger.get_account_transactions_between_date(
-            self.account_id, month_start, month_end
-        )
-
-        # compare to loaded length of transactions
-        if len(loaded_transactions) == len(current_transactions):
-            if (
-                len(loaded_transactions) != 0
-            ):  # prevents alerting when data might not be loading in correctly
-                print("Uh oh, has this data been loaded in already?")
-                # sanity check a couple transactions??
-                return True
-        else:
-            return False
 
     ##############################################################################
     ####      DATA SAVING FUNCTIONS    ###########################################
@@ -119,11 +86,11 @@ class Statement(Ledger.Ledger):
                 return False
 
         # INSERT TRANSACTION
-        error_flag = 0
-        for transaction in self.transactions:
-            success = dbh.ledger.insert_transaction(transaction)
-            if success == 0:
-                error_flag = 1
+        # error_flag = 0
+        # for transaction in self.transactions:
+        #     success = dbh.ledger.insert_transaction(transaction)
+        #     if success == 0:
+        #         error_flag = 1
 
         # FINAL ERROR HANDLING
         if error_flag == 1:

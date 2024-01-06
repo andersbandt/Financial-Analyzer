@@ -56,7 +56,7 @@ class TabLoadData(SubMenu.SubMenu):
 
         statement_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
         print("\nCreating master Ledger object for all files in {year}-{month}")
-        self.statement = loadh.create_master_ledger(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
+        self.statement = loadh.create_master_statement(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
         self.statement.print_statement()
 
         print("Statement loaded successfully, can continue with load process")

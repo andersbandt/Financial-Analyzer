@@ -42,13 +42,13 @@ def db_init():
             statements.append(value)
 
     # execute init sequence
-    status = True
-    status = all_tables_init(statements, DATABASE_DIRECTORY)
-    if not status:
+    db_status = all_tables_init(statements, DATABASE_DIRECTORY)
+    if not db_status:
         print("I don't think database file was able to be located!!!")
         return False
 
     populate_tables(DATABASE_DIRECTORY)
+    return True
 
 
 # thing that's gotta be here

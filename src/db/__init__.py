@@ -3,7 +3,7 @@
 import sqlite3
 
 # setup database master file
-DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/zrc/db/financials.db" # tag:hardcode
+DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
 
 
 """
@@ -97,7 +97,7 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
         print(f"\n\n##########################################################")
         print(f"\n\tYour path is currently \n\t{database_directory}. ")
         print(f"\n##########################################################")
-        print(f"\nPlease review filepath and make any needed adjustments in src/db/__init__.py. Around line 6 ish")
+        print(f"\nPlease review filepath and make any needed adjustments in src/db/__init__.py. Around line 6 ish\n\n")
         return False
     print("\n\n")
     return True
