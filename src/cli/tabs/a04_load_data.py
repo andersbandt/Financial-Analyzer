@@ -55,7 +55,7 @@ class TabLoadData(SubMenu.SubMenu):
                 [year, month] = prompt_date()
 
         statement_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
-        print("\nCreating master Ledger object for all files in {year}-{month}")
+        print(f"\nCreating master Statement object for all files in date bin {year}-{month}")
         self.statement = loadh.create_master_statement(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
         self.statement.print_statement()
 
@@ -115,6 +115,7 @@ class TabLoadData(SubMenu.SubMenu):
 
 
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
+    # TODO: this function no longer works. "Can't save statement: 'TabLoadData' has no attribute 'statement_list'
     def a05_save_statement_csv(self):
         print("... saving statement to .csv")
         try:

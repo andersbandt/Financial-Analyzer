@@ -59,14 +59,6 @@ class Statement(Ledger.Ledger):
     # save_statement: saves a categorized statement as a csv
     def save_statement(self):
         print("Attempting to save statement...")
-
-        # check statement "save status" and ask user for save verification
-        if self.check_statement_status(self.transactions):
-            response = clih.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
-            if response is False:
-                print("Ok, aborting save statement")
-                return False
-
         # DATA INTEGRITY / ERROR CHECKING ON TRANSACTION
         error_flag = 0
         for transaction in self.transactions:
@@ -78,6 +70,14 @@ class Statement(Ledger.Ledger):
                     False))  # the 'False' flag controls the actual function doing the printing
                 error_flag = 1
 
+        # NOTE: deleted this function because of new loading method ("master" Statement"
+        # if self.check_statement_status(self.transactions):
+        #     response = clih.promptYesNo("It looks like a saved statement for " + self.title + " already exists, are you sure you want to overwrite by saving this one?")
+        #     if response is False:
+        #         print("Ok, aborting save statement")
+        #         return False
+
+
         # USER CONFIRMATION
         if error_flag == 1:
             res = clih.promptYesNo("It looks like some duplicates or something were detected... are you sure you want to add this statement?")
@@ -85,12 +85,20 @@ class Statement(Ledger.Ledger):
                 print("Ok, aborting save statement!")
                 return False
 
+
         # INSERT TRANSACTION
-        # error_flag = 0
-        # for transaction in self.transactions:
-        #     success = dbh.ledger.insert_transaction(transaction)
-        #     if success == 0:
-        #         error_flag = 1
+        error_flag = 0
+        for transaction in self.transactions:
+            success = dbh.ledger.insert_transaction(transaction)
+            if success == 0:
+                error_flag = 1
+
+        # DO FINAL SANITY CHECK
+        self.print_statement()
+        res = clih.promptYesNo("You sure you want to save this statement? Last chance")
+        if not res:
+            print("Ok, aborting save statement!")
+            return False
 
         # FINAL ERROR HANDLING
         if error_flag == 1:
