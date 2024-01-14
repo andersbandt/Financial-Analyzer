@@ -5,7 +5,7 @@ from datetime import datetime
 # import user defined modules
 import db.helpers as dbh
 from statement_types import Transaction
-
+from tools import date_helper as dateh
 
 
 # @logfn
@@ -55,6 +55,18 @@ def recall_transaction_data(date_start=-1, date_end=-1):
         )
 
     return transactions
+
+
+def recall_transaction_month_bin(year, month):
+    month_range = dateh.month_year_to_date_range(
+        year,
+        month
+    )
+    month_trans = recall_transaction_data(
+        month_range[0],
+        month_range[1],
+    )
+    return month_trans
 
 
 def recall_transaction_desc_keyword(desc_keyword):

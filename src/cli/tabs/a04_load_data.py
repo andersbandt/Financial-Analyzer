@@ -41,6 +41,7 @@ class TabLoadData(SubMenu.SubMenu):
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
+# TODO: why do I have this "prompt_date" function?
         def prompt_date():
             print("\n... prompting user to find file for Statement")
             # get date information to determine which folder to look in

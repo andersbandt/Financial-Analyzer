@@ -37,12 +37,17 @@ class TabSpendingHistory(SubMenu.SubMenu):
         action_strings = ["Executive summary",
                           "Print database transactions",
                           "Search transactions",
-                          "Graph category data"]
+                          "Graph category data",
+                          "Generate sankey (not working)",
+                          "Review specific month transactions"]
+
 
         action_funcs = [self.a01_exec_summary,
                         self.a02_print_db_trans,
                         self.a03_search_trans,
-                        self.a04_graph_category]
+                        self.a04_graph_category,
+                        self.a05_make_sankey,
+                        self.a06_review_month]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -75,7 +80,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
 #    a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
-        transactions = anah.recall_transaction_data()
+        transactions = transaction_recall.recall_transaction_data()
         tmp_ledger = Ledger.Ledger("All Statement Data")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement()
@@ -157,6 +162,18 @@ class TabSpendingHistory(SubMenu.SubMenu):
         pass
 
 
+    def a06_review_month(self):
+        # get month of interest
+        year = clih.get_year_input()
+        month = clih.get_month_input()
+
+        month_transactions = transaction_recall.recall_transaction_month_bin(year, month)
+        tmp_ledger = Ledger.Ledger(f"Statements from ({year},{month}")
+        tmp_ledger.set_statement_data(month_transactions)
+        tmp_ledger.sort_trans_asc()
+        tmp_ledger.print_statement()
+
+
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
     ##############################################################################
@@ -235,15 +252,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
         if prev_month < 1:
             prev_month = 12
             prev_year -= 1
-        prev_month_range = dateh.month_year_to_date_range(
-            prev_year,
-            prev_month
-        )
 
-        prev_month_trans = transaction_recall.recall_transaction_data(
-            prev_month_range[0],
-            prev_month_range[1],
-        )
+        prev_month_trans = transaction_recall.recall_transaction_month_bin(prev_year, prev_month)
 
         # STEP 2: get transactions from baseline data (before previous month)
         baseline_month_start = prev_month - comp_month_prev
