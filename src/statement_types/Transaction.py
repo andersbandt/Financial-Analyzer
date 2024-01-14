@@ -149,8 +149,14 @@ class Transaction:
         return spaces
 
     # printTransaction: pretty prints a single transaction
-    def printTransaction(self, print_mode=True):
-        stringToPrint = (
+    def printTransaction(self, print_mode=True, include_sql_key=False):
+        if include_sql_key:
+            stringToPrint = "KEY: " + "".join(str(self.sql_key)) + "    "
+        else:
+            stringToPrint = ""
+
+        # add remaining columns
+        stringToPrint += (
             "DATE: "
             + "".join(self.date)
             + " || AMOUNT: "

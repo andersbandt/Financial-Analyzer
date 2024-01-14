@@ -145,18 +145,20 @@ class Ledger:
     def sort_date_desc(self):
         pass
 
+
     ##############################################################################
     ####      PRINTING FUNCTIONS    ##############################################
     ##############################################################################
 
     # printStatement: pretty prints a statement
-    def print_statement(self):
+    def print_statement(self, include_sql_key=False):
         if self.transactions is None:
             print("ERROR: can't print empty ledger!")
             return
         print("Ledger: ", self.title)
         for transaction in self.transactions:
-            transaction.printTransaction()
+            transaction.printTransaction(include_sql_key=include_sql_key)
+
 
     ##############################################################################
     ####      DATA SAVING FUNCTIONS    ###########################################
@@ -192,6 +194,7 @@ class Ledger:
             print("Saved Ledger")
         return True
 
+
     # delete_statement: deletes statement from master frame
     def delete_statement(self):
         print("Deleting ledger", self.title)
@@ -214,9 +217,6 @@ class Ledger:
 
 
 
-    ##############################################################################
-    ####      GENERAL HELPER FUNCTIONS    ########################################
-    ##############################################################################
 
 
 

@@ -39,7 +39,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
                           "Search transactions",
                           "Graph category data",
                           "Generate sankey (not working)",
-                          "Review specific month transactions"]
+                          "Review specific month transactions",
+                          "Add note to transaction"]
 
 
         action_funcs = [self.a01_exec_summary,
@@ -47,7 +48,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
                         self.a03_search_trans,
                         self.a04_graph_category,
                         self.a05_make_sankey,
-                        self.a06_review_month]
+                        self.a06_review_month,
+                        self.a07_add_note]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -168,10 +170,21 @@ class TabSpendingHistory(SubMenu.SubMenu):
         month = clih.get_month_input()
 
         month_transactions = transaction_recall.recall_transaction_month_bin(year, month)
-        tmp_ledger = Ledger.Ledger(f"Statements from ({year},{month}")
+        tmp_ledger = Ledger.Ledger(f"Transactions from ({year},{month})")
         tmp_ledger.set_statement_data(month_transactions)
         tmp_ledger.sort_trans_asc()
-        tmp_ledger.print_statement()
+        tmp_ledger.print_statement(include_sql_key=True)
+
+
+    def a07_add_note(self):
+        # get sql key of transaction
+        sql_key = clih.spinput("What is the SQL key of the transaction to add a note to?: ", "int")
+
+        # get note content
+        note_str = clih.spinput("What do you want the note to say?", "text")
+
+        # update note in database
+        dbh.transactions.update_transaction_note(sql_key, note_str)
 
 
     ##############################################################################

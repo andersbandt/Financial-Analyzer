@@ -48,6 +48,16 @@ def update_transaction_category(transaction: Transaction) -> bool:
     return True
 
 
+def update_transaction_note(sql_key, note):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE transactions SET note=? WHERE id=?",
+            (note, sql_key),
+        )
+    return True
+
+
 # delete_transaction: deletes a Transaction
 def delete_transaction(sql_key: str) -> bool:
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
