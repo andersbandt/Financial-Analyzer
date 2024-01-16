@@ -9,6 +9,7 @@ import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
 from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
+from analysis import transaction_helper as transh
 from analysis.data_recall import transaction_recall
 from tools import date_helper as dateh
 
@@ -16,16 +17,6 @@ from tools import date_helper as dateh
 from cli.tabs import SubMenu
 import cli.cli_helper as clih
 from statement_types import Ledger
-
-
-# TODO: lots
-# this should be the main focus of my program. The other stuff is cool but I have the data in place now where I can really focus
-# on the analysis. Ultimate customization.
-
-# things like
-# - % increase/decrease over selected date range vs previous period of x days
-# - clickable categories to view list of transactions in categories for period of days
-# - budgeting can easily be started now
 
 
 class TabSpendingHistory(SubMenu.SubMenu):
@@ -40,7 +31,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
                           "Graph category data",
                           "Generate sankey (not working)",
                           "Review specific month transactions",
-                          "Add note to transaction"]
+                          "Add note to transaction",
+                          "Update transaction category"]
 
 
         action_funcs = [self.a01_exec_summary,
@@ -49,7 +41,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
                         self.a04_graph_category,
                         self.a05_make_sankey,
                         self.a06_review_month,
-                        self.a07_add_note]
+                        self.a07_add_note,
+                        self.a08_update_transaction_category]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -131,11 +124,12 @@ class TabSpendingHistory(SubMenu.SubMenu):
         # form Ledger, print, and return executive summary
         tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type} with parameter {search_str}")
         tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement()
+        tmp_ledger.print_statement(include_sql_key=True)
 
         ledger_exec = anah.return_ledger_exec_dict(transactions)
         print("\n")
         pprint(ledger_exec)
+        return transactions
 
 
     # a04_graph_category: walks user through producing a graph of a certain category
@@ -179,13 +173,57 @@ class TabSpendingHistory(SubMenu.SubMenu):
     def a07_add_note(self):
         # get sql key of transaction
         sql_key = clih.spinput("What is the SQL key of the transaction to add a note to?: ", "int")
+        trans = transh.get_transaction(sql_key)
+        print(f"Found transaction with sql_key={sql_key}\n")
+        trans.printTransaction()
 
         # get note content
-        note_str = clih.spinput("What do you want the note to say?", "text")
+        note_str = clih.spinput("What do you want the note to say?: ", "text")
 
-        # update note in database
-        dbh.transactions.update_transaction_note(sql_key, note_str)
+        # TODO: add one last user check - print transaction and note and prompt yes no
+        print(f"Confirming transaction update for item with sql_key={sql_key}")
+        trans.note = note_str
+        trans.printTransaction()
 
+        print(f"\nNew note ---> {note_str}\n")
+
+        res = clih.promptYesNo("Are you sure you want to change the transaction listed above?: ")
+        if not res:
+            print(f"Ok, not adding note to transaction with sql_key={sql_key}")
+            return False
+        else:
+            # update note in database
+            dbh.transactions.update_transaction_note(sql_key, note_str)
+            return True
+
+
+    def a08_update_transaction_category(self):
+        print(" ... updating transaction categories ...")
+        print("Commencing a03_search_trans !!!")
+
+        found_transactions = self.a03_search_trans()
+        found_sql_key = []
+        for transaction in found_transactions:
+            found_sql_key.append(transaction.sql_key)
+            print(f"sql key: {transaction.sql_key}")
+
+        print(found_sql_key)
+
+        # prompt user to eliminate any transactions
+        status = True
+        while status:
+            sql_to_remove = clih.spinput("\nPlease enter sql key of transaction to remove from update list (q/quit to exit): ", "int")
+            if sql_to_remove is False:
+                status = False
+            else:
+                found_sql_key.remove(sql_to_remove)
+                # reprint updated list
+                print("\n")
+                for id_key in found_sql_key:
+                    transaction.printTransaction(
+                        transh.get_transaction(id_key),
+                        include_sql_key=True
+                    )
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################

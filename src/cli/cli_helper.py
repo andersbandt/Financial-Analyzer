@@ -12,7 +12,6 @@ from datetime import datetime
 from loguru import logger
 
 # helper modules for CLI interface
-from tools import date_helper
 from categories import categories_helper as cath
 from categories import Category
 import db.helpers as dbh

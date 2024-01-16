@@ -115,6 +115,15 @@ def get_transactions_description_keyword(desc_str):
     return ledger_data
 
 
+
+def get_transaction_by_sql_key(sql_key):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM transactions WHERE id=?", (sql_key,))
+        ledger_data = cur.fetchall()
+    return ledger_data
+
+
 def get_transactions_by_category_id(category_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
