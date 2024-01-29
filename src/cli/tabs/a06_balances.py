@@ -1,11 +1,15 @@
-# import needed packages
-from pprint import pprint
+"""
+@file a06_balances.py
+@brief CLI tab for managing balances of various accounts
+
+"""
 
 # import user defined modules
 import db.helpers as dbh
 import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
 import analysis.graphing_analyzer as grapa
+import account.account_helper as acch
 
 import cli.cli_helper as clih
 import cli.cli_printer as clip
@@ -107,12 +111,40 @@ class TabBalances(SubMenu.SubMenu):
         account_names_array = [dbh.account.get_account_name_from_id(account_id) for account_id in account_id_array]
         values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
 
-        # TODO: stacked line chart improvements. 1-sort account order by size? type?  2-
+        # TYPE 1: by account ID
+        # TODO: add sort by account size
         grapa.create_stackline_chart(edge_code_date[1:],
                                      values_array,
                                      title=f"Balances per account since {edge_code_date[0]}",
                                      label=account_names_array,
                                      y_format='currency')
+
+        # TYPE 2: by account type
+        # do some post-processing to bin values by type
+        # TODO: this initialization of the `type_values_array` variable can be improved (ask Chat-GPT)
+        # type_values_array = []
+        # for j in range(0, len(account_id_array)):
+        #     type_values_array.append([])
+        #     for i in range(0, len(values_array[0])):
+        #         type_values_array[j].append(0)
+
+        n = len(values_array[0])
+        m = acch.get_num_acc_type()
+        type_values_array = [[0 for _ in range(n)] for _ in range(m)]
+
+        for j in range(0, len(account_id_array)):
+            acc_type = dbh.account.get_account_type(account_id_array[j])
+            # if acc_type not in [1, 2, 3, 4]:
+            #     raise Exception(f"Uh oh account type is not valid for {account_id_array[j]}")
+            for i in range(0, len(values_array[0])):
+                type_values_array[acc_type-1][i] += values_array[j][i]
+
+        grapa.create_stackline_chart(edge_code_date[1:],
+                                     type_values_array,
+                                     title=f"Balances by account type",
+                                     label=acch.get_acc_type_arr(),
+                                     y_format='currency')
+
 
     # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):

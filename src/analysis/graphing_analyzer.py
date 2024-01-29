@@ -1,14 +1,10 @@
 
 # import needed modules
-import numpy as np
-from datetime import date
 import matplotlib.pyplot as plt
 
 # import user created modules
-import analysis.analyzer_helper as anah
 import analysis.graphing_helper as grah
 import analysis.investment_helper as invh
-from tools import date_helper
 
 # import logger
 from utils import logfn
@@ -134,10 +130,8 @@ def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None
     if y_format == 'currency':
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
-    plt.legend(loc="best")
-
-    # plt.show()
-    plt.show(block=False)
+    plt.legend(loc="upper left")
+    plt.show(block=True)
 
 
 def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
@@ -159,7 +153,7 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     plt.grid(True, linestyle='--', alpha=0.7)
 
     plt.title(title)
-    plt.show()
+    plt.show(block=True)
 
 
 # create_mul_line_chart: creates multiple

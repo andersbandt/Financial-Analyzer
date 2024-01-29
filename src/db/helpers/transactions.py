@@ -39,6 +39,7 @@ def insert_transaction(transaction: Transaction) -> bool:
 
 # updates Transaction objects (must have sql key)
 def update_transaction_category(transaction: Transaction) -> bool:
+    # TODO: add some checker for if the Transaction object has sql key populated or not
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
@@ -48,6 +49,19 @@ def update_transaction_category(transaction: Transaction) -> bool:
     return True
 
 
+
+def update_transaction_category_k(sql_key, new_category_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE transactions SET category_id=? WHERE id=?",
+            (new_category_id, sql_key),
+        )
+    return True
+
+
+
+# TODO: add _k in this name to note it as a "key based" function (as opposed to class)
 def update_transaction_note(sql_key, note):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()

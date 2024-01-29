@@ -173,6 +173,9 @@ class TabSpendingHistory(SubMenu.SubMenu):
     def a07_add_note(self):
         # get sql key of transaction
         sql_key = clih.spinput("What is the SQL key of the transaction to add a note to?: ", "int")
+        if sql_key is False:
+            print("Ok, quitting adding note to transaction")
+
         trans = transh.get_transaction(sql_key)
         print(f"Found transaction with sql_key={sql_key}\n")
         trans.printTransaction()
@@ -202,6 +205,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
         print("Commencing a03_search_trans !!!")
 
         found_transactions = self.a03_search_trans()
+        if found_transactions is False:
+            print("... and quitting update transactions category too !")
         found_sql_key = []
         for transaction in found_transactions:
             found_sql_key.append(transaction.sql_key)
@@ -217,13 +222,22 @@ class TabSpendingHistory(SubMenu.SubMenu):
                 status = False
             else:
                 found_sql_key.remove(sql_to_remove)
-                # reprint updated list
+                # reprint updated list")
                 print("\n")
                 for id_key in found_sql_key:
-                    transaction.printTransaction(
-                        transh.get_transaction(id_key),
-                        include_sql_key=True
-                    )
+                    transaction = transh.get_transaction(id_key)
+                    transaction.printTransaction(include_sql_key=True)
+
+        # prompt user to get new category ID
+        new_category_id = clih.category_prompt_all(
+            "What is the new category for this grouping of transactions?",
+            False) # display = False
+
+        # iterate through final list of keys and update their category ID
+        for key in found_sql_key:
+            dbh.transactions.update_transaction_category_k(
+                key,
+                new_category_id)
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################
