@@ -42,42 +42,11 @@ def check_sql_date_format(date_string):
 ####      DATE CONVERSION FUNCTIONS        ###################################
 ##############################################################################
 
-# monthToInt: converts a month string to an integer
-# TODO: I bet this function actually is not used anywhere since switching to a CLI
-def month2Int(month):
-    if month == "January":
-        return 1
-    elif month == "February":
-        return 2
-    elif month == "March":
-        return 3
-    elif month == "April":
-        return 4
-    elif month == "May":
-        return 5
-    elif month == "June":
-        return 6
-    elif month == "July":
-        return 7
-    elif month == "August":
-        return 8
-    elif month == "September":
-        return 9
-    elif month == "October":
-        return 10
-    elif month == "November":
-        return 11
-    elif month == "December":
-        return 12
-    else:
-        return -1
-
-
 # conv_two_digit_date: converts a two digit date representation with separators (MM/DD/YY) into
 #   the format needed for SQL storage (YYYY-MM-DD)
-def conv_two_digit_date(date):
+def conv_two_digit_date(date_str):
     char = "/"
-    ind = [i.start() for i in re.finditer(char, date)]
+    ind = [i.start() for i in re.finditer(char, date_str)]
 
     if len(ind) != 2:
         print(
@@ -85,16 +54,16 @@ def conv_two_digit_date(date):
         )
         raise Exception("Can't convert date into YYYY-MM-DD format")
 
-    month = date[0 : ind[0]]
+    month = date_str[0: ind[0]]
     if int(month) < 10:
         month = "0" + month
 
-    day = date[ind[0] + 1 : ind[1]]
+    day = date_str[ind[0] + 1: ind[1]]
     if int(day) < 10:
         day = "0" + day
 
     year = (
-        str(20) + date[ind[1] + 1 :]
+            str(20) + date_str[ind[1] + 1:]
     )  # prepend '20' to year (only will work for years 2000-2099)
 
     formatted_date = year + "-" + month + "-" + day
