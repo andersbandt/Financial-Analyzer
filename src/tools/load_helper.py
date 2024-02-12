@@ -141,27 +141,27 @@ def match_file_to_account(filepath):
 
     # WELLS CREDIT
     if "CreditCard4" in filepath:
-        print("contains 'CreditCard4")
+        print("\t\tcontains 'CreditCard4")
         return 2000000004
 
     # VENMO
     if "venmo" in filepath.lower() or 'transaction_history' in filepath.lower():
-        print("contains 'venmo' or 'transaction_history'")
+        print("\t\tcontains 'venmo' or 'transaction_history'")
         return 2000000007
 
     # APPLE CARD
     if "apple" in filepath.lower():
-        print("contains 'apple'")
+        print("\t\tcontains 'apple'")
         return 2000000009
 
     # CHASE
     if "chase" in filepath.lower():
-        print("Contains 'chase'")
+        print("\t\tContains 'chase'")
         return 2000000012
 
     if "bilt" in filepath.lower() or 'CreditCard3' in filepath.lower():
-        print("Contains 'bilt' or 'CreditCard3'")
-        return
+        print("\t\tContains 'bilt' or 'CreditCard3'")
+        return 2000000016
 
 
     # return None if we didn't match anything
@@ -231,19 +231,17 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         print("\tFound account ID: ", account_id)
 
 
-    # TODO: can I figure out a way to not hard code this in?
     # tag:HARDCODE
     if account_id == 2000000001:  # Marcus
         stat = st.Marcus.Marcus(account_id, year, month, filepath)
         return stat
-    elif (account_id == 2000000002) or (account_id == 2000000003) or (account_id == 2000000004):
+    elif account_id in {2000000002, 2000000003, 2000000004, 2000000016}:
         stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
                                             0,
                                             1,
                                             4,
                                             -1) # date_col, amount_col, description_col, category_col
         return stat
-
     elif account_id == 2000000005:  # Vanguard Brokerage
         stat = st.VanguardBrokerage.VanguardBrokerage(account_id, year, month, filepath)
         return stat
@@ -262,10 +260,13 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     elif account_id == 2000000012:  # Chase Card
         stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)
         return stat
+
     # if no valid account_id was found
     else:
-        raise Exception("No valid account selected in tools-load_helper-create_statement()")
+        print("No valid account selected in tools-load_helper-create_statement()")
         print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
+        print("You likely need to edit the create_statement() function hardcode !!!")
+        raise Exception()
 
     return None
 

@@ -78,14 +78,13 @@ class TabCategory(SubMenu.SubMenu):
         #   - no disconnected categories (all in tree structure)
 
 
-
     def a03_manage_keywords(self):
         print("... managing keywords ...")
         category_id = clih.category_prompt_all("Please enter the associated category of this keyword", True)
 
         keyword_string = clih.spinput("What is the string for this keyword?  "
                                       "*note that it will be converted to all uppercase\n\tkeyword :",
-                                      type="text")
+                                      inp_type="text")
         keyword_string = keyword_string.upper()
 
         # check if keyword string already exists
@@ -108,6 +107,10 @@ class TabCategory(SubMenu.SubMenu):
         for keyword in keyword_lg:
             cat_name = cath.category_id_to_name(keyword[1])
             print(cat_name + ": " + str(keyword[2]))
+
+
+# TODO: add function to print keywords PER category
+
 
 
     def a05_delete_category(self):

@@ -204,20 +204,32 @@ class TabSpendingHistory(SubMenu.SubMenu):
         print(" ... updating transaction categories ...")
         print("Commencing a03_search_trans !!!")
 
-        found_transactions = self.a03_search_trans()
-        if found_transactions is False:
-            print("... and quitting update transactions category too !")
-        found_sql_key = []
-        for transaction in found_transactions:
-            found_sql_key.append(transaction.sql_key)
-            print(f"sql key: {transaction.sql_key}")
+        # get input on what type of search to do
+        search_options = ["SEARCH", "MANUAL"]
+        search_type = clih.prompt_num_options("How do you want to procure sql key to update?: ",
+                                              search_options)
+        if search_type is False:
+            print("Ok, quitting transaction update\n")
+            return False
 
-        print(found_sql_key)
+        found_sql_key = []
+        if search_type == 1:
+            found_transactions = self.a03_search_trans()
+            if found_transactions is False:
+                print("... and quitting update transactions category too !")
+
+            for transaction in found_transactions:
+                found_sql_key.append(transaction.sql_key)
+        elif search_type == 2:
+            found_sql_key.append(clih.spinput("Please enter sql key to update: ", inp_type="int"))
+
+        # TODO: add some printing of transaction with sql_key in `found_sql_key`
 
         # prompt user to eliminate any transactions
+        print(found_sql_key)
         status = True
         while status:
-            sql_to_remove = clih.spinput("\nPlease enter sql key of transaction to remove from update list (q/quit to exit): ", "int")
+            sql_to_remove = clih.spinput("\nPlease enter sql key of transaction to remove from update list (q to exit): ", "int")
             if sql_to_remove is False:
                 status = False
             else:

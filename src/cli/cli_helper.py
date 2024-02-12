@@ -82,12 +82,13 @@ def prompt_num_options(prompt_str, prompt_string_arr):
     res = input(prompt_str)
     if res == 'q' or res == 'quit':
         return False
-    if int(res) > len(prompt_string_arr):
-        print("Uh oh I think your choice was out of bounds!")
-    return int(res)
-
-
-# prompt date function below in another section
+    try:
+        if int(res) > len(prompt_string_arr):
+            print("Uh oh I think your choice was out of bounds!")
+            return False
+        return int(res)
+    except ValueError:
+        return False
 
 
 ##############################################################################

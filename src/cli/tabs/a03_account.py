@@ -58,6 +58,9 @@ class TabAccount(SubMenu.SubMenu):
         if type_int > ah.get_num_acc_type():
             print("Int greater than predetermined account types. Won't insert account.")
 
+        # get retirement status
+        # TODO: finish this to get retirement status for the account. Possibly only enter this if investment account?
+
         # insert the investment into the database
         account_id = dbh.account.insert_account(name, type_int)
 
