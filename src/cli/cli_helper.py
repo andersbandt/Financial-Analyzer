@@ -130,11 +130,25 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
 
 def get_year_input():
     year = input("Enter year input: ")
-    return int(year)
+    try:
+        return int(year)
+    except ValueError:
+        return False
+
 
 def get_month_input():
     month = input("Enter month input (0-12): ")
-    return int(month)
+    try:
+        return int(month)
+    except ValueError:
+        return False
+
+def prompt_year_month():
+    print("\n... prompting user to find file for Statement")
+    # get date information to determine which folder to look in
+    y = get_year_input()
+    m = get_month_input()
+    return [y, m]
 
 
 # TODO: I think this function could be made SLIGHTLY easier to use (instead of manually typing dashes or something)

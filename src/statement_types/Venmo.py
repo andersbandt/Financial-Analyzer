@@ -36,7 +36,6 @@ class Venmo(csvStatement.csvStatement):
             return
 
         transactions = []
-        print("Extracting .csv (Venmo) statement at: " + self.filepath)
         try:
             with open(self.filepath, encoding='utf-8') as f:
                 csv_reader = csv.reader(f, delimiter=",")
@@ -67,10 +66,6 @@ class Venmo(csvStatement.csvStatement):
         except FileNotFoundError:
             print("You might be missing your Venmo .csv file")
             return False
-
-        print("Venmo Statement creation for the following for transactions")
-        for transaction in transactions:
-            transaction.printTransaction()
 
         # set and return transactions
         self.transactions = transactions

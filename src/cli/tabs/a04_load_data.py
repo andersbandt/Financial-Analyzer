@@ -41,21 +41,18 @@ class TabLoadData(SubMenu.SubMenu):
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
-# TODO: why do I have this "prompt_date" function?
-        def prompt_date():
-            print("\n... prompting user to find file for Statement")
-            # get date information to determine which folder to look in
-            y = clih.get_year_input()
-            m = clih.get_month_input()
-            return [y, m]
-
-        [year, month] = prompt_date()
+        [year, month] = clih.prompt_year_month()
         if month == -1 or year == -1:
             res = clih.promptYesNo("Bad date input. Try again?")
             if res:
-                [year, month] = prompt_date()
+                [year, month] = clih.prompt_year_month
 
-        statement_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
+        statement_list = loadh.get_month_year_statement_list(
+            self.basefilepath,
+            year,
+            month,
+            printmode=False)
+
         print(f"\nCreating master Statement object for all files in date bin {year}-{month}")
         self.statement = loadh.create_master_statement(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
         self.statement.print_statement()

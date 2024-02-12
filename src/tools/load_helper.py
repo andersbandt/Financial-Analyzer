@@ -127,11 +127,9 @@ def get_year_month_files(basefilepath, year, month):
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
-
     # MARCUS
     if False:
         return 2000000007
-
 
     # WELLS CHECKING
     if "Checking1" in filepath:
@@ -142,7 +140,8 @@ def match_file_to_account(filepath):
         return 2000000003
 
     # WELLS CREDIT
-    if "CreditCard3" in filepath:
+    if "CreditCard4" in filepath:
+        print("contains 'CreditCard4")
         return 2000000004
 
     # VENMO
@@ -160,7 +159,13 @@ def match_file_to_account(filepath):
         print("Contains 'chase'")
         return 2000000012
 
+    if "bilt" in filepath.lower() or 'CreditCard3' in filepath.lower():
+        print("Contains 'bilt' or 'CreditCard3'")
+        return
+
+
     # return None if we didn't match anything
+    print("\t\t... account not found!!!")
     return None
 
 
@@ -196,14 +201,16 @@ def check_transaction_load_status(transaction):
 def create_master_statement(statement_list):
     cum_trans_list = []
     for statement in statement_list:
-        if statement is not None:
+        if (statement is not None) and (statement is not False):
             if statement.transactions is not None:
                 cum_trans_list.extend(statement.transactions)
+
+    # we have appended all transactions together, so can create "master" with dummy parameters
     statement = Statement.Statement("dummy account_id",
-                                    "dummy year",
-                                    "dummy month",
-                                    "dummy filepath",
-                                    transactions=cum_trans_list)
+                                "dummy year",
+                                "dummy month",
+                                "dummy filepath",
+                                transactions=cum_trans_list)
     return statement
 
 
@@ -258,29 +265,64 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     # if no valid account_id was found
     else:
         raise Exception("No valid account selected in tools-load_helper-create_statement()")
-
-        # print out user error message
         print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
 
     return None
 
 
-def get_month_year_statement_list(basefilepath, year, month):
+# get_month_year_statement_list:
+#   @brief      MAIN FUNCTION THAT IS DOING THE SHIT WHEN LOADING !!!!
+def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     file_list = get_year_month_files(basefilepath, year, month)
 
     statement_list = []
+    status_list = []
     for file in file_list:
         statement_list.append(create_statement(year, month, file))
 
         if statement_list[-1] is not None:
             print("... statement created, going to load in data")
+            status_list.append(True)
 
             try:
                 statement_list[-1].load_statement_data()
             except Exception as e:
-                print("Something went wrong loading statement from filepath but the show MUST GO ON!!!")
+                print("Something went wrong loading statement from filepath!!!")
                 print("\terror is: ", e)
                 raise (e)
-            statement_list[-1].print_statement()
 
+            if printmode:
+                statement_list[-1].print_statement()
+        else:
+            print("... seems like no statement could be created")
+            status_list.append(False)
+
+    # print out final status list and return
+    print_status_table(file_list, status_list)
     return statement_list
+
+
+def print_status_table(file_list, status_list):
+    # Check if both lists are of the same length
+    if len(file_list) != len(status_list):
+        print("Error: statement_list and status_list must have the same length.")
+        return
+
+    # Print table header
+    print("| Status | Filepath   |")
+    print("|--------|------------|")
+
+    # Print rows
+    for i in range(len(file_list)):
+        file = file_list[i]
+        status = status_list[i]
+        if status is True:
+            status = "Found!"
+        else:
+            status = "FAIL!"
+
+        # Adjust the width of the columns based on your data
+        print(f"| {status.ljust(16)} | {file.ljust(8)} |")
+
+    # Print table footer
+    print("|------------------|----------|")
