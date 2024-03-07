@@ -10,6 +10,10 @@ class SubMenu():
     def __init__(self, title, basefilepath, action_strings, action_funcs):
         self.title = title
         self.basefilepath = basefilepath
+        if len(action_strings) != len(action_funcs):
+            print("Can't create submenu with mismatched lengths of strings and functions !!!")
+            print(f"Please check configuration for: {title}")
+            raise SystemError()
         self.action_strings = action_strings
         self.action_funcs = action_funcs
 

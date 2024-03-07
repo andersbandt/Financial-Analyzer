@@ -81,6 +81,8 @@ class TabSpendingHistory(SubMenu.SubMenu):
         tmp_ledger.print_statement()
 
 
+# TODO: cleanup on this function (quite unruly)
+# TODO: add some options to do some things like running my Ledger sort functions on the output of search
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
@@ -154,6 +156,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
                                title=f"Graph of category {cath.category_id_to_name(category_id)}")
 
 
+# TODO: Large task. Work on generating sankey diagram
     def a05_make_sankey(self):
         pass
 
@@ -196,7 +199,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             return False
         else:
             # update note in database
-            dbh.transactions.update_transaction_note(sql_key, note_str)
+            dbh.transactions.update_transaction_note_k(sql_key, note_str)
             return True
 
 

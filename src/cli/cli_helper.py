@@ -24,6 +24,7 @@ import db.helpers as dbh
 
 # spinput: really general input function to help with flow control
 #   @param   inp_type="int" === will return any POSITIVE VALUE (will return -1 on bad input)
+# TODO: for both int and float. Check for correctly positioned commas (now that I allow them)
 def spinput(prompt_str, inp_type):
     inp = input(prompt_str)
 
@@ -37,7 +38,7 @@ def spinput(prompt_str, inp_type):
 
     # TYPE: (int)
     if inp_type == "int":
-        # TODO: add some checking for if the user enters commas
+        inp = inp.replace(',', '') # get rid of commas
         try:
             inp = int(inp)
         except ValueError as e:
@@ -50,7 +51,7 @@ def spinput(prompt_str, inp_type):
 
     # TYPE: (float)
     elif inp_type == "float":
-        # TODO: add some checking for if the user enters commas
+        inp = inp.replace(',', '') # get rid of commas
         return float(inp)
 
     # TYPE: (yes or no)
@@ -136,7 +137,6 @@ def get_year_input():
     except ValueError:
         return False
 
-
 def get_month_input():
     month = input("Enter month input (0-12): ")
     try:
@@ -196,8 +196,8 @@ def category_prompt_all(prompt_str, display):
         return cath.category_name_to_id(cat_inp)
 
 # category_prompt: walks the user through selecting a Category from given array input
-# TODO: this function can be broken into at least one other function FOR SURE
-# TODO: this function also is incapable of returning a value because of the recursive calls
+# TODO: 1) reduce size      2) figure out how to return value with recursive calls
+# I also rarely use this function in practice ....
 def category_tree_prompt():
     category_arr = cath.load_top_level_categories()
 
@@ -291,7 +291,7 @@ def get_category_input(transaction, mode=2):
     if mode == 1:
         # set up autocomplete information
         #   by calling category_prompt(on top level of categories)
-        cat = category_prompt(cath.load_top_level_categories(), trans_prompt) # TODO: can I eliminate the load here?
+        cat = category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
     # MODE2: list all prompts in DB
     elif mode == 2:
         cat = category_prompt_all(trans_prompt, False) # second param controls if I print all the categories each transaction or not
@@ -316,7 +316,7 @@ def get_category_input(transaction, mode=2):
 
 
 ##############################################################################
-####      CATEGORY INPUT FUNCTIONS    ########################################
+####      ACCOUNT INPUT FUNCTIONS    #########################################
 ##############################################################################
 
 def account_prompt_type(prompt_str, acc_type):
@@ -347,5 +347,14 @@ def account_prompt_all(prompt_str):
     return ac_inp_id
 
 
+def get_account_id_manual():
+    accounts = dbh.account.get_account_ledger_data()
+    i = 1
+    for account in accounts:
+        print(str(i) + ": " + account[1])
+        i += 1
 
+    acc_num = int(input("\t\tPlease enter what account you want: "))
+    acc = accounts[acc_num - 1][0]
+    return acc
 

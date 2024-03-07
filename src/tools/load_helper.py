@@ -18,7 +18,6 @@ from loguru import logger
 from utils import logfn
 
 
-
 ##############################################################################
 ####      STATEMENT FILE FUNCTIONS    ########################################
 ##############################################################################
@@ -65,7 +64,6 @@ def check_account_load_status(account_id, month, year, printmode=None):
         return 0
 
 
-
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
 @logfn
 def get_statement_folder(base_filepath, year, month):
@@ -98,12 +96,11 @@ def get_statement_folder(base_filepath, year, month):
         return
 
     statement_folder = (
-        base_filepath + "/" + str(year) + "/monthly_statements/" + month_string # tag:HARDCODE
+            base_filepath + "/" + str(year) + "/monthly_statements/" + month_string  # tag:HARDCODE
     )
     return statement_folder
 
 
-# TODO: get this basefilepath out of there
 @logfn
 def get_year_month_files(basefilepath, year, month):
     # look in the folder to determine loaded files
@@ -119,11 +116,14 @@ def get_year_month_files(basefilepath, year, month):
 
     return dir_list
 
+
 # attempts to take in a raw financial data file and return what account number it is tied to
 # IDEA (captured in Obsidian as well): store what files I use and match them to accounts in order to
 #   create some algorithm that predicts based on things like file name, extension, size, etc
 #   to make the decision to match to account
 # tag:HARDCODE for this whole function
+# TODO: To really make this app usable for the general public I should turn this function in a table in the .db file
+    # would make it easier on me to for reviewing purposes
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
@@ -163,25 +163,9 @@ def match_file_to_account(filepath):
         print("\t\tContains 'bilt' or 'CreditCard3'")
         return 2000000016
 
-
     # return None if we didn't match anything
     print("\t\t... account not found!!!")
     return None
-
-
-# TODO: I think this should be moved to clih
-def get_account_id_manual():
-    accounts = dbh.account.get_account_ledger_data()
-
-    i = 1
-    for account in accounts:
-        print(str(i) +": " + account[1])
-        i += 1
-
-    acc_num = int(input("\t\tPlease enter what account you want: "))
-    acc = accounts[acc_num-1][0]
-    return acc
-
 
 
 ##############################################################################
@@ -189,8 +173,8 @@ def get_account_id_manual():
 ##############################################################################
 
 # check_transaction_load_status: checks whether or not a Transaction object is loaded up
-# TODO: could improve this function potentially. Like checking the actual raw filesystem data?
 def check_transaction_load_status(transaction):
+    # call function to get transaction in .db file based matching [date, account_id, amount, description]
     transaction_status = dbh.transactions.get_transaction(transaction)
     if transaction_status is None:
         return False
@@ -207,10 +191,10 @@ def create_master_statement(statement_list):
 
     # we have appended all transactions together, so can create "master" with dummy parameters
     statement = Statement.Statement("dummy account_id",
-                                "dummy year",
-                                "dummy month",
-                                "dummy filepath",
-                                transactions=cum_trans_list)
+                                    "dummy year",
+                                    "dummy month",
+                                    "dummy filepath",
+                                    transactions=cum_trans_list)
     return statement
 
 
@@ -224,12 +208,11 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     if account_id == None:
         if account_id_prompt:
             print("\tCouldn't automatically match account_id, manually loading in")
-            account_id = get_account_id_manual()
+            account_id = clih.get_account_id_manual()
         else:
             return None
     else:
         print("\tFound account ID: ", account_id)
-
 
     # tag:HARDCODE
     if account_id == 2000000001:  # Marcus
@@ -240,7 +223,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
                                             0,
                                             1,
                                             4,
-                                            -1) # date_col, amount_col, description_col, category_col
+                                            -1)  # date_col, amount_col, description_col, category_col
         return stat
     elif account_id == 2000000005:  # Vanguard Brokerage
         stat = st.VanguardBrokerage.VanguardBrokerage(account_id, year, month, filepath)
@@ -249,7 +232,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         stat = st.VanguardRoth.VanguardRoth(account_id, year, month, filepath)
         return stat
     elif account_id == 2000000007:  # Venmo
-        stat = st.Venmo.Venmo(account_id, year, month, filepath, -1, -1, -1, -1) # Venmo inherits from csvStatement
+        stat = st.Venmo.Venmo(account_id, year, month, filepath, -1, -1, -1, -1)  # Venmo inherits from csvStatement
         return stat
     elif account_id == 2000000008:  # Robinhood
         stat = st.Robinhood.Robinhood(account_id, year, month, filepath)

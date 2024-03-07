@@ -36,6 +36,8 @@ class Transaction:
         # create SQL key (optional parameter)
         if sql_key is not None:
             self.sql_key = sql_key
+        else:
+            self.sql_key = None
 
         # __init__ error handling
         if self.description is None:

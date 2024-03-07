@@ -3,6 +3,7 @@
 
 
 """
+from prettytable import PrettyTable
 
 
 
@@ -35,19 +36,15 @@
 
 
 # TODO: complete this function. Will be used to "pretty print" transactions and other things in tabular format
+# print_variable_table: prints a variable table
+#   @param  variable_names      strings for the top headers
+#   @param  values              a 2D array of the data to print
 def print_variable_table(variable_names, values):
+    table = PrettyTable()
     # do checking on same length input arrays
-    if len(variable_names) != len(values):
-        print("YIKES: can't print with different length inputs")
-        raise InterruptedError("Won't print variable table")
-
-    string_to_print = ""
-    for i in range(0, len(variable_names)):
-        string_to_print += variable_names[i] + \
-                           "".join(values[i]) + \
-                           get_spaces(len(variable_names[i]), 30) # WILL NEED TO ADJUST THIS TRIM VALUE
-
-    print(string_to_print)
+    table.field_names = variable_names
+    table.add_rows(values)
+    print(table)
 
 
 
@@ -70,12 +67,8 @@ def print_balances(names, values, title):
 # TODO: complete this printing function - will be useful for printing transactions, categories, etc.
 def print_tagged_array_data(labels, values):
     if len(labels) != len(values):
-        print("Can't print desired array! Mismatched lengths in program!")
-        return False
-
-    for label in labels:
-        print("f")
-
+        print("YIKES: can't print with different length inputs")
+        raise InterruptedError("Won't print variable table")
     pass
 
 

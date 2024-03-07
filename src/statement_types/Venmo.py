@@ -1,5 +1,4 @@
 
-
 # import needed modules
 import csv
 import os
@@ -28,6 +27,7 @@ class Venmo(csvStatement.csvStatement):
 
         # initialize identifying statement info
         self.title = self.title + " - Venmo"
+
 
     def load_statement_data(self):
         # verify statement file integrity
@@ -61,7 +61,6 @@ class Venmo(csvStatement.csvStatement):
                                 date, self.account_id, None, amount, description, note=line[3]
                             )
                         )  # order: date, account_id, category_id, amount, description
-
 
         except FileNotFoundError:
             print("You might be missing your Venmo .csv file")

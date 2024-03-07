@@ -60,8 +60,6 @@ class Ledger:
         else:
             return False
 
-    # def categorizeLedgerAutomatic():
-    #   inherited from Ledger
 
     def get_number_uncategorized(self):
         num = 0
@@ -70,6 +68,7 @@ class Ledger:
                 num += 1
         return num
 
+
     def getUncategorizedTrans(self):
         uncategorized_transaction = []
         for transaction in self.transactions:
@@ -77,6 +76,7 @@ class Ledger:
                 uncategorized_transaction.append(transaction)
 
         return uncategorized_transaction
+
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeLedgerAutomatic(self, categories):
@@ -139,11 +139,13 @@ class Ledger:
 
 
     def sort_date_asc(self):
-        pass
+        sorted_trans = sorted(self.transactions, key=lambda t: t.date)
+        self.transactions = sorted_trans
 
-    # TODO: finish these date sorting functions
+
     def sort_date_desc(self):
-        pass
+        sorted_trans = sorted(self.transactions, key=lambda t: t.date, reverse=True)
+        self.transactions = sorted_trans
 
 
     ##############################################################################
@@ -156,8 +158,12 @@ class Ledger:
             print("ERROR: can't print empty ledger!")
             return
         print("Ledger: ", self.title)
+
+        # OLD METHOD: using print_transaction
         for transaction in self.transactions:
             transaction.printTransaction(include_sql_key=include_sql_key)
+
+        # NEW METHOD: using prettytable
 
 
     ##############################################################################

@@ -50,7 +50,7 @@ class MainApplication:
 
 
     def print_header(self):
-        print("\n\n\n")
+        print("\n\n")
         print("#############################################")
         print("############ MAIN PROGRAM ###################")
         print("#############################################")
@@ -61,8 +61,10 @@ class MainApplication:
         print("Attempting to start main loop of CLI interface menu")
 
         while True:
+            error_flags = 0
             self.print_header()
 
+            # TODO: below printout of menu options can probably be better ...
             i = 1
             for tab in self.tabs:
                 if tab is not None:
@@ -71,7 +73,6 @@ class MainApplication:
                 else:
                     print("NONE")
                     i = i + 1
-
             print("0: EXIT PROGRAM")
 
             # ask user for choice
@@ -81,19 +82,18 @@ class MainApplication:
                 print('Exiting...')
                 break
             else:
-                # convert input to INT
                 try:
-                    choice_int = int(choice)
+                    choice_int = int(choice) # convert input to INT
                 except ValueError:
-                    print("Invalid integer string")
+                    print("\n\nInvalid integer string")
+                    error_flags = 1
+                if choice_int > len(self.tabs):
+                    print("\n\n!!! List choice out of range !!!")
+                    error_flags = 1
 
-                try:
+                # if no errors can run SubMenu
+                if error_flags == 0:
                     self.tabs[choice_int-1].run()
-                except IndexError as e:
-                    print("\n\n\n!!! List choice out of range !!!")
-                    # TODO: figure out how to make it so if I type 55 or something and that's not an option the program won't crash
-                    raise(e) # if I don't raise an exception possibly an exception within the run() statement won't be caught
-
 
 
 ###########################################################
