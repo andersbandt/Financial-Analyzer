@@ -68,7 +68,7 @@ def month_bin_transaction_total(transactions, months_prev):
     if cur_month - months_prev < 1:
         start_year = cur_year - int(months_prev/12)
         if months_prev % 12 > 0:
-            start_year = cur_year - (months_prev % 12) # TODO: finish this calculation of year change
+            start_year = cur_year - (months_prev % 12) # TODO: finish this calculation of year change <--- what did I mean by this?
         start_month = cur_month - months_prev + 12
     else:
         start_year = cur_year

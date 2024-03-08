@@ -4,6 +4,7 @@
 
 """
 
+
 # import user defined modules
 import db.helpers as dbh
 import analysis.analyzer_helper as anah
@@ -21,10 +22,6 @@ from loguru import logger
 from utils import logfn
 
 
-# TODO: add some slots for tabular data
-#   for example:
-#       -latest balance record for each account along with date it was recorded on and type
-
 
 class TabBalances(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
@@ -33,12 +30,14 @@ class TabBalances(SubMenu.SubMenu):
         action_strings = ["Show executive wealth summary",
                           "Add balance",
                           "Graph balances per account",
-                          "Retirement modeling"]
+                          "Retirement modeling",
+                          "Show recent .db balance"]
 
         action_funcs = [self.a01_show_wealth,
                         self.a02_add_balance,
                         self.a03_graph_account_balance,
-                        self.a04_retirement_modeling]
+                        self.a04_retirement_modeling,
+                        self.a05_show_recent_balance]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -64,8 +63,8 @@ class TabBalances(SubMenu.SubMenu):
             acc_balances,
             "BALANCE SUMMARY"
         )
-
         print(acc_dates)
+
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
     # TODO: add input for if the account is a retirement account or not
@@ -148,7 +147,7 @@ class TabBalances(SubMenu.SubMenu):
 
     # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
-        acc_id_arr, acc_balances = balh.produce_retirement_balances()
+        acc_id_arr, acc_balances = balh.get_retirement_balances()
 
         # use cli_printer to print a table of balances
         clip.print_balances(
@@ -182,22 +181,42 @@ class TabBalances(SubMenu.SubMenu):
             f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
 
-    def show_liquid_over_time(self):
-        print("INFO: show_liquid_over_time running")
+# TODO: this function can use cleanup ...
+    def a05_show_recent_balance(self):
+        print("... showing recent balances as you request ...")
+        acc_id_arr = dbh.account.get_all_account_ids()
+        table_values = []
+        for acc_id in acc_id_arr:
+            balance = dbh.balance.get_recent_balance(acc_id, True)
+            print(balance)
+            table_values.append([
+                dbh.account.get_account_name_from_id(acc_id),
+                balance[0],
+                balance[1]])
+        clip.print_variable_table(
+            ["Account", "Balance", "Date"],
+            table_values
+        )
+        return True
 
-        # set params
-        days_previous = 180  # half a year maybe?
-        N = 5
 
-        # get pyplot figure
-        figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
-
-        # get data for displaying balances in tabular form
-        spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
-        recent_Bx = spl_Bx[-1]
-
-        print("Working with this for tabulated data conversion")
-        print(recent_Bx)
+    # random shit that I have leftover for reference
+    # def show_liquid_over_time(self):
+    #     print("INFO: show_liquid_over_time running")
+    #
+    #     # set params
+    #     days_previous = 180  # half a year maybe?
+    #     N = 5
+    #
+    #     # get pyplot figure
+    #     figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
+    #
+    #     # get data for displaying balances in tabular form
+    #     spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
+    #     recent_Bx = spl_Bx[-1]
+    #
+    #     print("Working with this for tabulated data conversion")
+    #     print(recent_Bx)
 
     # def show_wealth_by_type(self):
     #     balance_by_type = []
@@ -217,3 +236,5 @@ class TabBalances(SubMenu.SubMenu):
     #
     #     print("Here is your recent balance history by account type")
     #     print(balance_by_type)
+
+

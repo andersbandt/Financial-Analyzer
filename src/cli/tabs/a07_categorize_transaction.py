@@ -3,25 +3,16 @@
 @brief sub menu for loading in raw financial data and storing in database
 
 
-
 """
 
-# TODO: I need to add a method to delete keywords
-
-# import needed packages
-import os
-from prompt_toolkit import prompt
 
 # import user defined modules
 from categories import categories_helper as cath
 import cli.cli_helper as clih
 from cli.tabs import SubMenu
-
 from categories import categories_helper
-
 from statement_types import Transaction
 from statement_types import Ledger
-
 import db.helpers as dbh
 
 
@@ -40,7 +31,6 @@ class TabTransCategorize(SubMenu.SubMenu):
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
-
 
     def a01_print_uncategorized(self):
         ledger_data = dbh.transactions.get_uncategorized_transactions()
@@ -76,7 +66,6 @@ class TabTransCategorize(SubMenu.SubMenu):
         uncategorized_statement.update_statement()
 
         return True
-
 
 
     ##############################################################################

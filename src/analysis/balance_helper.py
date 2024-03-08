@@ -3,6 +3,7 @@
 # import user defined modules
 import db.helpers as dbh
 import analysis.investment_helper as invh
+from tools import date_helper as dateh
 
 
 # import logger
@@ -17,7 +18,7 @@ def get_account_balance(account_id):
     # if account is an investment account
     if acc_type == 4:
         bal = invh.summarize_account(account_id)
-        bal_date = 0 # TODO: add current date if account is investment account
+        bal_date = dateh.get_cur_str_date()
     else:
         # leverage database 'balance' helper to get most recent balance entry by DATE
         bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
@@ -33,7 +34,6 @@ def get_account_balance_on_date(account_id, date):
         return balance_data
 
 
-# TODO: migrate any "manual additions" of balance adding into this function
 def add_account_balance(account_id, bal_amount, bal_date):
     # do some checking on double add per date
     bal_added = get_account_balance_on_date(account_id, bal_date)
@@ -51,10 +51,7 @@ def add_account_balance(account_id, bal_amount, bal_date):
     return True
 
 
-
-
-# a01_show_wealth
-def produce_retirement_balances():
+def get_retirement_balances():
     acc_balances = []
     acc_id_arr = dbh.account.get_retirement_accounts(1)
 

@@ -9,6 +9,7 @@ Transaction represents a single transaction on any statement
 # import user defined modules
 import db.helpers as dbh
 import cli.cli_helper as clih
+import cli.cli_printer as clip
 
 
 class Ledger:
@@ -125,7 +126,7 @@ class Ledger:
     ##############################################################################
     ####      ORDERING FUNCTIONS    ##############################################
     ##############################################################################
-
+# TODO: my prettytable module also has sorting capability ... worthwhile to still have these functions?
     # sort:trans_asc: sorts the transactions by amount ascending (highest to lowest)
     def sort_trans_asc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.amount)
@@ -160,10 +161,38 @@ class Ledger:
         print("Ledger: ", self.title)
 
         # OLD METHOD: using print_transaction
-        for transaction in self.transactions:
-            transaction.printTransaction(include_sql_key=include_sql_key)
+        # for transaction in self.transactions:
+        #     transaction.printTransaction(include_sql_key=include_sql_key)
 
         # NEW METHOD: using prettytable
+        if include_sql_key:
+            headers = ["KEY", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
+        else:
+            headers = ["DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
+
+        values = []
+        for transaction in self.transactions:
+            if include_sql_key:
+                cur_values = [
+                    transaction.sql_key,
+                    transaction.date,
+                    transaction.amount,
+                    transaction.description,
+                    dbh.category.get_category_name_from_id(transaction.category_id),
+                    dbh.account.get_account_name_from_id(transaction.account_id),
+                    transaction.note
+                ]
+            else:
+                cur_values = [
+                    transaction.date,
+                    transaction.amount,
+                    transaction.description,
+                    dbh.category.get_category_name_from_id(transaction.category_id),
+                    dbh.account.get_account_name_from_id(transaction.account_id),
+                    transaction.note
+                ]
+            values.append(cur_values)
+        clip.print_variable_table(headers, values)
 
 
     ##############################################################################

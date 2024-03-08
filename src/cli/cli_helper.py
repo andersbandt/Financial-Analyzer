@@ -107,6 +107,7 @@ def autocomplete(input_text, word_list):
 # @param string_arr      array of options for user to have autocomplete run on
 # @param echo            echo confirmation of selection?
 # @param disp_options    toggles all the possible array getting printed or not
+# @param exact_match     requires input to be in strings_arr   # TODO: shouldn't it always be exact_match...? What's the point of this?
 def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
     print("\n")
     # IF USER SELECTED DISPLAY OPTIONS
@@ -177,8 +178,9 @@ def get_date_input(prompt_str):
 ####      CATEGORY INPUT FUNCTIONS    ########################################
 ##############################################################################
 
-
-# returns -1 if bad prompt response
+# param         prompt_str    string to print to user
+# @param        display       print out all the categories or NOT
+# @returns      -1 if bad prompt response, category_id otherwise
 def category_prompt_all(prompt_str, display):
     print(prompt_str)
     # get list of all Category objects
@@ -328,7 +330,9 @@ def account_prompt_type(prompt_str, acc_type):
         logger.exception("Uh oh, no accounts found!")
         return
 
-    ac_inp = inp_auto(prompt_str, accounts, echo=True)
+    ac_inp = inp_auto(prompt_str, accounts, echo=True, exact_match=True)
+    if ac_inp is False:
+        return False
     ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
     return ac_inp_id
 

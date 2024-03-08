@@ -22,7 +22,6 @@ class SubMenu():
     ####      "FLOW" FUNCTIONS           #########################################
     ##############################################################################
 
-# TODO: I think that when I typed in "Wells Credit" as a run response it got past my initial exception check
     def run(self):
         print("\n\n")
         print("##############################")

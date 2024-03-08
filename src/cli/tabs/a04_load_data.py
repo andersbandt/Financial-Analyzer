@@ -61,7 +61,6 @@ class TabLoadData(SubMenu.SubMenu):
         self.update_listing()
 
 
-
     def a01b_load_all_data(self):
         print("... loading in ALL financial data")
 
@@ -113,7 +112,6 @@ class TabLoadData(SubMenu.SubMenu):
 
 
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
-    # TODO: this function no longer works. "Can't save statement: 'TabLoadData' has no attribute 'statement_list'
     def a05_save_statement_csv(self):
         print("... saving statement to .csv")
         try:
@@ -126,20 +124,18 @@ class TabLoadData(SubMenu.SubMenu):
                 # write headers
                 csv_writer.writerow(["Date", "Amount", "Description", "Category", "Source"])
 
-                # iterate through all statements
-                for statement in self.statement_list:
-                    # iterate through all transactions
-                    if statement.transactions is not None:
-                        for transaction in statement.transactions:
-                            string_dict = transaction.getStringDict()
+                # iterate through all transactions
+                if self.statement.transactions is not None:
+                    for transaction in self.statement.transactions:
+                        string_dict = transaction.getStringDict()
 
-                            # write the row
-                            csv_writer.writerow([
-                                string_dict['date'],
-                                string_dict['amount'],
-                                string_dict['description'],
-                                string_dict['category'],
-                                string_dict['source']])
+                        # write the row
+                        csv_writer.writerow([
+                            string_dict['date'],
+                            string_dict['amount'],
+                            string_dict['description'],
+                            string_dict['category'],
+                            string_dict['source']])
         except Exception as e:
             print("Can't save statement: ", e)
 

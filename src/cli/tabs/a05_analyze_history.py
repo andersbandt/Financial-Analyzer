@@ -9,8 +9,7 @@ import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
 from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
-from analysis import transaction_helper as transh
-from analysis.data_recall import transaction_recall
+from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
 # import user defined modules
@@ -64,7 +63,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         one_year_ago = today - timedelta(days=365)
 
         # LOAD IN TRANSACTIONS FROM 12 MONTHS AGO
-        transactions = transaction_recall.recall_transaction_data(
+        transactions = transr.recall_transaction_data(
             one_year_ago.strftime('%Y-%m-%d'),
             today.strftime('%Y-%m-%d'))
 
@@ -75,7 +74,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
 
 #    a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
-        transactions = transaction_recall.recall_transaction_data()
+        transactions = transr.recall_transaction_data()
         tmp_ledger = Ledger.Ledger("All Statement Data")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement()
@@ -99,20 +98,20 @@ class TabSpendingHistory(SubMenu.SubMenu):
         if search_type == 1:
             search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
                                             "text")
-            transactions = transaction_recall.recall_transaction_desc_keyword(search_str)
+            transactions = transr.recall_transaction_desc_keyword(search_str)
         elif search_type == 2:
             # determine user choice of type of category search
             cat_search_type = clih.prompt_num_options("What type of category search?: ",
                                                       ["recursive (children)", "individual"])
             if cat_search_type == 1:
-                search_str = clih.category_prompt_all("What is the category to search for?: ", False)
+                search_str = clih.category_tree_prompt()
                 children_id = cath.get_category_children(search_str)
-                transactions = transaction_recall.recall_transaction_category(search_str)
+                transactions = transr.recall_transaction_category(search_str)
                 for child_id in children_id:
-                    transactions.extend(transaction_recall.recall_transaction_category(child_id))
+                    transactions.extend(transr.recall_transaction_category(child_id))
             elif cat_search_type == 2:
                 search_str = clih.category_prompt_all("What is the category to search for?: ", False)
-                transactions = transaction_recall.recall_transaction_category(search_str)
+                transactions = transr.recall_transaction_category(search_str)
             elif cat_search_type is False:
                 print("Ok, quitting transaction search.\n")
                 return False
@@ -144,7 +143,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             pass
         if cat_graph_type == 2:
             category_id = clih.category_prompt_all("What is the category to graph?", False)
-            transactions = transaction_recall.recall_transaction_category(category_id)
+            transactions = transr.recall_transaction_category(category_id)
 
         months_prev = 12
         month_totals = anah.month_bin_transaction_total(transactions, months_prev)
@@ -166,7 +165,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         year = clih.get_year_input()
         month = clih.get_month_input()
 
-        month_transactions = transaction_recall.recall_transaction_month_bin(year, month)
+        month_transactions = transr.recall_transaction_month_bin(year, month)
         tmp_ledger = Ledger.Ledger(f"Transactions from ({year},{month})")
         tmp_ledger.set_statement_data(month_transactions)
         tmp_ledger.sort_trans_asc()
@@ -179,7 +178,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         if sql_key is False:
             print("Ok, quitting adding note to transaction")
 
-        trans = transh.get_transaction(sql_key)
+        trans = transr.get_transaction(sql_key)
         print(f"Found transaction with sql_key={sql_key}\n")
         trans.printTransaction()
 
@@ -240,7 +239,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
                 # reprint updated list")
                 print("\n")
                 for id_key in found_sql_key:
-                    transaction = transh.get_transaction(id_key)
+                    transaction = transr.get_transaction(id_key)
                     transaction.printTransaction(include_sql_key=True)
 
         # prompt user to get new category ID
@@ -333,7 +332,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             prev_month = 12
             prev_year -= 1
 
-        prev_month_trans = transaction_recall.recall_transaction_month_bin(prev_year, prev_month)
+        prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
 
         # STEP 2: get transactions from baseline data (before previous month)
         baseline_month_start = prev_month - comp_month_prev
@@ -353,7 +352,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             baseline_month_end
         )
 
-        baseline_trans = transaction_recall.recall_transaction_data(
+        baseline_trans = transr.recall_transaction_data(
             baseline_range_start[0],
             baseline_range_end[1],
         )

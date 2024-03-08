@@ -298,6 +298,7 @@ class tabBudgeting:
         # TODO: calling this may be causing the canvas to resize weird... look into
         canvas.configure(scrollregion=canvas.bbox("all"))
 
+
     # renderTree: renders a Tree using built in Tree and Treestyle from ete3 library
     def renderTree(self):
         # load all Category objects from SQL database

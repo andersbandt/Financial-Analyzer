@@ -5,11 +5,11 @@
 """
 
 # import user defined modules
+import db.helpers as dbh
 from categories import categories_helper as cath
 import cli.cli_helper as clih
+import cli.cli_printer as clip
 from cli.tabs import SubMenu
-
-import db.helpers as dbh
 
 
 class TabCategory(SubMenu.SubMenu):
@@ -36,7 +36,6 @@ class TabCategory(SubMenu.SubMenu):
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
 
-
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
@@ -61,7 +60,6 @@ class TabCategory(SubMenu.SubMenu):
         dbh.category.insert_category(category_name, parent_id)
         return True
 
-
     def a02_check_category(self):
         print("... checking categories ...")
 
@@ -77,10 +75,12 @@ class TabCategory(SubMenu.SubMenu):
         #   - no double names
         #   - no disconnected categories (all in tree structure)
 
-
     def a03_manage_keywords(self):
         print("... managing keywords ...")
         category_id = clih.category_prompt_all("Please enter the associated category of this keyword", True)
+        if category_id is False:
+            print("Ok, quitting add keyword")
+            return False
 
         keyword_string = clih.spinput("What is the string for this keyword?  "
                                       "*note that it will be converted to all uppercase\n\tkeyword :",
@@ -92,25 +92,38 @@ class TabCategory(SubMenu.SubMenu):
         if len(cat_id_for_keyword) != 0:
             print("Keyword string already exists for category ID: ", cat_id_for_keyword)
             print("ERROR: can't add keyword if string already exists!")
-            return
+            return False
 
         dbh.keywords.insert_keyword(keyword_string, category_id)
 
         print("Ok, added keyword: ", keyword_string)
         print("\tfor category", cath.category_id_to_name(category_id))
 
-
     def a04_print_keywords(self):
         print("... printing keywords ...")
-        keyword_lg = dbh.keywords.get_keyword_ledger_data()
 
+        # get input on what type of keyword print to do
+        print_options = ["ALL", "PER CATEGORY"]
+        print_type = clih.prompt_num_options("What type of print do you want to perform?: ",
+                                             print_options)
+
+        if print_type == 1:
+            keyword_lg = dbh.keywords.get_keyword_ledger_data()
+        elif print_type == 2:
+            category_id = clih.category_prompt_all("What category to print keywords for?", False)
+            keyword_lg = dbh.keywords.get_keyword_for_category_id(category_id)
+        else:
+            print("INVALID KEYWORD PRINTING!!!")
+            return False
+
+        table_values = []
         for keyword in keyword_lg:
             cat_name = cath.category_id_to_name(keyword[1])
-            print(cat_name + ": " + str(keyword[2]))
-
-
-# TODO: add function to print keywords PER category
-
+            table_values.append([cat_name, keyword[2]])
+        clip.print_variable_table(
+            ["Category", "Keyword String"],
+            table_values
+        )
 
 
     def a05_delete_category(self):
@@ -123,16 +136,16 @@ class TabCategory(SubMenu.SubMenu):
         dbh.category.delete_category(category_id)
         print("Ok deleted category with ID: " + str(category_id))
 
-
     def a06_move_parent(self):
         print("... moving parent category for ID ...")
-        category_id = clih.category_prompt_all("What category do you want to change the parent for?", False) # setting display=False
+        category_id = clih.category_prompt_all("What category do you want to change the parent for?",
+                                               False)  # setting display=False
 
         new_parent_id = clih.category_prompt_all("What is the new parent for this category?", False)
 
         # do some checking on the parent move?
-        confirm = clih.spinput("Move category "  + \
-                               cath.category_id_to_name(category_id)  + \
+        confirm = clih.spinput("Move category " + \
+                               cath.category_id_to_name(category_id) + \
                                " to parent " + \
                                cath.category_id_to_name(new_parent_id) + \
                                " ? (y) or (n): ",
@@ -145,8 +158,8 @@ class TabCategory(SubMenu.SubMenu):
         # make database change
         dbh.category.update_parent(category_id, new_parent_id)
 
-        print(f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
-
+        print(
+            f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
 
     # TODO: finish this function to delete a keyword
     def a07_delete_keyword(self):
@@ -160,7 +173,3 @@ class TabCategory(SubMenu.SubMenu):
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
-
-
-
-

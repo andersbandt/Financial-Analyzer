@@ -1,16 +1,45 @@
+"""
+@file    transaction_recall.py
+@brief   module will focus on retrieving Transactions from SQL .db file
 
-# import needed modules
-from datetime import datetime
+"""
+
 
 # import user defined modules
 import db.helpers as dbh
 from statement_types import Transaction
 from tools import date_helper as dateh
 
+# import logger
+from loguru import logger
+from utils import logfn
+
+
+@logfn
+class TransactionRecallError(Exception):
+    def __init__(self, origin="TransactionRecall", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+
+    def __str__(self):
+        return self.msg
+
+
 
 # @logfn
+def get_transaction(sql_key):
+    ledge_transaction = dbh.transactions.get_transaction_by_sql_key(sql_key)
+    transaction = convert_ledge_to_transactions(ledge_transaction)
+    if len(transaction) == 1:
+        # transaction[0].printTransaction(include_sql_key=True)
+        return transaction[0]
+    else:
+        print("Can't get transaction by sql_key: more than 1 result!")
+        raise Exception
+
+# convert_ledge_to_transactions: converts raw SQL ledger data into Transaction objects
+# @logfn
 def convert_ledge_to_transactions(ledger_data):
-    # create an array of Transaction objects with the database data
     transactions = []  # clear transactions
     for item in ledger_data:
         transactions.append(
@@ -36,7 +65,6 @@ def convert_ledge_to_transactions(ledger_data):
 #     @param date_end - the ending date for search
 # @logfn
 def recall_transaction_data(date_start=-1, date_end=-1):
-    # TODO: delete following lines post audit. I highly doubt I am using it?
     if date_start != -1 and date_end != -1:
         print("Recalling transactions between " + date_start + " and " + date_end)
         ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
@@ -48,12 +76,11 @@ def recall_transaction_data(date_start=-1, date_end=-1):
 
     if len(transactions) == 0:
         logger.exception(
-            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
+            "Uh oh, transaction_recall.recall_transaction_data produced no results."
         )
-        raise AnalyzerHelperError(
-            "Uh oh, analyzer_helper.recall_transaction_data produced no results."
+        raise TransactionRecallError(
+            "Uh oh, transaction_recall.recall_transaction_data produced no results."
         )
-
     return transactions
 
 

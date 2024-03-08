@@ -1,4 +1,4 @@
-# import needed modules
+
 
 
 # import user defined modules
@@ -25,10 +25,7 @@ class Category:
         self.keyword = []
         keywords = dbh.keywords.get_keyword_for_category_id(self.id)
         for keyword in keywords:
-            self.keyword.append(
-                # TODO: phase this .upper() out? Maybe by making SURE that loaded keywords into SQL are already uppercase?
-                keyword[2].upper()
-            )  # keyword string is third column of sql data structure
+            self.keyword.append(keyword[2].upper())  # keyword string is third column of sql data structure
 
 
     # print_category: prints a categories name to the console

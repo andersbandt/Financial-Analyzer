@@ -64,15 +64,10 @@ class MainApplication:
             error_flags = 0
             self.print_header()
 
-            # TODO: below printout of menu options can probably be better ...
             i = 1
             for tab in self.tabs:
-                if tab is not None:
-                    print(str(i) + ": " + tab.title)
-                    i = i + 1
-                else:
-                    print("NONE")
-                    i = i + 1
+                print(str(i) + ": " + tab.title)
+                i = i + 1
             print("0: EXIT PROGRAM")
 
             # ask user for choice
