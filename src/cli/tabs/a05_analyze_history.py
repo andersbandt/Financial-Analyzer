@@ -87,7 +87,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         print("... searching transactions ...")
 
         # get input on what type of search to do
-        search_options = ["DESCRIPTION", "CATEGORY"]
+        search_options = ["DESCRIPTION", "CATEGORY", "DATE"]
         search_type = clih.prompt_num_options("What type of search do you want to perform?: ",
                                               search_options)
         if search_type is False:
@@ -118,19 +118,26 @@ class TabSpendingHistory(SubMenu.SubMenu):
             else:
                 print(f"Uh oh, bad category search type of: {cat_search_type}")
                 return False
+        elif search_type == 3:
+            start_date = clih.get_date_input("What is the start date of search range?")
+            end_date = clih.get_date_input("What is the end date of search range?")
+            if start_date is False or end_date is False:
+                print("Ok, quitting transaction search.\n")
+                return False
+            transactions = transaction_recall.recall_transaction_data(start_date, end_date)
         else:
             print(f"Can't perform search with search type of: {search_type}")
             return False
 
         # form Ledger, print, and return executive summary
-        tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type} with parameter {search_str}")
+        tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type}")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement(include_sql_key=True)
 
         ledger_exec = anah.return_ledger_exec_dict(transactions)
         print("\n")
         pprint(ledger_exec)
-        return transactions
+        return True
 
 
     # a04_graph_category: walks user through producing a graph of a certain category
@@ -252,6 +259,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             dbh.transactions.update_transaction_category_k(
                 key,
                 new_category_id)
+
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################

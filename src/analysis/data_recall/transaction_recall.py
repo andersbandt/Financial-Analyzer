@@ -26,6 +26,22 @@ class TransactionRecallError(Exception):
 
 
 
+# import logger
+from loguru import logger
+from utils import logfn
+
+
+@logfn
+class TransactionRecallError(Exception):
+    """Transaction Recall Error"""
+    def __init__(self, origin="TransactionRecall", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+
+    def __str__(self):
+        return self.msg
+
+
 # @logfn
 def get_transaction(sql_key):
     ledge_transaction = dbh.transactions.get_transaction_by_sql_key(sql_key)
@@ -76,10 +92,10 @@ def recall_transaction_data(date_start=-1, date_end=-1):
 
     if len(transactions) == 0:
         logger.exception(
-            "Uh oh, transaction_recall.recall_transaction_data produced no results."
+            "Uh oh, transaction_recall produced no results."
         )
         raise TransactionRecallError(
-            "Uh oh, transaction_recall.recall_transaction_data produced no results."
+            "Uh oh, transaction_recall produced no results."
         )
     return transactions
 

@@ -173,9 +173,10 @@ def get_date_input(prompt_str):
         # try to convert into datetime object
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            return date_obj.date()  # Return only the date part, not the time
+            # return date_obj.date()  # Return only the date part, not the time
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
+        return date_str
 
 
 ##############################################################################
