@@ -104,7 +104,6 @@ def get_cur_date():
     # return datetime.now().date()
 
 
-# TODO: I believe this function returns a date that is sometimes ahead by 1 day?
 def get_cur_str_date():
     return datetime.now().strftime('%Y-%m-%d')
 

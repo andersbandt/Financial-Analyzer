@@ -14,6 +14,7 @@ from loguru import logger
 # helper modules for CLI interface
 from categories import categories_helper as cath
 from categories import Category
+from tools import date_helper as dateh
 import db.helpers as dbh
 
 
@@ -145,6 +146,7 @@ def get_month_input():
     except ValueError:
         return False
 
+
 def prompt_year_month():
     print("\n... prompting user to find file for Statement")
     # get date information to determine which folder to look in
@@ -158,8 +160,11 @@ def prompt_year_month():
 #   and then pass in a cleaned version of YYYY-MM-DD to the date time function. Allows user to type YYYYMMDD or YYYY/MM/DD. Idk.
 def get_date_input(prompt_str):
     print(prompt_str)
+    print("\tpssst -- can enter 'today' for current date")
     while True:
         date_str = input("Enter the date (YYYY-MM-DD): ")
+        if date_str == "today":
+            return dateh.get_cur_str_date()
 
         # handle QUIT commands
         if (date_str == "q") or (date_str == "quit"):
@@ -173,14 +178,15 @@ def get_date_input(prompt_str):
             print("Invalid date format. Please use YYYY-MM-DD.")
 
 
-
 ##############################################################################
 ####      CATEGORY INPUT FUNCTIONS    ########################################
 ##############################################################################
 
+
 # param         prompt_str    string to print to user
 # @param        display       print out all the categories or NOT
 # @returns      -1 if bad prompt response, category_id otherwise
+>>>>>>> beec80e (updated balance to include option to just add todays date)
 def category_prompt_all(prompt_str, display):
     print(prompt_str)
     # get list of all Category objects

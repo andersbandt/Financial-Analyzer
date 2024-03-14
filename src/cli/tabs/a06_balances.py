@@ -79,6 +79,7 @@ class TabBalances(SubMenu.SubMenu):
                                   inp_type="float")
 
         # prompt user for date
+        # TODO: add option to just select 'today'
         bal_date = clih.get_date_input("\nand what date is this balance record for?")
         if bal_date is False:
             print("Ok, quitting add balance")
@@ -87,6 +88,7 @@ class TabBalances(SubMenu.SubMenu):
         # add balance
         status = balh.add_account_balance(account_id, bal_amount, bal_date)
         return status
+
 
     def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
