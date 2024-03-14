@@ -6,12 +6,15 @@
 
 # import needed modules
 import os
+import numpy as np
 
 # import user created modules
 import db.helpers as dbh
 from tools import date_helper
 from statement_types import Statement
 import statement_types as st
+from cli import cli_printer as clip
+
 
 # import logger
 from loguru import logger
@@ -141,7 +144,7 @@ def match_file_to_account(filepath):
 
     # WELLS CREDIT
     if "CreditCard4" in filepath:
-        print("\t\tcontains 'CreditCard4")
+        print("\t\tcontains 'CreditCard4'")
         return 2000000004
 
     # VENMO
@@ -159,12 +162,13 @@ def match_file_to_account(filepath):
         print("\t\tContains 'chase'")
         return 2000000012
 
-    if "bilt" in filepath.lower() or 'CreditCard3' in filepath.lower():
-        print("\t\tContains 'bilt' or 'CreditCard3'")
+    if "CreditCard3" in filepath:
+        print("\t\tContains 'CreditCard3'")
         return 2000000016
 
     # return None if we didn't match anything
-    print("\t\t... account not found!!!")
+    print(f"\t\t... account not found!!!")
+    print(f"\t\t\tfilepath-->{filepath}")
     return None
 
 
@@ -282,31 +286,9 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             status_list.append(False)
 
     # print out final status list and return
-    print_status_table(file_list, status_list)
+    concat_table_arr = np.vstack((status_list, file_list)).T
+    clip.print_variable_table(["Status", "Filepath"], concat_table_arr)
     return statement_list
 
 
-def print_status_table(file_list, status_list):
-    # Check if both lists are of the same length
-    if len(file_list) != len(status_list):
-        print("Error: statement_list and status_list must have the same length.")
-        return
 
-    # Print table header
-    print("| Status | Filepath   |")
-    print("|--------|------------|")
-
-    # Print rows
-    for i in range(len(file_list)):
-        file = file_list[i]
-        status = status_list[i]
-        if status is True:
-            status = "Found!"
-        else:
-            status = "FAIL!"
-
-        # Adjust the width of the columns based on your data
-        print(f"| {status.ljust(16)} | {file.ljust(8)} |")
-
-    # Print table footer
-    print("|------------------|----------|")

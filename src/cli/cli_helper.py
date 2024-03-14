@@ -186,7 +186,6 @@ def get_date_input(prompt_str):
 # param         prompt_str    string to print to user
 # @param        display       print out all the categories or NOT
 # @returns      -1 if bad prompt response, category_id otherwise
->>>>>>> beec80e (updated balance to include option to just add todays date)
 def category_prompt_all(prompt_str, display):
     print(prompt_str)
     # get list of all Category objects
