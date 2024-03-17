@@ -18,7 +18,6 @@ class TabLoadData(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 
         self.statement = None
-        # self.statement_list = None # NOTE: should I try to phase this thing out...?
 
         self.basefilepath = basefilepath # had to add this in, at some point maybe delete?
 

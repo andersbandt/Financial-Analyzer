@@ -7,7 +7,6 @@
 
 # import needed modules
 import datetime
-import matplotlib.pyplot as plt
 
 # import user defined modules
 import cli.cli_helper as clih
@@ -17,6 +16,11 @@ from analysis import investment_helper as invh
 import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
+
+
+
+# TODO: let's create a function to calculate the "health" of my investment.ledger calculated account balances vs my manual entry ones
+#   have a limit on like the past 3 days the actual balance one has to be entered
 
 
 class TabInvestment(SubMenu.SubMenu):
@@ -73,6 +77,7 @@ class TabInvestment(SubMenu.SubMenu):
                 print("Ok. Cancelling adding investment")
                 return
 
+        # TODO: buy and sell is not properly being recorded
         # check if InvestmentTransaction is a buy or sell
         buy_sell_int = clih.spinput("\nIs this a buy or sell? \t(1 for buy, 2 for sell): ", inp_type="int")
         if buy_sell_int is False:
@@ -126,6 +131,7 @@ class TabInvestment(SubMenu.SubMenu):
                                           note=note)
 
 
+    # TODO: have nice printout of all investments owned by each account
     def a03_check_accounts(self):
         print("... checking investment data for each account ...")
 
@@ -133,22 +139,21 @@ class TabInvestment(SubMenu.SubMenu):
         inv_acc_id = dbh.account.get_account_id_by_type(4)
 
         # populate arrays
-        acc_str_arr = []
-        acc_val_arr = []
+        values = []
         for account_id in inv_acc_id:
             acc_val = invh.summarize_account(account_id, printmode=True)
-            acc_val_arr.append(acc_val)
-
             acc_str = dbh.account.get_account_name_from_id(account_id)
-            acc_str_arr.append(acc_str)
+            values.append([acc_str, acc_val])
 
         # use cli_printer to pretty print balances
-        clip.print_balances(
-            acc_str_arr,
-            acc_val_arr,
-            "INVESTMENT ACCOUNT VALUES"
+        print("\n... finished getting account info.\n")
+        clip.print_variable_table(
+            ["Account Name", "Value"],
+            values,
+            format_finance_col=1
         )
         return True
+
 
     def a04_cur_value_history(self):
         print("... summarizing value history ...")
@@ -225,16 +230,74 @@ class TabInvestment(SubMenu.SubMenu):
         for account_id in inv_acc_id:
             acc_val = invh.summarize_account(account_id, printmode=True)
             acc_val_arr.append(acc_val)
-        # add balances
-        bal_date = dateh.get_cur_str_date()
-        for i in range(0, len(inv_acc_id)):
-            # insert_category: inserts a category into the SQL database
-            dbh.balance.insert_account_balance(inv_acc_id[i],
-                                               acc_val_arr[i],
-                                               bal_date)
 
-            # print out balance addition confirmation
-            print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
+        # do one last check
+        res = clih.promptYesNo("Are you sure you want to add these investment account balances to the financial database?")
+        if res:
+            # add balances
+            bal_date = dateh.get_cur_str_date()
+            for i in range(0, len(inv_acc_id)):
+                # insert_category: inserts a category into the SQL database
+                dbh.balance.insert_account_balance(inv_acc_id[i],
+                                                   acc_val_arr[i],
+                                                   bal_date)
+
+                # print out balance addition confirmation
+                print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
+
+
+    def a06_add_dividend(self):
+        print("... adding dividend for a ticker ...")
+        # get account information
+        account_id = clih.account_prompt_type("What is the corresponding account for this investment dividend?: ", 4)
+        if account_id is False:
+            print("... exiting add dividend.")
+            return
+
+        # get ticker information
+        ticker = clih.spinput("\nWhat is the ticker of this investment dividend?: ", inp_type="text")
+        if ticker is False:
+            print("... exiting add dividend.")
+            return
+
+        # do some checking on validity of ticker
+        ticker_valid = invh.validate_ticker(ticker)
+        if ticker_valid is False:
+            res = clih.promptYesNo("\nSeems like ticker is not validated. Do you want to continue with entry?")
+            if not res:
+                print("... exiting add dividend.")
+                return
+
+        # get the TOTAL number of shares CURRENTLY owned
+        total_shares = clih.spinput("What is the TOTAL number of shares currently owned?: ", inp_type="float")
+        if total_shares is False:
+            print("... exiting add investment")
+            return
+
+        # perform some calculation on (current_total - recorded_total) to get dividend amount to add
+        recorded_total = -1
+        dividend_shares = total_shares - recorded_total
+
+        # add note (OPTIONAL)
+        res = clih.promptYesNo("Do you want to add a note?")
+        if res:
+            note = clih.spinput("What is the note for this investment transaction? \tnote: ", inp_type="text")
+            if note is False:
+                print("... exiting add investment")
+                return
+        else:
+            note = None
+
+        # insert the investment into the database
+        today_date = dateh.get_cur_str_date()
+        dbh.investments.insert_investment(today_date,
+                                          account_id,
+                                          ticker,
+                                          dividend_shares,
+                                          "DIV",
+                                          0.00,
+                                          description=f"DIVIDEND: {dividend_shares}",
+                                          note=note)
 
 
 

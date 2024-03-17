@@ -10,6 +10,7 @@ import yfinance as yf
 # import user created modules
 import db.helpers as dbh
 from tools import date_helper as dateh
+from cli import cli_printer as clip
 
 # import logger
 from utils import logfn
@@ -98,19 +99,14 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
 ######      OVERALL ANALYSIS FUNCTIONS      ##################################
 ##############################################################################
 
-
 # summarize_account: this function is for showcasing account view and holdings
-# TODO: I think I should consider having this function store 'account_value' into the recent balance in the account table
-#   would ease computation effort when running summary in a06_balances
 # @logfn
 def summarize_account(account_id, printmode=True):
     transactions = dbh.investments.get_active_ticker(account_id)
-    print("\n\t ",
-          dbh.account.get_account_name_from_id(account_id),
-          ": "
-          )
+    print(f"\n\t {dbh.account.get_account_name_from_id(account_id)} : ")
 
     account_value = 0
+    ticker_table = []
     for transaction in transactions:
         ticker = transaction[0]
         shares = transaction[2]
@@ -118,11 +114,16 @@ def summarize_account(account_id, printmode=True):
         # calculate the value of the asset ticker
         price = get_ticker_price(ticker)
         value = shares*price
-
-        if printmode:
-            print(f"Ticker: {ticker}, Quantity: {shares}, Value: {value}")
-
         account_value += value
+
+        ticker_table.append([ticker, shares, value])
+
+    if printmode:
+        clip.print_variable_table(
+            ["Ticker", "Shares", "Value"],
+            ticker_table,
+            format_finance_col=2
+        )
 
     return account_value
 

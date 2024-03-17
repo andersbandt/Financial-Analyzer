@@ -4,6 +4,8 @@
 
 """
 
+# import needed modules
+import numpy as np
 
 # import user defined modules
 import db.helpers as dbh
@@ -22,7 +24,6 @@ from loguru import logger
 from utils import logfn
 
 
-
 class TabBalances(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 
@@ -31,13 +32,17 @@ class TabBalances(SubMenu.SubMenu):
                           "Add balance",
                           "Graph balances per account",
                           "Retirement modeling",
-                          "Show recent .db balance"]
+                          "Show recent .db balance",
+                          "Delete balance entries",
+                          "Print .db balance"]
 
         action_funcs = [self.a01_show_wealth,
                         self.a02_add_balance,
                         self.a03_graph_account_balance,
                         self.a04_retirement_modeling,
-                        self.a05_show_recent_balance]
+                        self.a05_show_recent_balance,
+                        self.a06_delete_balance,
+                        self.a07_print_balance_table]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -121,14 +126,6 @@ class TabBalances(SubMenu.SubMenu):
                                      y_format='currency')
 
         # TYPE 2: by account type
-        # do some post-processing to bin values by type
-        # TODO: this initialization of the `type_values_array` variable can be improved (ask Chat-GPT)
-        # type_values_array = []
-        # for j in range(0, len(account_id_array)):
-        #     type_values_array.append([])
-        #     for i in range(0, len(values_array[0])):
-        #         type_values_array[j].append(0)
-
         n = len(values_array[0])
         m = acch.get_num_acc_type()
         type_values_array = [[0 for _ in range(n)] for _ in range(m)]
@@ -147,7 +144,7 @@ class TabBalances(SubMenu.SubMenu):
                                      y_format='currency')
 
 
-    # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
+# TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
         acc_id_arr, acc_balances = balh.get_retirement_balances()
 
@@ -202,41 +199,48 @@ class TabBalances(SubMenu.SubMenu):
         return True
 
 
-    # random shit that I have leftover for reference
-    # def show_liquid_over_time(self):
-    #     print("INFO: show_liquid_over_time running")
-    #
-    #     # set params
-    #     days_previous = 180  # half a year maybe?
-    #     N = 5
-    #
-    #     # get pyplot figure
-    #     figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
-    #
-    #     # get data for displaying balances in tabular form
-    #     spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
-    #     recent_Bx = spl_Bx[-1]
-    #
-    #     print("Working with this for tabulated data conversion")
-    #     print(recent_Bx)
+# TODO: complete this function
+    def a06_delete_balance(self):
+        self.a07_print_balance_table()
+        print("\nPlease enter the sql key of transactions you want to delete. Enter 'quit' or 'q' to finalize list")
+        status = True
+        sql_key_arr = []
+        while status:
+            sql_key = clih.spinput("\tsql_key: ", inp_type="int")
+            if sql_key is False:
+                status = False
+            else:
+                sql_key_arr.append(sql_key)
+                print(sql_key_arr)
 
-    # def show_wealth_by_type(self):
-    #     balance_by_type = []
-    #
-    #     # iterate across account types
-    #     for acc_type in range(1, 4 + 1):
-    #         acc_sum = 0
-    #         acc_id_by_type = dbh.account.get_account_id_by_type(acc_type)
-    #
-    #         for acc_id in acc_id_by_type:
-    #             print("Checking acc_id: " + str(acc_id))
-    #             bal = dbh.balance.get_recent_balance(acc_id)
-    #             print("Got balance of " + str(bal))
-    #             acc_sum += bal
-    #
-    #         balance_by_type.append(acc_sum)
-    #
-    #     print("Here is your recent balance history by account type")
-    #     print(balance_by_type)
+        # get one last user confirmation
+        print("\n\n== BALANCES TO DELETE ==")
+        for sql_key in sql_key_arr:
+            print(dbh.balance.get_balance(sql_key))
+        print("\nGreat, planning on deleting the shown list of balances.")
+        res = clih.promptYesNo("Is that ok?")
+        if not res:
+            return False
 
+        # delete balances
+        for sql_key in sql_key_arr:
+            dbh.balance.delete_balance(sql_key)
+        return True
+
+
+    def a07_print_balance_table(self):
+        # retrieve ledger data as tuples and convert into 2D array
+        balance_ledge = dbh.balance.get_balance_ledge_data()
+        balance_arr = np.array(balance_ledge)
+
+        # convert account ID to name
+        for entry in balance_arr:
+            entry[1] = dbh.account.get_account_name_from_id(entry[1])
+
+        # use clip to print table
+        clip.print_variable_table(
+            ["SQL key", "Balance", "Account", "Date"],
+            balance_arr,
+            format_finance_col=2
+        )
 

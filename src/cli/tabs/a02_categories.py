@@ -60,6 +60,7 @@ class TabCategory(SubMenu.SubMenu):
         dbh.category.insert_category(category_name, parent_id)
         return True
 
+
     def a02_check_category(self):
         print("... checking categories ...")
 
@@ -74,6 +75,7 @@ class TabCategory(SubMenu.SubMenu):
         # perform some verification on database integrity
         #   - no double names
         #   - no disconnected categories (all in tree structure)
+
 
     def a03_manage_keywords(self):
         print("... managing keywords ...")
@@ -98,6 +100,7 @@ class TabCategory(SubMenu.SubMenu):
 
         print("Ok, added keyword: ", keyword_string)
         print("\tfor category", cath.category_id_to_name(category_id))
+
 
     def a04_print_keywords(self):
         print("... printing keywords ...")
@@ -136,6 +139,7 @@ class TabCategory(SubMenu.SubMenu):
         dbh.category.delete_category(category_id)
         print("Ok deleted category with ID: " + str(category_id))
 
+
     def a06_move_parent(self):
         print("... moving parent category for ID ...")
         category_id = clih.category_prompt_all("What category do you want to change the parent for?",
@@ -160,6 +164,7 @@ class TabCategory(SubMenu.SubMenu):
 
         print(
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
+
 
     # TODO: finish this function to delete a keyword
     def a07_delete_keyword(self):

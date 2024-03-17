@@ -243,7 +243,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
                 status = False
             else:
                 found_sql_key.remove(sql_to_remove)
-                # reprint updated list")
+                # reprint updated list
                 print("\n")
                 for id_key in found_sql_key:
                     transaction = transr.get_transaction(id_key)

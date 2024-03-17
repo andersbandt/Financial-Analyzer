@@ -15,9 +15,9 @@ def insert_investment(date, account_id, ticker, shares, inv_type, value, descrip
 
     # update description if not provided
     if description is None:
-        if shares > 0:
+        if inv_type == "BUY":
             description = "BUY " + str(shares) + " @ " + str(value/shares)
-        elif shares < 0:
+        elif inv_type == "SELL":
             description = "SELL " + str(shares) + " @ " + str(value/shares)
 
     # insert into table 'investment'
@@ -68,6 +68,7 @@ def get_account_ticker(account_id):
 #     return ledger_data
 
 
+# TODO: this function won't work because `shares` is always positive and I mark it as a buy or sell with another column
 def get_active_ticker(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -75,7 +76,7 @@ def get_active_ticker(account_id):
             SELECT ticker,
             account_id,
             SUM(CASE WHEN shares > 0 THEN shares
-                                   WHEN shares < 0 THEN shares
+                                   WHEN shares < 0 THEN -1*shares
                                    ELSE 0 END) as net_shares
             FROM investment
             WHERE account_id = ?

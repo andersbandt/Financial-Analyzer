@@ -1,9 +1,28 @@
+"""
+@file balance.py
+@brief SQL interface file for the 'balance' table
+
+"""
+
+
 
 # import needed modules
 import sqlite3
 
 # import user definitions
 from db import DATABASE_DIRECTORY
+
+
+
+def get_balance(sql_key):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM balance WHERE id=?",
+            (sql_key,),
+        )
+        balances_data = cur.fetchall()
+    return balances_data
 
 
 def insert_account_balance(account_id, amount, date):
@@ -36,7 +55,6 @@ def get_recent_balance(account_id, add_date=False):
         return rec_bal
 
 
-
 def get_balance_on_date(account_id, date):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -59,3 +77,22 @@ def get_balances_between_date(date_start, date_end):
         )
         balances_data = cur.fetchall()
     return balances_data
+
+
+def delete_balance(sql_key):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM balance WHERE id=?", (sql_key,))
+    return True
+
+
+def get_balance_ledge_data():
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM balance",
+        )
+        ledger_data = cur.fetchall()
+    return ledger_data
+
+
