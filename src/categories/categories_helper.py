@@ -20,7 +20,7 @@ from utils import logfn
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    logger.debug("cath.load_categories: loading category ID's")
+    # logger.debug("cath.load_categories: loading category ID's")
     all_category_id = dbh.category.get_all_category_id()
     categories = []
     for category_id in all_category_id:
@@ -145,12 +145,12 @@ def get_category_children_obj(category):
 # create_Tree: creates a Tree object of the categories
 # @logfn
 def create_Tree(categories, cat_type="id"):
-    logger.debug("category_helper.create_Tree: Generating Tree object of categories")
+    # logger.debug("category_helper.create_Tree: Generating Tree object of categories")
     t = Tree()
     root = t.add_child(name="root")  # create root node
 
     # first add all top level categories
-    logger.debug("create_Tree: populating children node Categories")
+    # logger.debug("create_Tree: populating children node Categories")
     for category in get_top_level_categories():
         if category.parent == 1:  # if it is a top level category
             if cat_type == "id":
@@ -161,7 +161,7 @@ def create_Tree(categories, cat_type="id"):
                 logger.exception("Bad type supplied for category Tree creation")
 
     # then populate children
-    logger.debug("create_Tree: populating children node Categories")
+    # logger.debug("create_Tree: populating children node Categories")
     for category in categories:
         if category.parent != 1:
             if cat_type == "id":

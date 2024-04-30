@@ -17,7 +17,7 @@ def get_account_balance(account_id):
 
     # if account is an investment account
     if acc_type == 4:
-        bal = invh.summarize_account(account_id)
+        bal = invh.summarize_account(account_id, printmode=True)
         bal_date = dateh.get_cur_str_date()
     else:
         # leverage database 'balance' helper to get most recent balance entry by DATE

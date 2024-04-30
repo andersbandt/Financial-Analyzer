@@ -55,7 +55,8 @@ def return_ledger_exec_dict(transactions):
                 incomes += trans_amount
 
     exec_summary = {"expenses": expenses,
-                    "incomes": incomes}
+                    "incomes": incomes,
+                    "delta (incomes-expenses): ": (incomes+expenses)}
 
     return exec_summary
 

@@ -151,7 +151,11 @@ def prompt_year_month():
     print("\n... prompting user to find file for Statement")
     # get date information to determine which folder to look in
     y = get_year_input()
+    if y is False:
+        return False
     m = get_month_input()
+    if m is False:
+        return False
     return [y, m]
 
 

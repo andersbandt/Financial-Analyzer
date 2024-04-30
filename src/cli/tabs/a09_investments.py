@@ -32,13 +32,15 @@ class TabInvestment(SubMenu.SubMenu):
                           "Add investment transaction",
                           "Check account balances/summary",
                           "Show account snapshot value history",
-                          "Add balances to .db"]
+                          "Add balances to .db",
+                          "Add dividend"]
 
         action_funcs = [self.a01_check_investments,
                         self.a02_add_investment,
                         self.a03_check_accounts,
                         self.a04_cur_value_history,
-                        self.a05_add_inv_balances]
+                        self.a05_add_inv_balances,
+                        self.a06_add_dividend]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -275,7 +277,8 @@ class TabInvestment(SubMenu.SubMenu):
             return
 
         # perform some calculation on (current_total - recorded_total) to get dividend amount to add
-        recorded_total = -1
+        recorded_total = dbh.investments.get_ticker_shares(account_id, ticker)
+        print(recorded_total)
         dividend_shares = total_shares - recorded_total
 
         # add note (OPTIONAL)
@@ -288,6 +291,11 @@ class TabInvestment(SubMenu.SubMenu):
         else:
             note = None
 
+        print(f"\nAdding {dividend_shares} to current {recorded_total} to reach a total of {total_shares}")
+        print(f"Doing this for ticker {ticker}")
+        res = clih.promptYesNo("Does all seem to checkout? Proceed with add?")
+        if not res:
+            return False
         # insert the investment into the database
         today_date = dateh.get_cur_str_date()
         dbh.investments.insert_investment(today_date,
@@ -298,7 +306,7 @@ class TabInvestment(SubMenu.SubMenu):
                                           0.00,
                                           description=f"DIVIDEND: {dividend_shares}",
                                           note=note)
-
+        return True
 
 
     ##############################################################################

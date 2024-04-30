@@ -3,7 +3,6 @@
 @brief sub menu for loading in raw financial data and storing in database
 
 
-
 """
 
 # import needed packages
@@ -23,8 +22,17 @@ class TabAccount(SubMenu.SubMenu):
         self.statement = None
 
         # initialize information about sub menu options
-        action_strings = ["Check accounts", "Add account"]
-        action_funcs = [self.a01_check_accounts, self.a02_add_account]
+        action_strings = [
+            "Check accounts",
+            "Add account",
+            "Add filename to account mapping",
+            "Print account-filename map"]
+        action_funcs = [
+            self.a01_check_accounts,
+            self.a02_add_account,
+            self.a03_add_file_search_str,
+            self.a04_print_account_file_map]
+
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -65,6 +73,29 @@ class TabAccount(SubMenu.SubMenu):
         account_id = dbh.account.insert_account(name, type_int)
 
         print("Inserted account - " + name + " with account_id of (" + str(account_id) + ")")
+
+
+
+    def a03_add_file_search_str(self):
+        print("... adding accounts ...")
+
+        # get account information
+        account_id = clih.account_prompt_all("What account do you want to add a search string for?")
+
+        # what is the search string?
+        search_str = name = clih.spinput("What is the search string required?", inp_type="text")
+
+        # insert the investment into the database
+        data_id = dbh.file_mapping.insert_account_search_str(account_id, search_str)
+
+        # print out success information
+        print(f"Added a new file mapping with data id of : {data_id}")
+
+
+
+    def a04_print_account_file_map(self):
+        ledge_data = dbh.file_mapping.get_file_mapping_ledge_data()
+        print(ledge_data)
 
 
     ##############################################################################

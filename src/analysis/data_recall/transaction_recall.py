@@ -15,15 +15,6 @@ from loguru import logger
 from utils import logfn
 
 
-@logfn
-class TransactionRecallError(Exception):
-    def __init__(self, origin="TransactionRecall", msg="Error encountered"):
-        self.msg = f"{origin} error encountered: {msg}"
-        return self.msg
-
-    def __str__(self):
-        return self.msg
-
 
 
 # import logger
@@ -36,7 +27,7 @@ class TransactionRecallError(Exception):
     """Transaction Recall Error"""
     def __init__(self, origin="TransactionRecall", msg="Error encountered"):
         self.msg = f"{origin} error encountered: {msg}"
-        return self.msg
+        # return self.msg
 
     def __str__(self):
         return self.msg

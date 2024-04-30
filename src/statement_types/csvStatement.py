@@ -1,4 +1,3 @@
-
 # import needed modules
 import csv
 import os
@@ -34,13 +33,11 @@ class csvStatement(Statement.Statement):
         # initialize identifying statement info
         self.title = self.title + " - .csv file"
 
-
     def csv_check(self):
         # verify statement file integrity
         if self.filepath_val is not True:
             print("Can't load in. Bad filepath for .csv statement: ", self.filepath)
             return
-
 
     def load_statement_data(self):
         # verify statement file integrity
@@ -65,14 +62,15 @@ class csvStatement(Statement.Statement):
 
                     try:
                         transactions.append(Transaction.Transaction(date,
-                                                                self.account_id, # account ID
-                                                                category, # category
-                                                                float(line[self.amount_col]), # amount
-                                                                line[self.description_col] # description
-                                                                ))
-                    except Exception:
+                                                                    self.account_id,  # account ID
+                                                                    category,  # category
+                                                                    float(line[self.amount_col]),  # amount
+                                                                    line[self.description_col]  # description
+                                                                    ))
+                    except Exception as e:
                         print("Uh oh, couldn't load transactions based on supplied .csv column params")
-                        return False
+                        print(e)
+                        # raise e
 
         except FileNotFoundError:
             print("Uh oh, error in data loading")

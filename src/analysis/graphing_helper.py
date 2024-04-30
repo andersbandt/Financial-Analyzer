@@ -58,7 +58,7 @@ def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
     plt.tight_layout()
 
 
-@logfn
+# @logfn
 def get_line_chart(x_axis, y_axis, label=None, color=None):
     # make plot
     # plt.plot(x_axis, y_axis)

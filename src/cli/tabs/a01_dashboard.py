@@ -54,3 +54,10 @@ class TabMainDashboard(SubMenu.SubMenu):
         account_names = dbh.account.get_account_names()
         print(account_names)
 
+
+# TODO: finish this function to reboot the program (for instance if code source changed)
+    def a05_reboot(self):
+        pass
+
+
+4

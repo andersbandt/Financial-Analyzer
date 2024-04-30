@@ -13,7 +13,7 @@ class SubMenu():
         if len(action_strings) != len(action_funcs):
             print("Can't create submenu with mismatched lengths of strings and functions !!!")
             print(f"Please check configuration for: {title}")
-            raise SystemError()
+            raise IndexError
         self.action_strings = action_strings
         self.action_funcs = action_funcs
 

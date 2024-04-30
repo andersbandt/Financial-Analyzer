@@ -330,9 +330,10 @@ class TabSpendingHistory(SubMenu.SubMenu):
     # @desc this function will compare the previous month to some predetermined date range of previous month spending
     # @param    comp_month_prev    this variable will determine how many months back to use as comparison "baseline"
     def exec_summary_02(self, comp_month_prev):
-        print("... comparing previous month spending to running averages ...")
+        print("\n\n\n... comparing previous month spending to running averages ...")
 
         # STEP 1: get transactions from previous month
+        # TODO: this date logic doesn't make sense
         cur_date_arr = dateh.get_date_int_array()
         prev_year = cur_date_arr[0] # index 0 dateh.get_date_int_array() is YEAR
         prev_month = cur_date_arr[1] - 1  # index 1 of dateh.get_date_int_array() is MONTH then less 1 for PREV MONTH
@@ -345,18 +346,20 @@ class TabSpendingHistory(SubMenu.SubMenu):
         # STEP 2: get transactions from baseline data (before previous month)
         baseline_month_start = prev_month - comp_month_prev
         baseline_month_end = prev_month - 1
+        prev_year_start = prev_year
+        prev_year_end = cur_date_arr[0]
         if baseline_month_start < 1:
-            baseline_month_start += 13
-            prev_year -= 1
+            baseline_month_start += 12
+            prev_year_start -= 1
         if baseline_month_end < 1:
             baseline_month_end = 12
-            prev_year -= 1
+            prev_year_end -= 1
         baseline_range_start = dateh.month_year_to_date_range(
-            prev_year,
+            prev_year_start,
             baseline_month_start
         )
         baseline_range_end = dateh.month_year_to_date_range(
-            prev_year,
+            prev_year_end,
             baseline_month_end
         )
 
@@ -365,7 +368,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             baseline_range_end[1],
         )
 
-        print(f"Done retrieving transactions from previous month\n\t {prev_month_range[0]} TO {prev_month_range[1]}")
+        print(f"Done retrieving transactions from previous month\n\t {prev_year}-{prev_month}")
         print(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")
 
         # STEP 3: extract totals and make comparison
@@ -390,7 +393,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
             percent_diffs.append(delta)
 
             # do some printout
-            print(f"\t{top_cat_str[i]}\n\t\t{delta}\n\t\t{baseline_amounts[i]} vs. {prev_amounts[i]}")
+            print(f"\t{top_cat_str[i]}\n\t\tDelta: {delta} %\n\t\t{baseline_amounts[i]} vs. {prev_amounts[i]}")
 
         title = f"Delta from past {comp_month_prev} months"
         grapa.create_bar_chart(

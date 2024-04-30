@@ -57,16 +57,24 @@ class TabBalances(SubMenu.SubMenu):
         acc_dates = []
         acc_id_arr = dbh.account.get_all_account_ids()
 
+        values_table = []
         for acc_id in acc_id_arr:
             bal_amount, bal_date = balh.get_account_balance(acc_id)
             acc_balances.append(bal_amount)
             acc_dates.append(bal_date)
+            values_table.append([dbh.account.get_account_name_from_id(acc_id), bal_amount, bal_date])
 
         # use cli_printer to print a table of balances
-        clip.print_balances(
-            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
-            acc_balances,
-            "BALANCE SUMMARY"
+        # clip.print_balances(
+        #     [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
+        #     acc_balances,
+        #     "BALANCE SUMMARY"
+        # )
+
+        clip.print_variable_table(
+            ["Account id", "Amount", "Date"],
+            values_table,
+            format_finance_col=1
         )
         print(acc_dates)
 

@@ -55,34 +55,48 @@ def get_account_ticker(account_id):
     return ledger_data
 
 
-# def get_active_ticker(account_id):
-#     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
-#         cur = conn.cursor()
-#         cur.execute("""
-#             SELECT ticker FROM investment
-#                 SUM(CASE WHEN shares > 0 then shares
-#                 WHEN shares < 0 THEN shares
-#                 ELSE 0 END) as net_shares
-#             WHERE account_id = ?""", account_id)
-#         ledger_data = cur.fetchall()
-#     return ledger_data
+
+def get_ticker_shares(account_id, ticker):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT ticker,
+            account_id,
+            SUM(CASE WHEN trans_type="BUY" THEN shares
+                                   WHEN trans_type="DIV" then shares
+                                   WHEN trans_type="SELL" THEN -1*shares
+                                   ELSE 0 END) as net_shares
+            FROM investment
+            WHERE account_id = ?
+            AND ticker = ?""", (account_id, ticker))
+        ledger_data = cur.fetchall()
+    return ledger_data
 
 
-# TODO: this function won't work because `shares` is always positive and I mark it as a buy or sell with another column
+
+# TODO: eliminate this function in favor of the previous one and iterate through tickers
 def get_active_ticker(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("""
             SELECT ticker,
             account_id,
-            SUM(CASE WHEN shares > 0 THEN shares
-                                   WHEN shares < 0 THEN -1*shares
+            SUM(CASE WHEN trans_type="BUY" THEN shares
+                                   WHEN trans_type="DIV" then shares
+                                   WHEN trans_type="SELL" THEN -1*shares
                                    ELSE 0 END) as net_shares
             FROM investment
             WHERE account_id = ?
             GROUP BY ticker""", (account_id,))
         ledger_data = cur.fetchall()
     return ledger_data
+
+#         cur.execute("""
+#             SELECT ticker FROM investment
+#                 SUM(CASE WHEN shares > 0 then shares
+#                 WHEN shares < 0 THEN shares
+#                 ELSE 0 END) as net_shares
+#             WHERE account_id = ?""", account_id)
 
 
 def get_investment_ledge_data():

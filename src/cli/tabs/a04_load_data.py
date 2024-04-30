@@ -40,11 +40,15 @@ class TabLoadData(SubMenu.SubMenu):
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
-        [year, month] = clih.prompt_year_month()
-        if month == -1 or year == -1:
+# I was feeling pretty high and weird writing below code so maybe give it an audit on efficacy
+        try:
+            [year, month] = clih.prompt_year_month()
+        except TypeError:
             res = clih.promptYesNo("Bad date input. Try again?")
             if res:
-                [year, month] = clih.prompt_year_month
+                [year, month] = clih.prompt_year_month()
+            else:
+                return False
 
         statement_list = loadh.get_month_year_statement_list(
             self.basefilepath,
@@ -58,6 +62,7 @@ class TabLoadData(SubMenu.SubMenu):
 
         print("Statement loaded successfully, can continue with load process")
         self.update_listing()
+        return True
 
 
     def a01b_load_all_data(self):

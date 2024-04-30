@@ -64,6 +64,10 @@ class TableStatements:
                     description             VARCHAR(300),
                     note                    VARCHAR(300),
                     date_added              DATETIME);"""
+    file_mapping = """CREATE TABLE file_mapping
+                    (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    account_id              INT(10) REFERENCES account(id),
+                    file_search_str         VARCHAR(300));"""
     file_history = """CREATE TABLE file_history
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
                     account_id              INT(10) REFERENCES account(id),

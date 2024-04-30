@@ -14,6 +14,7 @@ from tools import date_helper
 from statement_types import Statement
 import statement_types as st
 from cli import cli_printer as clip
+from cli import cli_helper as clih
 
 
 # import logger
@@ -124,52 +125,39 @@ def get_year_month_files(basefilepath, year, month):
 # IDEA (captured in Obsidian as well): store what files I use and match them to accounts in order to
 #   create some algorithm that predicts based on things like file name, extension, size, etc
 #   to make the decision to match to account
-# tag:HARDCODE for this whole function
-# TODO: To really make this app usable for the general public I should turn this function in a table in the .db file
     # would make it easier on me to for reviewing purposes
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
-    # MARCUS
-    if False:
-        return 2000000007
+    # METHOD 1: simple
+    # TODO: below method would be ideal case but doesn't really work
+    account_id = dbh.file_mapping.get_account_id_from_string(filepath)
 
-    # WELLS CHECKING
-    if "Checking1" in filepath:
-        return 2000000002
+    # METHOD 2: handling the search logic in this function
+    account_file_map_ledge = dbh.file_mapping.get_file_mapping_ledge_data()
+    # for entry in account_file_map_ledge:
+    #     if entry[2]
 
-    # WELLS SAVING
-    if "Savings2" in filepath:
-        return 2000000003
+    # METHOD 3: hardcode
+    # # VENMO
+    # if "venmo" in filepath.lower() or 'transaction_history' in filepath.lower():
+    #     print("\t\tcontains 'venmo' or 'transaction_history'")
+    #     return 2000000007
+    #
+    # # APPLE CARD
+    # if "apple" in filepath.lower():
+    #     print("\t\tcontains 'apple'")
+    #     return 2000000009
+    #
 
-    # WELLS CREDIT
-    if "CreditCard4" in filepath:
-        print("\t\tcontains 'CreditCard4'")
-        return 2000000004
-
-    # VENMO
-    if "venmo" in filepath.lower() or 'transaction_history' in filepath.lower():
-        print("\t\tcontains 'venmo' or 'transaction_history'")
-        return 2000000007
-
-    # APPLE CARD
-    if "apple" in filepath.lower():
-        print("\t\tcontains 'apple'")
-        return 2000000009
-
-    # CHASE
-    if "chase" in filepath.lower():
-        print("\t\tContains 'chase'")
-        return 2000000012
-
-    if "CreditCard3" in filepath:
-        print("\t\tContains 'CreditCard3'")
-        return 2000000016
 
     # return None if we didn't match anything
-    print(f"\t\t... account not found!!!")
-    print(f"\t\t\tfilepath-->{filepath}")
-    return None
+    if account_id is False:
+        print(f"\t\t... account not found!!!")
+        print(f"\t\t\tfilepath-->{filepath}")
+        return None
+    else:
+        return account_id
 
 
 ##############################################################################
@@ -247,15 +235,20 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     elif account_id == 2000000012:  # Chase Card
         stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)
         return stat
-
+    elif account_id == 2000000017: # CitiMastercard AAdvantage
+        stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
+                                            1,
+                                            3,
+                                            2,
+                                            -1)  # date_col, amount_col, description_col, category_col
+        return stat
     # if no valid account_id was found
     else:
+        print("\n\n#################### CRITICAL PROGRAM SOURCE ERROR   ###################################")
         print("No valid account selected in tools-load_helper-create_statement()")
         print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
         print("You likely need to edit the create_statement() function hardcode !!!")
         raise Exception()
-
-    return None
 
 
 # get_month_year_statement_list:

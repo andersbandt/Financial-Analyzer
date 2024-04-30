@@ -16,9 +16,16 @@ from prettytable.colortable import ColorTable, Themes
 #   @param  variable_names          strings for the top headers
 #   @param  values                  a 2D array of the data to print
 #   @param  format_finance_col      index of column number to format as financial data
-def print_variable_table(variable_names, values, format_finance_col=None):
+def print_variable_table(variable_names, values, format_finance_col=None, max_width_column=None):
     # table = PrettyTable()
     table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
+
+    # if we want to set a width limit
+    # TODO: finish this function
+    if max_width_column is not None:
+        table._max_width = {max_width_column, 80}
+
+    table._max_table_width = 150
 
     # if we want to format into finance
     if format_finance_col is not None:
