@@ -21,9 +21,9 @@ def print_variable_table(variable_names, values, format_finance_col=None, max_wi
     table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
 
     # if we want to set a width limit
-    # TODO: finish this function
+    # TODO: finish this function to determine max width of certain column
     if max_width_column is not None:
-        table._max_width = {max_width_column, 80}
+        table._max_width = {max_width_column: 80}
 
     table._max_table_width = 150
 

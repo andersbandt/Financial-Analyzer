@@ -19,7 +19,7 @@ class TabLoadData(SubMenu.SubMenu):
 
         self.statement = None
 
-        self.basefilepath = basefilepath # had to add this in, at some point maybe delete?
+        self.basefilepath = basefilepath  # had to add this in, at some point maybe delete?
 
         # initialize information about sub menu options
         action_strings = ["Load data", "Load ALL data", "Check data status"]
@@ -27,7 +27,6 @@ class TabLoadData(SubMenu.SubMenu):
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
-
 
     # def run(self):
     #     super().run()
@@ -40,7 +39,7 @@ class TabLoadData(SubMenu.SubMenu):
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
-# I was feeling pretty high and weird writing below code so maybe give it an audit on efficacy
+        # I was feeling pretty high and weird writing below code so maybe give it an audit on efficacy
         try:
             [year, month] = clih.prompt_year_month()
         except TypeError:
@@ -57,13 +56,13 @@ class TabLoadData(SubMenu.SubMenu):
             printmode=False)
 
         print(f"\nCreating master Statement object for all files in date bin {year}-{month}")
-        self.statement = loadh.create_master_statement(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
+        self.statement = loadh.create_master_statement(
+            statement_list)  # TODO: I think I should have this be a Statement instead of a Ledger
         self.statement.print_statement()
 
         print("Statement loaded successfully, can continue with load process")
         self.update_listing()
         return True
-
 
     def a01b_load_all_data(self):
         print("... loading in ALL financial data")
@@ -73,7 +72,7 @@ class TabLoadData(SubMenu.SubMenu):
         year_range = ["2020", "2021", "2022", "2023"]
 
         for year in year_range:
-            for month in range(1, 12+1):
+            for month in range(1, 12 + 1):
                 tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
                 statement_list.extend(tmp_list)
 
@@ -85,12 +84,11 @@ class TabLoadData(SubMenu.SubMenu):
         print("\t... done creating Ledger object.\n Updating listings and exiting.")
         self.update_listing()
 
-
     def a02_check_status(self):
         print("... checking data status ...")
+        return True
 
-
-##### BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN
+    ##### BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN
 
     # a03_categorize_statement: helps user categorize currently loaded statement data
     def a03_categorize_statement(self):
@@ -107,13 +105,11 @@ class TabLoadData(SubMenu.SubMenu):
         else:
             print("Ok, leaving statement with just automatic categorization applied")
 
-
     # a04_print_statement_summary: prints a summary of the currently loaded statement
     # TODO: I think I can phase this function out? Probably just needed during program bringup?
     def a04_print_statement_summary(self):
         for statement in self.statement_list:
             print(statement.title)
-
 
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
     def a05_save_statement_csv(self):
@@ -143,13 +139,11 @@ class TabLoadData(SubMenu.SubMenu):
         except Exception as e:
             print("Can't save statement: ", e)
 
-
     # a06_print_ledger: prints the currently loaded ledger
     def a06_print_ledger(self):
         print(" ... printing current Ledger object")
         self.statement.sort_date_desc()
         self.statement.print_statement()
-
 
     # a07_sort_ledger: sorts the ledger by some metric
     def a07_sort_ledger(self):
@@ -159,7 +153,6 @@ class TabLoadData(SubMenu.SubMenu):
         self.statement.sort_trans_asc()
         self.statement.print_statement()
 
-
     def a08_save_statement_db(self):
         print("... saving statement to .db file ...")
         self.statement.save_statement()
@@ -168,7 +161,7 @@ class TabLoadData(SubMenu.SubMenu):
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
-# TODO: probably can migrate some of these functions into `load_helper.py`
+    # TODO: probably can migrate some of these functions into `load_helper.py`
 
     def update_listing(self):
         # append new actions to menu now that statement is loaded in
@@ -186,11 +179,8 @@ class TabLoadData(SubMenu.SubMenu):
         self.action_funcs.append(self.a08_save_statement_db)
         return True
 
-
     def categorize_automatic(self):
         pass
-
-
 
     # def a01_load_data(self):
     #     print("... loading in financial data ...")

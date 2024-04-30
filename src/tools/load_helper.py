@@ -190,6 +190,7 @@ def create_master_statement(statement_list):
     return statement
 
 
+# tag: HARDCODE
 def create_statement(year, month, filepath, account_id_prompt=False):
     # determine account_id
     print("\nCreating statement at: " + filepath)
@@ -197,7 +198,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     ### GRAB ACCOUNT_ID either automatic or based on filepath
     account_id = match_file_to_account(filepath)
 
-    if account_id == None:
+    if account_id is None:
         if account_id_prompt:
             print("\tCouldn't automatically match account_id, manually loading in")
             account_id = clih.get_account_id_manual()
@@ -231,6 +232,11 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         return stat
     elif account_id == 2000000009:  # Apple Card
         stat = st.AppleCard.AppleCard(account_id, year, month, filepath, -1, -1, -1, -1)
+        # stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
+        #                                     1,
+        #                                     3,
+        #                                     2,
+        #                                     -1)  # date_col, amount_col, description_col, category_col
         return stat
     elif account_id == 2000000012:  # Chase Card
         stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)

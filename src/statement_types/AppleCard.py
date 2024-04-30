@@ -1,7 +1,6 @@
 
 
-
-# import needed moodules
+# import needed modules
 import csv
 
 import statement_types.Statement as Statement
@@ -51,14 +50,6 @@ class AppleCard(csvStatement.csvStatement):
                         )  # order: date, account_id, category_id, amount, description
                     i += 1
         except FileNotFoundError:
-            gui_helper.gui_print(
-                self.frame, self.prompt, "Uh oh, error in data loading"
-            )
-            gui_helper.alert_user(
-                self.frame,
-                "Missing data!",
-                "You might be missing your Apple Card .csv file",
-            )
             return False
 
         # set and return transactions

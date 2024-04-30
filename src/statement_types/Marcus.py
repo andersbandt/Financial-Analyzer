@@ -10,12 +10,6 @@ from tools import date_helper
 class Marcus(Statement.Statement):
     def load_statement_data(self):
         transactions = []
-        gui_helper.gui_print(
-            self.frame,
-            self.prompt,
-            "Extracting raw Marcus statement at: ",
-            self.filepath,
-        )
 
         try:
             with open(self.filepath, "rb") as f:
