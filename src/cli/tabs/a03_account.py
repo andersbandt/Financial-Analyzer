@@ -1,6 +1,6 @@
 """
-@file a04_load_data.py
-@brief sub menu for loading in raw financial data and storing in database
+@file a03_account.py
+@brief sub menu for managing accounts
 
 
 """
@@ -74,6 +74,10 @@ class TabAccount(SubMenu.SubMenu):
 
         print("Inserted account - " + name + " with account_id of (" + str(account_id) + ")")
 
+
+# TODO: finish this function to rename an account
+    def a0x_rename_account(self):
+        pass
 
 
     def a03_add_file_search_str(self):

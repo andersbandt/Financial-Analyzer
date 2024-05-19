@@ -18,12 +18,12 @@ class TabLoadData(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 
         self.statement = None
-
         self.basefilepath = basefilepath  # had to add this in, at some point maybe delete?
+        self.updated = False
 
         # initialize information about sub menu options
-        action_strings = ["Load data", "Load ALL data", "Check data status"]
-        action_funcs = [self.a01_load_data, self.a01b_load_all_data, self.a02_check_status]
+        action_strings = ["Load data", "Load ALL data", "Add manual transaction (not functional)"]
+        action_funcs = [self.a01_load_data, self.a02_load_all_data, self.a03_add_transaction_manual]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -49,6 +49,7 @@ class TabLoadData(SubMenu.SubMenu):
             else:
                 return False
 
+        # create list of Statement objects for each file for the particular month/year combination
         statement_list = loadh.get_month_year_statement_list(
             self.basefilepath,
             year,
@@ -64,7 +65,8 @@ class TabLoadData(SubMenu.SubMenu):
         self.update_listing()
         return True
 
-    def a01b_load_all_data(self):
+    # TODO: clean up this function
+    def a02_load_all_data(self):
         print("... loading in ALL financial data")
 
         statement_list = []
@@ -84,14 +86,14 @@ class TabLoadData(SubMenu.SubMenu):
         print("\t... done creating Ledger object.\n Updating listings and exiting.")
         self.update_listing()
 
-    def a02_check_status(self):
-        print("... checking data status ...")
-        return True
+    # TODO: complete this function to manually add cash transactions
+    def a03_add_transaction_manual(self):
+        pass
 
     ##### BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN
 
-    # a03_categorize_statement: helps user categorize currently loaded statement data
-    def a03_categorize_statement(self):
+    # a04_categorize_statement: helps user categorize currently loaded statement data
+    def a04_categorize_statement(self):
         print("\n\na03: Automatically categorizing Statement")
         categories = categories_helper.load_categories()
 
@@ -104,12 +106,6 @@ class TabLoadData(SubMenu.SubMenu):
             self.statement.categorize_manual()
         else:
             print("Ok, leaving statement with just automatic categorization applied")
-
-    # a04_print_statement_summary: prints a summary of the currently loaded statement
-    # TODO: I think I can phase this function out? Probably just needed during program bringup?
-    def a04_print_statement_summary(self):
-        for statement in self.statement_list:
-            print(statement.title)
 
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
     def a05_save_statement_csv(self):
@@ -155,81 +151,31 @@ class TabLoadData(SubMenu.SubMenu):
 
     def a08_save_statement_db(self):
         print("... saving statement to .db file ...")
-        self.statement.save_statement()
+        status = self.statement.save_statement()
+        return status
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
-    # TODO: probably can migrate some of these functions into `load_helper.py`
-
+    # TODO: can I improve how I'm updating this listing? Standardize across other CLI tab?
     def update_listing(self):
-        # append new actions to menu now that statement is loaded in
-        self.action_strings.append("Categorize statement")
-        self.action_strings.append("Statement summary")
-        self.action_strings.append("Save to .csv")
-        self.action_strings.append("Print new Ledger")
-        self.action_strings.append("Sort ledger")
-        self.action_strings.append("Save to database")
-        self.action_funcs.append(self.a03_categorize_statement)
-        self.action_funcs.append(self.a04_print_statement_summary)
-        self.action_funcs.append(self.a05_save_statement_csv)
-        self.action_funcs.append(self.a06_print_ledger)
-        self.action_funcs.append(self.a07_sort_ledger)
-        self.action_funcs.append(self.a08_save_statement_db)
+        if not self.updated:
+            # append new actions to menu now that statement is loaded in
+            self.action_strings.append("Categorize statement")
+            self.action_strings.append("Save to .csv")
+            self.action_strings.append("Print new Ledger")
+            self.action_strings.append("Sort ledger")
+            self.action_strings.append("Save to database")
+            self.action_funcs.append(self.a04_categorize_statement)
+            self.action_funcs.append(self.a05_save_statement_csv)
+            self.action_funcs.append(self.a06_print_ledger)
+            self.action_funcs.append(self.a07_sort_ledger)
+            self.action_funcs.append(self.a08_save_statement_db)
+
+            self.updated = True
+
         return True
 
     def categorize_automatic(self):
         pass
-
-    # def a01_load_data(self):
-    #     print("... loading in financial data ...")
-    #
-    #     status = True
-    #     while status:
-    #         def prompt_date():
-    #             print("\n... prompting user to find file for Statement")
-    #             # get date information to determine which folder to look in
-    #             y = clih.get_year_input()
-    #             m = clih.get_month_input()
-    #             return [y, m]
-    #
-    #         [year, month] = prompt_date()
-    #         if month == -1 or year == -1:
-    #             res = clih.promptYesNo("Bad date input. Try again?")
-    #             if res:
-    #                 [year, month] = prompt_date()
-    #
-    #         # look in the folder to determine loaded files
-    #         dir_path = clih.get_statement_folder(self.basefilepath, year, month)
-    #         print("Looking at path: " + dir_path)
-    #         dir_list = os.listdir(dir_path)
-    #         if len(dir_list) == 0:
-    #             print("Yikes! No files found")
-    #         i = 0
-    #         for file in dir_list:
-    #             print(str(i+1) + ": " + file)
-    #             i += 1
-    #
-    #         # get individual file
-    #         file_sel = clih.spinput("Select what number file you want to load in (1 to N): ", type="int")
-    #
-    #         # STANDARD FLOW CONTROL FOR SPINPUT
-    #         if file_sel == False:
-    #             break
-    #         elif file_sel == -1:
-    #             status = False
-    #             break
-    #         # END OF FLOW CONTROL
-    #
-    #         file = dir_list[file_sel-1]
-    #         print("\nYou selected " + file)
-    #
-    #         # create Statement object for file
-    #         self.statement = loadh.create_statement(year, month, dir_path + file)
-    #         self.statement.load_statement_data()
-    #         self.statement.print_statement()
-    #         print("Statement loaded successfully, can continue with load process")
-    #         status = False
-    #
-    #     self.update_listing()

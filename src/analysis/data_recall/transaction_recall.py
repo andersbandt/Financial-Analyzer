@@ -81,16 +81,18 @@ def recall_transaction_data(date_start=-1, date_end=-1):
 
     transactions = convert_ledge_to_transactions(ledger_data)
 
-    if len(transactions) == 0:
-        logger.exception(
-            "Uh oh, transaction_recall produced no results."
-        )
-        raise TransactionRecallError(
-            "Uh oh, transaction_recall produced no results."
-        )
+    # if len(transactions) == 0:
+    #     logger.exception(
+    #         "Uh oh, transaction_recall produced no results."
+    #     )
+    #     raise TransactionRecallError(
+    #         "Uh oh, transaction_recall produced no results."
+    #     )
     return transactions
 
 
+
+@logfn
 def recall_transaction_month_bin(year, month):
     month_range = dateh.month_year_to_date_range(
         year,

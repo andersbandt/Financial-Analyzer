@@ -4,7 +4,6 @@
 
 """
 
-
 # import needed modules
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
@@ -16,7 +15,6 @@ from categories import categories_helper as cath
 from categories import Category
 from tools import date_helper as dateh
 import db.helpers as dbh
-
 
 
 ##############################################################################
@@ -39,7 +37,7 @@ def spinput(prompt_str, inp_type):
 
     # TYPE: (int)
     if inp_type == "int":
-        inp = inp.replace(',', '') # get rid of commas
+        inp = inp.replace(',', '')  # get rid of commas
         try:
             inp = int(inp)
         except ValueError as e:
@@ -52,7 +50,7 @@ def spinput(prompt_str, inp_type):
 
     # TYPE: (float)
     elif inp_type == "float":
-        inp = inp.replace(',', '') # get rid of commas
+        inp = inp.replace(',', '')  # get rid of commas
         return float(inp)
 
     # TYPE: (yes or no)
@@ -61,7 +59,6 @@ def spinput(prompt_str, inp_type):
     # UNKNOWN TYPE!
     else:
         raise Exception("Unknown clih.spinput type!")
-
 
     return inp
 
@@ -121,7 +118,7 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
     if exact_match:
         if user_input not in strings_arr:
             print(user_input + " is not in inp_auto list!")
-            return -1 # can't return -1 here because category NA has ID=0
+            return -1  # can't return -1 here because category NA has ID=0
 
     if echo:
         print("Selected: " + user_input + "\n")
@@ -138,6 +135,7 @@ def get_year_input():
         return int(year)
     except ValueError:
         return False
+
 
 def get_month_input():
     month = input("Enter month input (0-12): ")
@@ -207,6 +205,7 @@ def category_prompt_all(prompt_str, display):
     else:
         return cath.category_name_to_id(cat_inp)
 
+
 # category_prompt: walks the user through selecting a Category from given array input
 # TODO: 1) reduce size      2) figure out how to return value with recursive calls
 # I also rarely use this function in practice ....
@@ -271,9 +270,6 @@ def category_tree_prompt():
 
     return False
 
-
-
-
     category_arr2 = []
     category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
     status = True
@@ -281,7 +277,8 @@ def category_tree_prompt():
         # print(prompt)
         print("Type 'y' to finalize category")
         print("Type 'x' to go one level up")
-        cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True, exact_match=False)
+        cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
+                            exact_match=False)
 
 
 # TODO: I think I should refactor this to be outside cli_helper
@@ -306,7 +303,8 @@ def get_category_input(transaction, mode=2):
         cat = category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
     # MODE2: list all prompts in DB
     elif mode == 2:
-        cat = category_prompt_all(trans_prompt, False) # second param controls if I print all the categories each transaction or not
+        cat = category_prompt_all(trans_prompt,
+                                  False)  # second param controls if I print all the categories each transaction or not
     else:
         print("Uh oh, invalid category selection mode!")
         return None
@@ -314,7 +312,7 @@ def get_category_input(transaction, mode=2):
     # do some error handling on category
     if cat == -1:
         print("category input (-1) return reached.")
-        return -1 # can't return 0 here because the category NA has an ID of 0 !!!
+        return -1  # can't return 0 here because the category NA has an ID of 0 !!!
 
     # set new Category to Transaction and print for lolz
     # print("Adding category " + cat.getName())
@@ -324,7 +322,6 @@ def get_category_input(transaction, mode=2):
 
     # return newly associated Category ID so upper layer can properly change Transaction data
     return cat
-
 
 
 ##############################################################################
@@ -371,4 +368,3 @@ def get_account_id_manual():
     acc_num = int(input("\t\tPlease enter what account you want: "))
     acc = accounts[acc_num - 1][0]
     return acc
-

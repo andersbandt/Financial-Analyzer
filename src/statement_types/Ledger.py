@@ -7,6 +7,7 @@ Transaction represents a single transaction on any statement
 
 
 # import user defined modules
+import categories.categories_helper as cath
 import db.helpers as dbh
 import cli.cli_helper as clih
 import cli.cli_printer as clip
@@ -132,19 +133,19 @@ class Ledger:
         sorted_trans = sorted(self.transactions, key=lambda t: t.amount)
         self.transactions = sorted_trans
 
-
     # sort_trans_desc: sorts the transaction by amount descending (lowest to highest)
     def sort_trans_desc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.amount, reverse=True)
         self.transactions = sorted_trans
 
 
-    def sort_date_asc(self):
+    # sort_date_desc: end of transaction array will be most recent date
+    def sort_date_desc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.date)
         self.transactions = sorted_trans
 
-
-    def sort_date_desc(self):
+    # sort_date_asc: start of transaction array will be most recent date
+    def sort_date_asc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.date, reverse=True)
         self.transactions = sorted_trans
 
@@ -178,7 +179,7 @@ class Ledger:
                     transaction.date,
                     transaction.amount,
                     transaction.description,
-                    dbh.category.get_category_name_from_id(transaction.category_id),
+                    cath.category_id_to_name(transaction.category_id),
                     dbh.account.get_account_name_from_id(transaction.account_id),
                     transaction.note
                 ]
@@ -187,12 +188,12 @@ class Ledger:
                     transaction.date,
                     transaction.amount,
                     transaction.description,
-                    dbh.category.get_category_name_from_id(transaction.category_id),
+                    cath.category_id_to_name(transaction.category_id),
                     dbh.account.get_account_name_from_id(transaction.account_id),
                     transaction.note
                 ]
             values.append(cur_values)
-        clip.print_variable_table(headers, values)
+        clip.print_variable_table(headers, values, max_width_column="DESC")
 
 
     ##############################################################################

@@ -4,28 +4,24 @@ Class: Investment
 Investment represents a single investment in an asset
 
 """
-import json
-from datetime import date  # needed to get current date
 
+# import needed modules
+import json
 from googlefinance import getQuotes
 
+# import user created modules
+from analysis import investment_helper as invh
 from statement_types.Transaction import Transaction
 
 
+
 class Investment(Transaction):
-    def __init__(self, ticker, shares, account_id, *args):
+    def __init__(self, date, account_id, category_id, amount, description, ticker, shares, note=None, sql_key=None):
+        super.__init__(date, account_id, category_id, amount, description, note=None, sql_key=None)
+
+        # add investment specific information
         self.ticker = ticker
         self.shares = shares
-        self.account_id = account_id
 
-    # get_current_value: gets the current value of the investment
-    def get_current_value(self):
-        # get stock information
-        info = getQuotes(self.ticker)  # For example: "AAPL", "MSFT", etc.
-        stuff = json.dumps(info)
-        final = ""
-        for i in range(118, 123):
-            final += stuff[i]
-        price = float(final)
+        self.price = invh.get_ticker_price(ticker)
 
-        return self.shares * price

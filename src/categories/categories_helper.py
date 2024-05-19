@@ -98,6 +98,8 @@ def category_name_to_id(category_name):
 
 # category_id_to_name
 def category_id_to_name(category_id):
+    if category_id is None:
+        return "NA" #tag:hardcode?
     return dbh.category.get_category_name_from_id(category_id)
 
 

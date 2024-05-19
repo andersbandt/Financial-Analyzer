@@ -54,7 +54,7 @@ class TabCategory(SubMenu.SubMenu):
             parent_id = 1
 
         # prompt for name
-        category_name = clih.spinput("What is this new category name?: ")
+        category_name = clih.spinput("\nWhat is this new category name?: ", inp_type="text")
 
         # insert_category: inserts a category into the SQL database
         dbh.category.insert_category(category_name, parent_id)

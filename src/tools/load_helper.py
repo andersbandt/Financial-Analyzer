@@ -11,6 +11,7 @@ import numpy as np
 # import user created modules
 import db.helpers as dbh
 from tools import date_helper
+from account import account_helper as acch
 from statement_types import Statement
 import statement_types as st
 from cli import cli_printer as clip
@@ -130,26 +131,12 @@ def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
     # METHOD 1: simple
-    # TODO: below method would be ideal case but doesn't really work
     account_id = dbh.file_mapping.get_account_id_from_string(filepath)
 
     # METHOD 2: handling the search logic in this function
     account_file_map_ledge = dbh.file_mapping.get_file_mapping_ledge_data()
     # for entry in account_file_map_ledge:
     #     if entry[2]
-
-    # METHOD 3: hardcode
-    # # VENMO
-    # if "venmo" in filepath.lower() or 'transaction_history' in filepath.lower():
-    #     print("\t\tcontains 'venmo' or 'transaction_history'")
-    #     return 2000000007
-    #
-    # # APPLE CARD
-    # if "apple" in filepath.lower():
-    #     print("\t\tcontains 'apple'")
-    #     return 2000000009
-    #
-
 
     # return None if we didn't match anything
     if account_id is False:
@@ -242,11 +229,13 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)
         return stat
     elif account_id == 2000000017: # CitiMastercard AAdvantage
-        stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
+        stat = st.CitiMasterCard.CitiMastercard(account_id, year, month, filepath,
                                             1,
                                             3,
-                                            2,
-                                            -1)  # date_col, amount_col, description_col, category_col
+                                            4,
+                                        2,
+                                            -1,
+                                                exclude_header=True)  # date_col, amount_col, description_col, category_col
         return stat
     # if no valid account_id was found
     else:
@@ -264,29 +253,36 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
 
     statement_list = []
     status_list = []
+    account_list = []
     for file in file_list:
         statement_list.append(create_statement(year, month, file))
 
         if statement_list[-1] is not None:
             print("... statement created, going to load in data")
             status_list.append(True)
+            # account_name = dbh.account.get_account_name_from_id(statement_list[-1].account_id)
+            account_list.append(statement_list[-1].account_id)
 
             try:
                 statement_list[-1].load_statement_data()
             except Exception as e:
                 print("Something went wrong loading statement from filepath!!!")
                 print("\terror is: ", e)
-                raise (e)
+                raise e
 
             if printmode:
                 statement_list[-1].print_statement()
         else:
             print("... seems like no statement could be created")
             status_list.append(False)
+            account_list.append(False)
+
+    # print out what accounts got loaded in
+    acch.print_account_status(account_list)
 
     # print out final status list and return
-    concat_table_arr = np.vstack((status_list, file_list)).T
-    clip.print_variable_table(["Status", "Filepath"], concat_table_arr)
+    concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+    clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
     return statement_list
 
 

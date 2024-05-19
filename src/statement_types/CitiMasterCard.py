@@ -5,7 +5,7 @@ import csv
 import os
 
 # import user created modules
-import statement_types.Statement as Statement
+import statement_types.csvStatement as csvStatement
 import statement_types.Transaction as Transaction
 
 
@@ -14,36 +14,25 @@ import statement_types.Transaction as Transaction
 # amount
 # description
 # category
-class csvStatement(Statement.Statement):
+class CitiMastercard(csvStatement.csvStatement):
     def __init__(self, account_id,
                  year,
                  month,
                  filepath,
                  date_col,
-                 amount_col,
+                 debit_col,
+                 credit_col,
                  description_col,
                  category_col,
                  exclude_header=False):
         # call parent class __init__ method
-        super().__init__(account_id, year, month, filepath)
+        super().__init__(account_id, year, month, filepath, date_col, debit_col, description_col, category_col, exclude_header=exclude_header)
 
         # set the .csv file search column numbering
-        self.date_col = date_col
-        self.amount_col = amount_col
-        self.description_col = description_col
-        self.category_col = category_col
+        self.amount_col = None
+        self.debit_col = debit_col
+        self.credit_col = credit_col
 
-        self.exclude_header = exclude_header
-
-        # verify .csv extension validity
-        file_extension = os.path.splitext(self.filepath)[1]
-        if file_extension.lower() != ".csv":
-            self.filepath_val = False
-        else:
-            self.filepath_val = True
-
-        # initialize identifying statement info
-        self.title = self.title + " - .csv file"
 
     def csv_check(self):
         # verify statement file integrity
@@ -79,11 +68,17 @@ class csvStatement(Statement.Statement):
                     else:
                         category = None
 
+                    # AMOUNT
+                    try:
+                        amount = -1 * float(line[self.debit_col])
+                    except ValueError:
+                        amount = -1 * float(line[self.credit_col])
+
                     try:
                         transactions.append(Transaction.Transaction(date,
                                                                     self.account_id,  # account ID
                                                                     category,  # category
-                                                                    float(line[self.amount_col]),  # amount
+                                                                    amount,  # amount
                                                                     line[self.description_col]  # description
                                                                     ))
                     except Exception as e:

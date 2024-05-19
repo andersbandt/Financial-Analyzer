@@ -7,6 +7,7 @@
 
 # import needed modules
 import datetime
+from pprint import pprint
 
 # import user defined modules
 import cli.cli_helper as clih
@@ -16,7 +17,6 @@ from analysis import investment_helper as invh
 import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
-
 
 
 # TODO: let's create a function to calculate the "health" of my investment.ledger calculated account balances vs my manual entry ones
@@ -29,6 +29,7 @@ class TabInvestment(SubMenu.SubMenu):
 
         # initialize information about sub menu options
         action_strings = ["Check investments",
+                          "Print .db investment transactions",
                           "Add investment transaction",
                           "Check account balances/summary",
                           "Show account snapshot value history",
@@ -36,15 +37,15 @@ class TabInvestment(SubMenu.SubMenu):
                           "Add dividend"]
 
         action_funcs = [self.a01_check_investments,
-                        self.a02_add_investment,
-                        self.a03_check_accounts,
-                        self.a04_cur_value_history,
-                        self.a05_add_inv_balances,
-                        self.a06_add_dividend]
+                        self.a02_print_db_inv,
+                        self.a03_add_investment,
+                        self.a04_check_accounts,
+                        self.a05_cur_value_history,
+                        self.a06_add_inv_balances,
+                        self.a07_add_dividend]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
-
 
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
@@ -56,7 +57,19 @@ class TabInvestment(SubMenu.SubMenu):
         return True
 
 
-    def a02_add_investment(self):
+# TODO: finish this function to print investment transactions
+    def a02_print_db_inv(self):
+        # METHOD 1: cheap
+        ledge_data = dbh.investments.get_investment_ledge_data()
+        pprint(ledge_data)
+
+        # METHOD 2: actuallyy doing it right
+        # transactions = transr.recall_transaction_data() # TODO: need to finish a function to recall InvestmentTransaction data. But where to put?
+        # tmp_ledger = Ledger.Ledger("All Investment Data")
+        # tmp_ledger.set_statement_data(transactions)
+        # tmp_ledger.print_statement()
+
+    def a03_add_investment(self):
         print("... adding investment transaction ...")
 
         # get account information
@@ -132,9 +145,7 @@ class TabInvestment(SubMenu.SubMenu):
                                           value,
                                           note=note)
 
-
-    # TODO: have nice printout of all investments owned by each account
-    def a03_check_accounts(self):
+    def a04_check_accounts(self):
         print("... checking investment data for each account ...")
 
         # populate array of accounts with type=4
@@ -156,8 +167,7 @@ class TabInvestment(SubMenu.SubMenu):
         )
         return True
 
-
-    def a04_cur_value_history(self):
+    def a05_cur_value_history(self):
         print("... summarizing value history ...")
 
         # set some parameters and populate my "active" investment data
@@ -170,9 +180,9 @@ class TabInvestment(SubMenu.SubMenu):
         total_arr = []
         date_arr = []
         dummy_ticker_price_data = invh.get_ticker_price_data("AAPL",
-                                                dateh.get_date_previous(days_prev),
-                                                datetime.datetime.now(),
-                                                interval)
+                                                             dateh.get_date_previous(days_prev),
+                                                             datetime.datetime.now(),
+                                                             interval)
 
         for ticker_date_entry in dummy_ticker_price_data["date"]:
             date_arr.append(ticker_date_entry)
@@ -199,31 +209,28 @@ class TabInvestment(SubMenu.SubMenu):
             #         print(f"\nMISMATCH BELOW!")
             #         print(f"\n{cur_data[i]} != {prev_data[i]}")
 
-
             # do some verification of the length
             if len(price_data["close"]) != len(total_arr):
                 print("Can't add current data because there is a mismatch in total dates")
                 continue
 
-
             i = 0  # in this context i represents the dates
             for price in price_data["close"]:
                 shares = entry["shares"]
-                total_arr[i] += entry["shares"]*price
+                total_arr[i] += entry["shares"] * price
                 i += 1
 
         print(date_arr)
         print(total_arr)
 
         grapa.create_line_chart(date_arr,
-                                    total_arr,
-                                    title="Historical price data of portfolio snapshot",
-                                    y_format='currency')
+                                total_arr,
+                                title="Historical price data of portfolio snapshot",
+                                y_format='currency')
 
         print("Done running a04_cur_value_history with days previous of: ", days_prev)
 
-
-    def a05_add_inv_balances(self):
+    def a06_add_inv_balances(self):
         print("... adding investment balances to financials database ...")
         # populate array of accounts with type=4
         inv_acc_id = dbh.account.get_account_id_by_type(4)
@@ -234,7 +241,8 @@ class TabInvestment(SubMenu.SubMenu):
             acc_val_arr.append(acc_val)
 
         # do one last check
-        res = clih.promptYesNo("Are you sure you want to add these investment account balances to the financial database?")
+        res = clih.promptYesNo(
+            "Are you sure you want to add these investment account balances to the financial database?")
         if res:
             # add balances
             bal_date = dateh.get_cur_str_date()
@@ -247,8 +255,7 @@ class TabInvestment(SubMenu.SubMenu):
                 # print out balance addition confirmation
                 print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
 
-
-    def a06_add_dividend(self):
+    def a07_add_dividend(self):
         print("... adding dividend for a ticker ...")
         # get account information
         account_id = clih.account_prompt_type("What is the corresponding account for this investment dividend?: ", 4)
@@ -307,10 +314,4 @@ class TabInvestment(SubMenu.SubMenu):
                                           description=f"DIVIDEND: {dividend_shares}",
                                           note=note)
         return True
-
-
-    ##############################################################################
-    ####      OTHER HELPER FUNCTIONS           ###################################
-    ##############################################################################
-
 
