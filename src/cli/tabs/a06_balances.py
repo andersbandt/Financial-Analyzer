@@ -32,7 +32,6 @@ class TabBalances(SubMenu.SubMenu):
                           "Add balance",
                           "Graph balances per account",
                           "Retirement modeling",
-                          "Show recent .db balance",
                           "Delete balance entries",
                           "Print .db balance"]
 
@@ -40,9 +39,8 @@ class TabBalances(SubMenu.SubMenu):
                         self.a02_add_balance,
                         self.a03_graph_account_balance,
                         self.a04_retirement_modeling,
-                        self.a05_show_recent_balance,
-                        self.a06_delete_balance,
-                        self.a07_print_balance_table]
+                        self.a05_delete_balance,
+                        self.a06_print_balance_table]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_strings, action_funcs)
@@ -51,48 +49,37 @@ class TabBalances(SubMenu.SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
-    # a01_show_wealth
+    # a01_show_wealth: prints out tabular view of account balances (either from latest .db entry or live stock price)
+    # TODO: possibly omit any accounts with a balance of 0 (and print out which accounts were omitted)
     def a01_show_wealth(self):
-        acc_balances = []
-        acc_dates = []
-        acc_id_arr = dbh.account.get_all_account_ids()
-
-        values_table = []
-        for acc_id in acc_id_arr:
-            bal_amount, bal_date = balh.get_account_balance(acc_id)
-            acc_balances.append(bal_amount)
-            acc_dates.append(bal_date)
+        values_table = []  # values table to print
+        for acc_id in dbh.account.get_all_account_ids():
+            bal_amount, bal_date = balh.get_account_balance(
+                acc_id)  # TODO: let's audit this function and possibly add some hooks for options (live stock price, latest recorded, etc)
             values_table.append([dbh.account.get_account_name_from_id(acc_id), bal_amount, bal_date])
-
-        # use cli_printer to print a table of balances
-        # clip.print_balances(
-        #     [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
-        #     acc_balances,
-        #     "BALANCE SUMMARY"
-        # )
 
         clip.print_variable_table(
             ["Account id", "Amount", "Date"],
             values_table,
             format_finance_col=1
         )
-        print(acc_dates)
-
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
-    # TODO: add input for if the account is a retirement account or not
     def a02_add_balance(self):
         print("... adding a balance entry ...")
 
         # prompt user for account ID
         account_id = clih.account_prompt_all("What account do you want to add balance to?")
+        if account_id is False:
+            return False
 
         # prompt for balance amount
         bal_amount = clih.spinput("\nWhat is the amount for balance entry? (no $): ",
                                   inp_type="float")
+        if bal_amount is False:
+            return False
 
         # prompt user for date
-        # TODO: add option to just select 'today'
         bal_date = clih.get_date_input("\nand what date is this balance record for?")
         if bal_date is False:
             print("Ok, quitting add balance")
@@ -102,7 +89,7 @@ class TabBalances(SubMenu.SubMenu):
         status = balh.add_account_balance(account_id, bal_amount, bal_date)
         return status
 
-
+    # a03_graph_account_balance: produces some graphs of account balances across time
     def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
 
@@ -125,34 +112,19 @@ class TabBalances(SubMenu.SubMenu):
         account_names_array = [dbh.account.get_account_name_from_id(account_id) for account_id in account_id_array]
         values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
 
-        # TYPE 1: by account ID
-        # TODO: add sort by account size
-        grapa.create_stackline_chart(edge_code_date[1:],
-                                     values_array,
-                                     title=f"Balances per account since {edge_code_date[0]}",
-                                     label=account_names_array,
-                                     y_format='currency')
+        # TYPE 1:
+        balh.graph_balance_1(edge_code_date, values_array, account_names_array)
 
         # TYPE 2: by account type
-        n = len(values_array[0])
-        m = acch.get_num_acc_type()
-        type_values_array = [[0 for _ in range(n)] for _ in range(m)]
+        balh.graph_balance_2(edge_code_date, values_array, account_id_array)
 
-        for j in range(0, len(account_id_array)):
-            acc_type = dbh.account.get_account_type(account_id_array[j])
-            # if acc_type not in [1, 2, 3, 4]:
-            #     raise Exception(f"Uh oh account type is not valid for {account_id_array[j]}")
-            for i in range(0, len(values_array[0])):
-                type_values_array[acc_type-1][i] += values_array[j][i]
+        # TYPE 3: using .db data to model day by day balance
+        balance_history = balh.model_account_balance(2000000003)
+        dates = [date for date, balance in balance_history]
+        balances = [balance for date, balance in balance_history]
+        balh.graph_balance_3(dates, balances)
 
-        grapa.create_stackline_chart(edge_code_date[1:],
-                                     type_values_array,
-                                     title=f"Balances by account type",
-                                     label=acch.get_acc_type_arr(),
-                                     y_format='currency')
-
-
-# TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
+    # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
         acc_id_arr, acc_balances = balh.get_retirement_balances()
 
@@ -187,29 +159,8 @@ class TabBalances(SubMenu.SubMenu):
         print(
             f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
-
-# TODO: this function can use cleanup ...
-    def a05_show_recent_balance(self):
-        print("... showing recent balances as you request ...")
-        acc_id_arr = dbh.account.get_all_account_ids()
-        table_values = []
-        for acc_id in acc_id_arr:
-            balance = dbh.balance.get_recent_balance(acc_id, True)
-            print(balance)
-            table_values.append([
-                dbh.account.get_account_name_from_id(acc_id),
-                balance[0],
-                balance[1]])
-        clip.print_variable_table(
-            ["Account", "Balance", "Date"],
-            table_values
-        )
-        return True
-
-
-# TODO: complete this function
-    def a06_delete_balance(self):
-        self.a07_print_balance_table()
+    def a05_delete_balance(self):
+        self.a06_print_balance_table()
         print("\nPlease enter the sql key of transactions you want to delete. Enter 'quit' or 'q' to finalize list")
         status = True
         sql_key_arr = []
@@ -222,6 +173,9 @@ class TabBalances(SubMenu.SubMenu):
                 print(sql_key_arr)
 
         # get one last user confirmation
+        if len(sql_key_arr) == 0:
+            print("Quitting balance delete!")
+
         print("\n\n== BALANCES TO DELETE ==")
         for sql_key in sql_key_arr:
             print(dbh.balance.get_balance(sql_key))
@@ -235,8 +189,8 @@ class TabBalances(SubMenu.SubMenu):
             dbh.balance.delete_balance(sql_key)
         return True
 
-
-    def a07_print_balance_table(self):
+    # a06_print_balance_table: prints all recorded .db balances
+    def a06_print_balance_table(self):
         # retrieve ledger data as tuples and convert into 2D array
         balance_ledge = dbh.balance.get_balance_ledge_data()
         balance_arr = np.array(balance_ledge)
@@ -251,4 +205,4 @@ class TabBalances(SubMenu.SubMenu):
             balance_arr,
             format_finance_col=2
         )
-
+        return True

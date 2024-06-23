@@ -8,6 +8,23 @@ import re
 from loguru import logger
 from utils import logfn
 
+
+
+
+# iterate_dates: shit man ChatGPT wrote this guy. I use it in `balance_helper.py`
+def iterate_dates(start_date_str, end_date_str):
+    # Convert the input strings to datetime objects
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+
+    # Iterate over each date in the range
+    current_date = start_date
+    while current_date <= end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(days=1)
+
+
+
 ##############################################################################
 ####      DATE VERIFICATION FUNCTIONS        #################################
 ##############################################################################
@@ -98,11 +115,9 @@ def month_year_to_date_range(year, month):
 ####      DATE GETTER FUNCTIONS            ###################################
 ##############################################################################
 
-
 def get_cur_date():
     return datetime.now()
     # return datetime.now().date()
-
 
 def get_cur_str_date():
     return datetime.now().strftime('%Y-%m-%d')

@@ -14,6 +14,8 @@ from cli.tabs import SubMenu
 from tools import load_helper as loadh
 
 
+# TODO: I need to add a function to parse ALL folders and conduct an analysis on potential months with missing data
+
 class TabLoadData(SubMenu.SubMenu):
     def __init__(self, title, basefilepath):
 

@@ -1,3 +1,10 @@
+"""
+@file a05_analyze_history.py
+@brief sub menu for performing ANALYSIS on financial data
+
+"""
+
+
 # import needed packages
 from datetime import datetime, timedelta
 from pprint import pprint
@@ -15,8 +22,6 @@ from tools import date_helper as dateh
 from cli.tabs import SubMenu
 import cli.cli_helper as clih
 from statement_types import Ledger
-
-
 
 
 
@@ -83,8 +88,10 @@ class TabSpendingHistory(SubMenu.SubMenu):
         tmp_ledger.sort_date_desc()
         tmp_ledger.print_statement(include_sql_key=True)
 
+
     # TODO: cleanup on this function (quite unruly)
     # TODO: add some options to do some things like running my Ledger sort functions on the output of search
+    # TODO: add filtering of multiple options at once (description and amount amount < M, etc)
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
@@ -238,7 +245,7 @@ class TabSpendingHistory(SubMenu.SubMenu):
         status = True
         while status:
             sql_to_remove = clih.spinput(
-                "\nPlease enter sql key of transaction to remove from update list (q to exit): ", "int")
+                "\nPlease enter sql key of transaction to remove from update list (q to continue without removal): ", "int")
             if sql_to_remove is False:
                 status = False
             else:
@@ -249,10 +256,16 @@ class TabSpendingHistory(SubMenu.SubMenu):
                     transaction = transr.get_transaction(id_key)
                     transaction.printTransaction(include_sql_key=True)
 
+        if len(found_sql_key) == 0:
+            print("No transaction left to update. Quitting")
+            return False
+
         # prompt user to get new category ID
         new_category_id = clih.category_prompt_all(
             "What is the new category for this grouping of transactions?",
             False)  # display = False
+
+        # TODO: add final printout of transactions to be updated
 
         # iterate through final list of keys and update their category ID
         for key in found_sql_key:

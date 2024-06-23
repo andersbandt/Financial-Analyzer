@@ -46,6 +46,9 @@ class Category:
         print("Executing rename_category")
 
 
+    def set_parent(self, parent_id):
+        self.parent = parent_id
+
     def add_child(self):
         print("Executing add_child")
 

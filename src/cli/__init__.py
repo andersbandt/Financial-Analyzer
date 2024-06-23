@@ -25,8 +25,6 @@ class MainApplication:
         # initialize the tabs in self.tabs[]
         self.initTabs()
 
-
-
     def setTabs(self):
         self.tabs = [self.tab1, self.tab2, self.tab3, self.tab4, self.tab5, self.tab6, self.tab7, self.tab8, self.tab9]
 

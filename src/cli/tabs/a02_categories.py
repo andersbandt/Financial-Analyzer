@@ -61,6 +61,7 @@ class TabCategory(SubMenu.SubMenu):
         return True
 
 
+# TODO: there might be a bug where some top level gets chopped off.... experienced "Shopping" getting dropped from printout
     def a02_check_category(self):
         print("... checking categories ...")
 
@@ -71,7 +72,9 @@ class TabCategory(SubMenu.SubMenu):
         tree_ascii = tree.get_ascii(compact=False, show_internal=True)
         tree.get_ascii()
         print(tree_ascii)
+        return True
 
+    # TODO: some category check improvements
         # perform some verification on database integrity
         #   - no double names
         #   - no disconnected categories (all in tree structure)
@@ -133,11 +136,16 @@ class TabCategory(SubMenu.SubMenu):
         categories = dbh.category.get_category_ledger_data()
 
         for item in categories:
-            print(item)
+            print(item) # TODO: make this printout better (put into table?)
 
-        category_id = clih.spinput("What is the category ID you want to DROP?", type="int")
+        category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
+        if category_id is False:
+            return False
         dbh.category.delete_category(category_id)
         print("Ok deleted category with ID: " + str(category_id))
+        return True
+
+        # TODO: make recursive (keep prompting for delete inputs until exit)
 
 
     def a06_move_parent(self):

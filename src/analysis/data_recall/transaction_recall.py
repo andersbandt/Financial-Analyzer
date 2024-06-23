@@ -4,18 +4,10 @@
 
 """
 
-
 # import user defined modules
 import db.helpers as dbh
 from statement_types import Transaction
 from tools import date_helper as dateh
-
-# import logger
-from loguru import logger
-from utils import logfn
-
-
-
 
 # import logger
 from loguru import logger
@@ -44,6 +36,7 @@ def get_transaction(sql_key):
         print("Can't get transaction by sql_key: more than 1 result!")
         raise Exception
 
+
 # convert_ledge_to_transactions: converts raw SQL ledger data into Transaction objects
 # @logfn
 def convert_ledge_to_transactions(ledger_data):
@@ -67,32 +60,38 @@ def convert_ledge_to_transactions(ledger_data):
 ####      "SIMPLER" RECALL FUNCTIONS    ######################################
 ##############################################################################
 
-# recall_transaction_data: loads up an array of Transaction objects based on date range and accounts
+# recall_transaction_data: loads up an array of Transaction objects based on date range
 #     @param date_start - the starting date for search
 #     @param date_end - the ending date for search
-# @logfn
-def recall_transaction_data(date_start=-1, date_end=-1):
-    if date_start != -1 and date_end != -1:
-        print("Recalling transactions between " + date_start + " and " + date_end)
-        ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
+def recall_transaction_data(date_start=-1, date_end=-1, account_id=False):
+    if isinstance(account_id, int):
+        if date_start != -1 and date_end != -1:
+            print(f"Recalling account {account_id} transactions between {date_start} and {date_end}")
+            ledger_data = dbh.ledger.get_account_transactions_between_date(account_id, date_start, date_end)
+        elif date_start != -1 and date_end == -1:
+            date_end = dateh.get_cur_str_date()
+            print(f"Recalling account {account_id} transactions between {date_start} and {date_end}")
+            ledger_data = dbh.ledger.get_account_transactions_between_date(account_id, date_start, date_end)
+        else:
+            print(f"Recalling all transactions for account {account_id}")
+            ledger_data = dbh.ledger.get_account_transactions(account_id)
     else:
-        print("getting ALL transactions")
-        ledger_data = dbh.ledger.get_transactions_ledge_data()
+        if date_start != -1 and date_end != -1:
+            print(f"Recalling transactions between {date_start} and {date_end}")
+            ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
+        elif date_start != -1 and date_end == -1:
+            date_end = dateh.get_cur_str_date()
+            print(f"Recalling transactions between {date_start} and {date_end}")
+            ledger_data = dbh.ledger.get_transactions_between_date(date_start, date_end)
+        else:
+            print("Getting ALL transactions")
+            ledger_data = dbh.ledger.get_transactions_ledge_data()
 
     transactions = convert_ledge_to_transactions(ledger_data)
 
-    # if len(transactions) == 0:
-    #     logger.exception(
-    #         "Uh oh, transaction_recall produced no results."
-    #     )
-    #     raise TransactionRecallError(
-    #         "Uh oh, transaction_recall produced no results."
-    #     )
     return transactions
 
 
-
-@logfn
 def recall_transaction_month_bin(year, month):
     month_range = dateh.month_year_to_date_range(
         year,

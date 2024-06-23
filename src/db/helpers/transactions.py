@@ -3,7 +3,6 @@
     @brief SQL database helper for the 'transactions' table
 """
 
-
 # import needed modules
 import datetime
 import sqlite3
@@ -47,7 +46,6 @@ def update_transaction_category(transaction: Transaction) -> bool:
                 (transaction.category_id, transaction.sql_key),
             )
     return True
-
 
 
 def update_transaction_category_k(sql_key, new_category_id):
@@ -109,7 +107,7 @@ def get_transactions_between_date(date_start, date_end):
     return ledger_data
 
 
-# get_uncategorized_transactions:
+# get_uncategorized_transactions: get any transactions with category_id = 0 (NA)
 def get_uncategorized_transactions():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -118,14 +116,12 @@ def get_uncategorized_transactions():
     return ledger_data
 
 
-# get_uncategorized_transactions:
 def get_transactions_description_keyword(desc_str):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM transactions WHERE description LIKE ? ORDER BY date ASC", (f"%{desc_str}%",))
         ledger_data = cur.fetchall()
     return ledger_data
-
 
 
 def get_transaction_by_sql_key(sql_key):
@@ -140,6 +136,14 @@ def get_transactions_by_category_id(category_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM transactions WHERE category_id=? ORDER BY date ASC", (category_id,))
+        ledger_data = cur.fetchall()
+    return ledger_data
+
+
+def get_transactions_by_account_id(account_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM transactions WHERE account_id=? ORDER BY date ASC", (account_id,))
         ledger_data = cur.fetchall()
     return ledger_data
 
