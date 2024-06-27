@@ -34,8 +34,21 @@ def get_num_acc_type():
     return len(types)
 
 
-# TODO: add some function for account_id->name and name->account_id and refactor them into here
+# account_name_to_id: converts an account name to the ID
+def account_name_to_id(account_name):
+    try:
+        category_id = dbh.account.get_account_id_from_name(account_name)
+    except Exception as e:
+        print("Something went wrong getting account ID from name: " + str(account_name))
+        return -1
+    return category_id
 
+
+# category_id_to_name
+def account_id_to_name(account_id):
+    if account_id is None:
+        return False
+    return dbh.account.get_account_name_from_id(account_id)
 
 
 def print_account_status(acc_id_compare):

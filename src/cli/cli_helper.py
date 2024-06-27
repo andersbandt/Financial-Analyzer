@@ -11,6 +11,7 @@ from datetime import datetime
 from loguru import logger
 
 # helper modules for CLI interface
+from account import account_helper as acch
 from categories import categories_helper as cath
 from categories import Category
 from tools import date_helper as dateh
@@ -333,7 +334,7 @@ def account_prompt_type(prompt_str, acc_type):
     ac_inp = inp_auto(prompt_str, accounts, echo=True, exact_match=True)
     if ac_inp is False:
         return False
-    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    ac_inp_id = acch.account_name_to_id(ac_inp)
     return ac_inp_id
 
 
@@ -347,7 +348,7 @@ def account_prompt_all(prompt_str):
         return
 
     ac_inp = inp_auto(prompt_str, accounts, echo=True)
-    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    ac_inp_id = acch.account_name_to_id(ac_inp)
     return ac_inp_id
 
 

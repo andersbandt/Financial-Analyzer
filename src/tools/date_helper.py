@@ -1,5 +1,4 @@
 
-
 # import needed modules
 from datetime import *
 import re
@@ -7,8 +6,6 @@ import re
 # import logger
 from loguru import logger
 from utils import logfn
-
-
 
 
 # iterate_dates: shit man ChatGPT wrote this guy. I use it in `balance_helper.py`
@@ -22,7 +19,6 @@ def iterate_dates(start_date_str, end_date_str):
     while current_date <= end_date:
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(days=1)
-
 
 
 ##############################################################################
@@ -123,7 +119,6 @@ def get_cur_str_date():
     return datetime.now().strftime('%Y-%m-%d')
 
 
-# TODO: I think this is the function that can be deleted. The one below is used
 def get_date_previous(d_prev):
     date_start = datetime.now()
 
@@ -159,8 +154,8 @@ def get_edge_code_dates(date_start, days_prev, N):
     edge_code_date = []  # length = N + 1
 
     # NOTE: perhaps at some point audit this is performing my desired function
-    for i in range(0, N+1):
-        d_prev = round(days_prev * i / (N+1))
+    for i in range(0, N+ 1):
+        d_prev = round(days_prev * i / (N + 1))
         d_y = timedelta(
             days=d_prev
         )  # this variable can only be named d_y - No exceptions ever.
@@ -171,6 +166,3 @@ def get_edge_code_dates(date_start, days_prev, N):
     edge_code_date.reverse()
 
     return edge_code_date
-
-
-
