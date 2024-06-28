@@ -3,7 +3,12 @@
 from datetime import datetime, timedelta
 from pprint import pprint
 
-# import user defined helper modules
+# import user defined CLI modules
+import cli.cli_helper as clih
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
+
+# import user defined HELPER modules
 import db.helpers as dbh
 import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
@@ -13,38 +18,27 @@ from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
 # import user defined modules
-from cli.tabs import SubMenu
-import cli.cli_helper as clih
 from statement_types import Ledger
 
 
-class TabSpendingHistory(SubMenu.SubMenu):
+class TabSpendingHistory(SubMenu):
     def __init__(self, title, basefilepath):
 
         self.basefilepath = basefilepath  # had to add this in, at some point maybe delete?
 
         # initialize information about sub menu options
-        action_strings = ["Executive summary",
-                          "Print database transactions",
-                          "Search transactions",
-                          "Graph category data",
-                          "Generate sankey (not working)",
-                          "Review specific month transactions",
-                          "Add note to transaction",
-                          "Update transaction category"]
-
-
-        action_funcs = [self.a01_exec_summary,
-                        self.a02_print_db_trans,
-                        self.a03_search_trans,
-                        self.a04_graph_category,
-                        self.a05_make_sankey,
-                        self.a06_review_month,
-                        self.a07_add_note,
-                        self.a08_update_transaction_category]
+        action_arr = [Action("Executive summary", self.a01_exec_summary),
+                          Action("Print database transactions", self.a02_print_db_trans),
+                          Action("Search transactions", self.a03_search_trans),
+                          Action("Graph category data", self.a04_graph_category),
+                          Action("Generate sankey (not working)", self.a05_make_sankey),
+                          Action("Review specific month transactions", self.a06_review_month),
+                          Action("Add note to transaction", self.a07_add_note),
+                          Action("Update transaction category", self.a08_update_transaction_category)
+                          ]
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
     # a01_exec_summary: creates a list of "executive summary items" about spending data
     def a01_exec_summary(self):

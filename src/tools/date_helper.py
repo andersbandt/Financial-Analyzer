@@ -1,4 +1,8 @@
+"""
+@file date_helper.py
+@brief toolsset for all things DATE related
 
+"""
 
 # import needed modules
 from datetime import *
@@ -19,6 +23,7 @@ def date_order(date1, date2):
     else:
         return False
 
+
 # date_between: returns True if date is in range, false otherwise (INCLUSIVE OF RANGE)
 def date_between(date_start, date_end, date_interest):
     if date_start <= date_interest:
@@ -36,6 +41,11 @@ def check_sql_date_format(date_string):
         print("Date string locations of '-' don't match")
         raise Exception("ERROR: improperly formatted date string: ", date_string)
     return True
+
+
+# TODO: complete this function instead of hardcoding it in
+def get_valid_years():
+    return ["2020", "2021", "2022", "2023", "2024"]  # tag:hardcode
 
 
 ##############################################################################
@@ -78,7 +88,6 @@ def conv_two_digit_date(date_str):
 # month_year_to_date_range: converts a string representation of a month and int of year
 #   into the format needed for SQL storage (YYYY-MM-DD)
 #   EXAMPLE: (2022, 10) --> ["2022-10-01", "2022-10-31"]
-@logfn
 def month_year_to_date_range(year, month):
     # Check if the month is valid
     if not (1 <= month <= 12):
@@ -98,18 +107,13 @@ def month_year_to_date_range(year, month):
 ####      DATE GETTER FUNCTIONS            ###################################
 ##############################################################################
 
-
 def get_cur_date():
     return datetime.now()
     # return datetime.now().date()
 
-
-# TODO: I believe this function returns a date that is sometimes ahead by 1 day?
 def get_cur_str_date():
     return datetime.now().strftime('%Y-%m-%d')
 
-
-# TODO: I think this is the function that can be deleted. The one below is used
 def get_date_previous(d_prev):
     date_start = datetime.now()
 
@@ -121,7 +125,7 @@ def get_date_previous(d_prev):
     return prev_date
 
 
-# get_date_days_prev: gets the date a previous
+# get_date_days_prev: gets the date a previous relative to a different date
 def get_date_days_prev(date_start, days_prev):
     d_y = timedelta(days=days_prev)
     date_prev = date_start - d_y

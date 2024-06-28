@@ -9,32 +9,26 @@ import db.helpers as dbh
 from categories import categories_helper as cath
 import cli.cli_helper as clih
 import cli.cli_printer as clip
-from cli.tabs import SubMenu
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
 
 
-class TabCategory(SubMenu.SubMenu):
+class TabCategory(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
 
         # initialize information about sub menu options
-        action_strings = ["Add category",
-                          "Print categories",
-                          "Add keyword",
-                          "Print keywords",
-                          "Delete category",
-                          "Update parent of category",
-                          "Delete a keyword"]
-
-        action_funcs = [self.a01_add_category,
-                        self.a02_check_category,
-                        self.a03_manage_keywords,
-                        self.a04_print_keywords,
-                        self.a05_delete_category,
-                        self.a06_move_parent,
-                        self.a07_delete_keyword]
+        action_arr = [Action("Add category", self.a01_add_category),
+                      Action("Print categories", self.a02_check_category),
+                      Action("Add keyword", self.a03_manage_keywords),
+                      Action("Print keywords", self.a04_print_keywords),
+                      Action("Delete category", self.a05_delete_category),
+                      Action("Update parent of category", self.a06_move_parent),
+                      Action("Delete a keyword", self.a07_delete_keyword)
+                      ]
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
@@ -124,7 +118,6 @@ class TabCategory(SubMenu.SubMenu):
             ["Category", "Keyword String"],
             table_values
         )
-
 
     def a05_delete_category(self):
         categories = dbh.category.get_category_ledger_data()

@@ -1,3 +1,8 @@
+
+
+
+
+
 # import needed modules
 import math
 import tkinter as tk
@@ -6,13 +11,17 @@ from tkinter.ttk import Style
 
 from ete3 import TextFace, Tree, TreeStyle, add_face_to_node
 
-import db.helpers as dbh
+
+
+# import user CLI stuff
+from cli.cli_class import SubMenu
+
 # import user defined modules
+import db.helpers as dbh
 from categories import categories_helper
-from gui import gui_helper
 
 
-class tabBudgeting:
+class tabBudgeting(SubMenu):
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)

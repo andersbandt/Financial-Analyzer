@@ -5,11 +5,11 @@ Transaction represents a single transaction on any statement
 
 """
 
-
 # import user defined modules
 import db.helpers as dbh
 import cli.cli_helper as clih
 import cli.cli_printer as clip
+import analysis.transaction_helper as transh
 
 
 class Ledger:
@@ -48,53 +48,35 @@ class Ledger:
     ####      CATEGORIZATION FUNCTIONS    ########################################
     ##############################################################################
 
-    # checkNA: checks if a statement contains any transactions with 'NA' as a category
-    def checkNA(self):
-        amount_NA = 0
-        for transaction in self.transactions:
-            if not transaction.get_cat_status():
-                amount_NA += 1
-
-        if amount_NA > 0:
-            print("Analyzed statement, contains " + str(amount_NA) + " NA entries")
-            return True
-        else:
-            return False
-
-
     def get_number_uncategorized(self):
         num = 0
         for transaction in self.transactions:
-            if transaction.category_id == None or transaction.category_id == 0:
+            if transaction.category_id is None or transaction.category_id == 0:
                 num += 1
         return num
-
 
     def getUncategorizedTrans(self):
         uncategorized_transaction = []
         for transaction in self.transactions:
             if not transaction.get_cat_status():
                 uncategorized_transaction.append(transaction)
-
         return uncategorized_transaction
-
 
     # categorizeStatementAutomatic: adds a category label to each statement array based predefined
     def categorizeLedgerAutomatic(self, categories):
-        print("\n categorizeLedgerAutomatic on:" + self.title)
-
+        # PERFORM VARIABLE CHECKS
         if len(categories) == 0:
             raise Exception("Loaded categories length is 0")
 
         if self.transactions is None:
-            print("Can't category Ledger: ", self.title)
+            print("Can't categorize Ledger: ", self.title)
             print("No transactions loaded.")
             return
 
+        # iterate through transactions and categorize them
         for transaction in self.transactions:
             transaction.categorizeTransactionAutomatic(categories)
         return
-
 
     def categorize_manual(self):
         i = 0
@@ -105,10 +87,11 @@ class Ledger:
                                 "mode 1=tree style\n"
                                 "mode 2=all category\n"
                                 " 1-2: ", inp_type="int")
+
         for transaction in self.getUncategorizedTrans():
             # prompt user for category information
             print("\n")
-            category_id = clih.get_category_input(transaction, mode=cat_mode)
+            category_id = transh.get_trans_category_cli(transaction, mode=cat_mode)
 
             if category_id == -1:
                 print("Received bad category ID\n"
@@ -120,34 +103,29 @@ class Ledger:
                 # set transaction
                 transaction.setCategory(category_id)
                 i += 1
-                print("Transactions left:", num_to_categorize-i)
-
+                print("Transactions left:", num_to_categorize - i)
 
     ##############################################################################
     ####      ORDERING FUNCTIONS    ##############################################
     ##############################################################################
-# TODO: my prettytable module also has sorting capability ... worthwhile to still have these functions?
+
     # sort:trans_asc: sorts the transactions by amount ascending (highest to lowest)
     def sort_trans_asc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.amount)
         self.transactions = sorted_trans
-
 
     # sort_trans_desc: sorts the transaction by amount descending (lowest to highest)
     def sort_trans_desc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.amount, reverse=True)
         self.transactions = sorted_trans
 
-
     def sort_date_asc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.date)
         self.transactions = sorted_trans
 
-
     def sort_date_desc(self):
         sorted_trans = sorted(self.transactions, key=lambda t: t.date, reverse=True)
         self.transactions = sorted_trans
-
 
     ##############################################################################
     ####      PRINTING FUNCTIONS    ##############################################
@@ -194,13 +172,11 @@ class Ledger:
             values.append(cur_values)
         clip.print_variable_table(headers, values)
 
-
     ##############################################################################
     ####      DATA SAVING FUNCTIONS    ###########################################
     ##############################################################################
 
     # save_statement: saves a categorized statement as a csv
-    #   in the case of a Ledger, this is more like an "update" statement
     def save_statement(self):
         # prompt user to verify desire to update ledger data
         print("Attempting to save Ledger...")
@@ -229,13 +205,11 @@ class Ledger:
             print("Saved Ledger")
         return True
 
-
     # delete_statement: deletes statement from master frame
     def delete_statement(self):
         print("Deleting ledger", self.title)
         self.frame.grid_forget()
         self.frame.destroy()
-
 
     def update_statement(self):
         print("Attempting to update Ledger...")
@@ -249,10 +223,3 @@ class Ledger:
             print("Uh oh, something went wrong updating ledger")
 
         print("Ledger updated")
-
-
-
-
-
-
-

@@ -6,7 +6,6 @@ from cli.tabs import *
 
 class MainApplication:
     def __init__(self, *args, **kwargs):
-
         self.tab1 = None
         self.tab2 = None
         self.tab3 = None
@@ -20,12 +19,10 @@ class MainApplication:
         self.tabs = []
 
         # tag:BASEFILEPATH
-        self.basefilepath = "C:/Users/ander/OneDrive/Documents/Financials"
+        self.basefilepath = "C:/Users/ander/OneDrive/Documents/Financials" # tag:hardcode
 
         # initialize the tabs in self.tabs[]
         self.initTabs()
-
-
 
     def setTabs(self):
         self.tabs = [self.tab1, self.tab2, self.tab3, self.tab4, self.tab5, self.tab6, self.tab7, self.tab8, self.tab9]
@@ -45,16 +42,14 @@ class MainApplication:
         self.tab9 = a09_investments.TabInvestment("Review investments", self.basefilepath)
 
         self.setTabs()
-
+        print("Tabs should be initialized")
         return True
-
 
     def print_header(self):
         print("\n\n")
         print("#############################################")
         print("############ MAIN PROGRAM ###################")
         print("#############################################")
-
 
     def mainloop(self):
         # print out menu options

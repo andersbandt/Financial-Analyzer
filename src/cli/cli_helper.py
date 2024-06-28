@@ -4,7 +4,6 @@
 
 """
 
-
 # import needed modules
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
@@ -17,18 +16,12 @@ from categories import Category
 import db.helpers as dbh
 
 
-
 ##############################################################################
 ####      GENERAL INPUT FUNCTIONS        #####################################
 ##############################################################################
 
-# spinput: really general input function to help with flow control
-#   @param   inp_type="int" === will return any POSITIVE VALUE (will return -1 on bad input)
-# TODO: for both int and float. Check for correctly positioned commas (now that I allow them)
-def spinput(prompt_str, inp_type):
-    inp = input(prompt_str)
-
-    # handle user prompts to either quit command or terminate program
+# esc_cmd: helper function to handle valid command / input escape strings
+def esc_cmd(inp):
     if inp == 'q':
         return False
     elif inp == 'quit':
@@ -36,33 +29,45 @@ def spinput(prompt_str, inp_type):
     elif inp == "exit":
         return False
 
-    # TYPE: (int)
-    if inp_type == "int":
-        inp = inp.replace(',', '') # get rid of commas
-        try:
-            inp = int(inp)
-        except ValueError as e:
-            print("was that really an int?")
-            print(e)
-            return -1
+
+# parse_inp_type: performs parsing of user input based on type
+#       @param[in]      inp         string input string from python input()
+#       @param[in]      inp_type
+#                           text     string return of input
+#                           int      will return any POSITIVE VALUE (will return -1 on bad input) # TODO: verify this actually can't handle "-" minus sign
+#                           float    will return any float value (maybe POSITIVE ONLY?)
+#
+def parse_inp_type(inp, inp_type):
     # TYPE: (text)
-    elif inp_type == "text":
+    if inp_type == "text":
         return inp
 
-    # TYPE: (float)
-    elif inp_type == "float":
-        inp = inp.replace(',', '') # get rid of commas
-        return float(inp)
-
-    # TYPE: (yes or no)
-    # if type == 'yn':
+    # TYPE: (int) or (float)
+    elif inp_type == "int" or "float":
+        inp = inp.replace(',', '')  # get rid of commas
+        # TODO: perform check for correctly positioned commands here
+        try:
+            if inp_type == "int":
+                inp = int(inp)
+            elif inp_type == "float":
+                inp = float(inp)
+        except ValueError as e:
+            print("was that really a float/int?")
+            return False
+        return inp
 
     # UNKNOWN TYPE!
     else:
-        raise Exception("Unknown clih.spinput type!")
+        raise BaseException("Unknown clih.spinput type!")
 
 
-    return inp
+# spinput: really general input function to help with flow control
+def spinput(prompt_str, inp_type):
+    while True:
+        inp = input(prompt_str)
+        p_inp = parse_inp_type(inp, inp_type)
+        if p_inp is not False:
+            return p_inp
 
 
 # promptYesNo: function for prompting user for a YES or NO input
@@ -120,7 +125,7 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
     if exact_match:
         if user_input not in strings_arr:
             print(user_input + " is not in inp_auto list!")
-            return -1 # can't return -1 here because category NA has ID=0
+            return -1  # can't return -1 here because category NA has ID=0
 
     if echo:
         print("Selected: " + user_input + "\n")
@@ -138,12 +143,14 @@ def get_year_input():
     except ValueError:
         return False
 
+
 def get_month_input():
     month = input("Enter month input (0-12): ")
     try:
         return int(month)
     except ValueError:
         return False
+
 
 def prompt_year_month():
     print("\n... prompting user to find file for Statement")
@@ -153,9 +160,8 @@ def prompt_year_month():
     return [y, m]
 
 
-# TODO: I think this function could be made SLIGHTLY easier to use (instead of manually typing dashes or something)
-#   one option for above ^^ is to basically clean the input (remove all non digits), check the resulting YYYYMMDD
-#   and then pass in a cleaned version of YYYY-MM-DD to the date time function. Allows user to type YYYYMMDD or YYYY/MM/DD. Idk.
+# TODO: ask ChatGPT to make version that automatically adds a dash "-" after the first four YYYY is entered
+#   and then another one after the next MM is entered
 def get_date_input(prompt_str):
     print(prompt_str)
     while True:
@@ -171,7 +177,6 @@ def get_date_input(prompt_str):
             return date_obj.date()  # Return only the date part, not the time
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
-
 
 
 ##############################################################################
@@ -196,6 +201,7 @@ def category_prompt_all(prompt_str, display):
         return -1
     else:
         return cath.category_name_to_id(cat_inp)
+
 
 # category_prompt: walks the user through selecting a Category from given array input
 # TODO: 1) reduce size      2) figure out how to return value with recursive calls
@@ -228,13 +234,6 @@ def category_tree_prompt():
         prev_cat_obj = cur_cat_obj
         cur_cat_obj = find_category(category_arr, cat_inp)
 
-        # if cur_cat_obj is None:
-        #     res = promptYesNo("Uh oh, input may have been wrong. Try again?")
-        #     if res:
-        #         return False
-        #     else:
-        #         return False
-
         # handle user input
         if cat_inp == 'y':
             print("Returning FINAL Category: " + prev_cat_obj.name)
@@ -261,9 +260,6 @@ def category_tree_prompt():
 
     return False
 
-
-
-
     category_arr2 = []
     category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
     status = True
@@ -271,49 +267,8 @@ def category_tree_prompt():
         # print(prompt)
         print("Type 'y' to finalize category")
         print("Type 'x' to go one level up")
-        cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True, exact_match=False)
-
-
-# TODO: I think I should refactor this to be outside cli_helper
-# get_category_input: this function should display a transaction to the user and prompt them through categorization
-#   with the end result being returning the associated category_id with the transaction in question
-def get_category_input(transaction, mode=2):
-    # create initial category tree
-    # categories = cath.load_categories()
-    # tree = cath.create_Tree(categories)
-    # print(tree)
-    # tree_ascii = tree.get_ascii()
-    # print(tree_ascii)
-
-    # print transaction and prompt
-    print("\n\n")
-    trans_prompt = transaction.printTransaction()
-
-    # MODE1: descend into tree
-    if mode == 1:
-        # set up autocomplete information
-        #   by calling category_prompt(on top level of categories)
-        cat = category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
-    # MODE2: list all prompts in DB
-    elif mode == 2:
-        cat = category_prompt_all(trans_prompt, False) # second param controls if I print all the categories each transaction or not
-    else:
-        print("Uh oh, invalid category selection mode!")
-        return None
-
-    # do some error handling on category
-    if cat == -1:
-        print("category input (-1) return reached.")
-        return -1 # can't return 0 here because the category NA has an ID of 0 !!!
-
-    # set new Category to Transaction and print for lolz
-    # print("Adding category " + cat.getName())
-    transaction.setCategory(cat)
-    print("\nCategorized transaction below")
-    transaction.printTransaction()
-
-    # return newly associated Category ID so upper layer can properly change Transaction data
-    return cat
+        cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
+                            exact_match=False)
 
 
 
@@ -361,4 +316,3 @@ def get_account_id_manual():
     acc_num = int(input("\t\tPlease enter what account you want: "))
     acc = accounts[acc_num - 1][0]
     return acc
-

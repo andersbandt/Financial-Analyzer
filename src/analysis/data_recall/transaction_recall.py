@@ -78,9 +78,9 @@ def recall_transaction_data(date_start=-1, date_end=-1):
         logger.exception(
             "Uh oh, transaction_recall.recall_transaction_data produced no results."
         )
-        raise TransactionRecallError(
-            "Uh oh, transaction_recall.recall_transaction_data produced no results."
-        )
+        # raise TransactionRecallError(
+        #     "Uh oh, transaction_recall.recall_transaction_data produced no results."
+        # )
     return transactions
 
 

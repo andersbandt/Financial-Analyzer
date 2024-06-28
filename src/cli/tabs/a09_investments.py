@@ -7,37 +7,33 @@
 
 # import needed modules
 import datetime
-import matplotlib.pyplot as plt
 
-# import user defined modules
+# import user CLI modules
 import cli.cli_helper as clih
 import cli.cli_printer as clip
-from cli.tabs import SubMenu
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
+
+# import user defined modules
 from analysis import investment_helper as invh
 import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
 
 
-class TabInvestment(SubMenu.SubMenu):
+class TabInvestment(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
 
         # initialize information about sub menu options
-        action_strings = ["Check investments",
-                          "Add investment transaction",
-                          "Check account balances/summary",
-                          "Show account snapshot value history",
-                          "Add balances to .db"]
-
-        action_funcs = [self.a01_check_investments,
-                        self.a02_add_investment,
-                        self.a03_check_accounts,
-                        self.a04_cur_value_history,
-                        self.a05_add_inv_balances]
+        action_arr = [Action("Check investments", self.a01_check_investments),
+                      Action("Add investment transaction", self.a02_add_investment),
+                      Action("Check account balances/summary", self.a03_check_accounts),
+                      Action("Show account snapshot value history", self.a04_cur_value_history),
+                      Action("Add balances to .db", self.a05_add_inv_balances)]
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
 
     ##############################################################################
@@ -48,7 +44,6 @@ class TabInvestment(SubMenu.SubMenu):
         print("... checking investment data ...")
         print("Anders you gotta finish this function!")
         return True
-
 
     def a02_add_investment(self):
         print("... adding investment transaction ...")
@@ -124,7 +119,6 @@ class TabInvestment(SubMenu.SubMenu):
                                           inv_type,
                                           value,
                                           note=note)
-
 
     def a03_check_accounts(self):
         print("... checking investment data for each account ...")
@@ -215,7 +209,6 @@ class TabInvestment(SubMenu.SubMenu):
 
         print("Done running a04_cur_value_history with days previous of: ", days_prev)
 
-
     def a05_add_inv_balances(self):
         print("... adding investment balances to financials database ...")
         # populate array of accounts with type=4
@@ -235,7 +228,6 @@ class TabInvestment(SubMenu.SubMenu):
 
             # print out balance addition confirmation
             print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
-
 
 
     ##############################################################################

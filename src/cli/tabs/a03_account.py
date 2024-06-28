@@ -7,27 +7,28 @@
 """
 
 # import needed packages
-import os
 
 # import user defined modules
-from categories import categories_helper as cath
 import cli.cli_helper as clih
-from cli.tabs import SubMenu
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
+
 from account import account_helper as ah
-from tools import load_helper as loadh
 import db.helpers as dbh
 
 
-class TabAccount(SubMenu.SubMenu):
+class TabAccount(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
 
         # initialize information about sub menu options
-        action_strings = ["Check accounts", "Add account"]
-        action_funcs = [self.a01_check_accounts, self.a02_add_account]
+        action_arr = [
+            Action("Check accounts", self.a01_check_accounts),
+            Action("Add account", self.a02_add_account)
+            ]
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
 
     ##############################################################################

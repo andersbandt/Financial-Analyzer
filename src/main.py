@@ -17,8 +17,6 @@ def formatter(record):
     return "<" + color_tag + ">[{name}]</> <bold>{message}</>\n{exception}"
 
 
-logger.add(sys.stdout, colorize=True, format=formatter)
-
 
 # main: main function of the program. Really just calls gui_driver
 def main():

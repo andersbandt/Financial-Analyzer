@@ -5,27 +5,28 @@
 
 """
 
+# import user CLI stuff
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
 
 # import user defined modules
-from categories import categories_helper as cath
-import cli.cli_helper as clih
-from cli.tabs import SubMenu
 from categories import categories_helper
 from statement_types import Transaction
 from statement_types import Ledger
 import db.helpers as dbh
 
 
-class TabTransCategorize(SubMenu.SubMenu):
+class TabTransCategorize(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
 
         # initialize information about sub menu options
-        action_strings = ["Print uncategorized", "Categorize uncategorized"]
-        action_funcs = [self.a01_print_uncategorized, self.a02_categorize_NA]
+        action_arr = [Action("Print uncategorized", self.a01_print_uncategorized),
+                                 Action("Categorize uncategorized", self.a02_categorize_NA)]
+
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
 
     ##############################################################################

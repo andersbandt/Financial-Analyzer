@@ -4,6 +4,11 @@
 
 """
 
+# import user CLI stuff
+import cli.cli_helper as clih
+import cli.cli_printer as clip
+from cli.cli_class import SubMenu
+from cli.cli_class import Action
 
 # import user defined modules
 import db.helpers as dbh
@@ -11,36 +16,26 @@ import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
 import analysis.graphing_analyzer as grapa
 import account.account_helper as acch
-
-import cli.cli_helper as clih
-import cli.cli_printer as clip
-from cli.tabs import SubMenu
 import tools.date_helper as dateh
+
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
-
-class TabBalances(SubMenu.SubMenu):
+class TabBalances(SubMenu):
     def __init__(self, title, basefilepath):
 
         # initialize information about sub menu options
-        action_strings = ["Show executive wealth summary",
-                          "Add balance",
-                          "Graph balances per account",
-                          "Retirement modeling",
-                          "Show recent .db balance"]
+        action_arr = [Action("Show executive wealth summary", self.a01_show_wealth),
+                      Action("Add balance", self.a02_add_balance),
+                      Action("Graph balances per account", self.a03_graph_account_balance),
+                      Action("Retirement modeling", self.a04_retirement_modeling), 
+                      Action("Show recent .db balance", self.a05_show_recent_balance)]
 
-        action_funcs = [self.a01_show_wealth,
-                        self.a02_add_balance,
-                        self.a03_graph_account_balance,
-                        self.a04_retirement_modeling,
-                        self.a05_show_recent_balance]
 
         # call parent class __init__ method
-        super().__init__(title, basefilepath, action_strings, action_funcs)
+        super().__init__(title, basefilepath, action_arr)
 
     ##############################################################################
     ####      ACTION FUNCTIONS           #########################################
