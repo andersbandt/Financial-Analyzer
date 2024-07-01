@@ -14,6 +14,7 @@ from categories import Category
 from loguru import logger
 from utils import logfn
 
+
 ##############################################################################
 ####      CATEGORY ARRAY FUNCTIONS    ########################################
 ##############################################################################
@@ -129,7 +130,6 @@ def get_top_level_categories(cat_type="class"):
     return top
 
 
-
 ##############################################################################
 ####      CATEGORY TREE FUNCTIONS     ########################################
 ##############################################################################
@@ -145,12 +145,11 @@ def get_category_children_obj(category):
 # create_Tree: creates a Tree object of the categories
 # @logfn
 def create_Tree(categories, cat_type="id"):
-    logger.debug("category_helper.create_Tree: Generating Tree object of categories")
+    # logger.debug("category_helper.create_Tree: Generating Tree object of categories")
     t = Tree()
     root = t.add_child(name="root")  # create root node
 
     # first add all top level categories
-    logger.debug("create_Tree: populating children node Categories")
     for category in get_top_level_categories():
         if category.parent == 1:  # if it is a top level category
             if cat_type == "id":
@@ -161,7 +160,6 @@ def create_Tree(categories, cat_type="id"):
                 logger.exception("Bad type supplied for category Tree creation")
 
     # then populate children
-    logger.debug("create_Tree: populating children node Categories")
     for category in categories:
         if category.parent != 1:
             if cat_type == "id":

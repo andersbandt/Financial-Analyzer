@@ -112,7 +112,7 @@ def autocomplete(input_text, word_list):
 # @param string_arr      array of options for user to have autocomplete run on
 # @param echo            echo confirmation of selection?
 # @param disp_options    toggles all the possible array getting printed or not
-# @param exact_match     requires input to be in strings_arr   # TODO: shouldn't it always be exact_match...? What's the point of this?
+# @param exact_match     requires input to be in strings_arr
 def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match=False):
     print("\n")
     # IF USER SELECTED DISPLAY OPTIONS

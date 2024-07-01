@@ -187,12 +187,10 @@ def filter_transactions_date(transactions, date_start, date_end):
             filtered_transactions.append(transaction)
     return filtered_transactions
 
+
 ##############################################################################
 ####      DATA MANIPULATION FUNCTIONS    #####################################
 ##############################################################################
-
-
-
 
 # gen_Bx_matrix: generate 'Bx_matrix'
 #       this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
@@ -254,7 +252,6 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
         spl_Bx.append(a_A)
 
     return spl_Bx, edge_code_date
-
 
 
 @logfn

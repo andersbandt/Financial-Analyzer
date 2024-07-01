@@ -34,7 +34,8 @@ class TabSpendingHistory(SubMenu):
                           Action("Generate sankey (not working)", self.a05_make_sankey),
                           Action("Review specific month transactions", self.a06_review_month),
                           Action("Add note to transaction", self.a07_add_note),
-                          Action("Update transaction category", self.a08_update_transaction_category)
+                          Action("Update transaction category", self.a08_update_transaction_category),
+                          Action("Examine specific category", self.a09_examine_category)
                           ]
 
         # call parent class __init__ method
@@ -246,6 +247,12 @@ class TabSpendingHistory(SubMenu):
             dbh.transactions.update_transaction_category_k(
                 key,
                 new_category_id)
+
+
+    def a09_examine_category(self):
+        category_id = clih.category_prompt_all("What is the category to examine?", display=False)
+
+
 
     ##############################################################################
     ####      GENERAL HELPER FUNCTIONS    ########################################

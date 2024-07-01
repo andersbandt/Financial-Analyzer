@@ -9,6 +9,7 @@ import os
 
 # import user created modules
 import db.helpers as dbh
+from cli import cli_helper as clih
 from tools import date_helper
 from statement_types import Statement
 import statement_types as st
@@ -123,7 +124,7 @@ def get_year_month_files(basefilepath, year, month):
 #   to make the decision to match to account
 # tag:HARDCODE for this whole function
 # TODO: To really make this app usable for the general public I should turn this function in a table in the .db file
-    # would make it easier on me to for reviewing purposes
+# would make it easier on me to for reviewing purposes
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
@@ -182,14 +183,16 @@ def check_transaction_load_status(transaction):
         return True
 
 
-def create_master_statement(statement_list):
+# join_statement: takes in a Statement list and outputs
+def join_statement(statement_list):
+    # create list of all Transaction from each Statement
     cum_trans_list = []
     for statement in statement_list:
         if (statement is not None) and (statement is not False):
             if statement.transactions is not None:
                 cum_trans_list.extend(statement.transactions)
 
-    # we have appended all transactions together, so can create "master" with dummy parameters
+    # create "dummy" statement with manually added transaction list
     statement = Statement.Statement("dummy account_id",
                                     "dummy year",
                                     "dummy month",
@@ -205,7 +208,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     ### GRAB ACCOUNT_ID either automatic or based on filepath
     account_id = match_file_to_account(filepath)
 
-    if account_id == None:
+    if account_id is None:
         if account_id_prompt:
             print("\tCouldn't automatically match account_id, manually loading in")
             account_id = clih.get_account_id_manual()
@@ -214,6 +217,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
     else:
         print("\tFound account ID: ", account_id)
 
+    # TODO: really need to get rid of this hardcode to Statement if I want to make this app mainstream
     # tag:HARDCODE
     if account_id == 2000000001:  # Marcus
         stat = st.Marcus.Marcus(account_id, year, month, filepath)
@@ -262,21 +266,21 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     statement_list = []
     status_list = []
     for file in file_list:
-        statement_list.append(create_statement(year, month, file))
-
-        if statement_list[-1] is not None:
-            print("... statement created, going to load in data")
+        statement = create_statement(year, month, file, account_id_prompt=False)
+        # NOTE: added this check to prevent returned statement list from having None in there
+        if statement is not None:
+            statement_list.append(statement)
+            # logger.debug("Statement created, going to load in data")
             status_list.append(True)
 
             try:
-                statement_list[-1].load_statement_data()
+                statement.load_statement_data()
             except Exception as e:
-                print("Something went wrong loading statement from filepath!!!")
-                print("\terror is: ", e)
-                raise (e)
+                print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
+                raise e
 
             if printmode:
-                statement_list[-1].print_statement()
+                statement.print_statement()
         else:
             print("... seems like no statement could be created")
             status_list.append(False)
@@ -286,6 +290,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     return statement_list
 
 
+# TODO: possibly refactor to cli_printer ? And make more general ?
 def print_status_table(file_list, status_list):
     # Check if both lists are of the same length
     if len(file_list) != len(status_list):

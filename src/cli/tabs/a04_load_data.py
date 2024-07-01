@@ -9,11 +9,15 @@ import csv
 
 # import user defined modules
 import cli.cli_helper as clih
+import cli.cli_printer as clip
 from cli.cli_class import SubMenu
 from cli.cli_class import Action
 
+
 from categories import categories_helper
+from account import account_helper as acch
 from tools import load_helper as loadh
+import db.helpers as dbh
 from tools import date_helper as dateh
 
 
@@ -28,8 +32,8 @@ class TabLoadData(SubMenu):
         # initialize information about sub menu options
         action_arr = [
             Action("Load data", self.a01_load_data),
-            Action("Load ALL data", self.a02_load_all_data()),
-            Action("Check data status", self.a03_categorize_statement)
+            Action("Load ALL data", self.a02_load_all_data),
+            Action("Check data status", self.a03_check_status)
         ]
 
         # call parent class __init__ method
@@ -56,17 +60,17 @@ class TabLoadData(SubMenu):
             printmode=False)
 
         print(f"\nCreating master Statement object for all files in date bin {year}-{month}")
-        self.statement = loadh.create_master_statement(statement_list) # TODO: I think I should have this be a Statement instead of a Ledger
+        self.statement = loadh.join_statement(statement_list)
         self.statement.print_statement()
 
         print("Statement loaded successfully, can continue with load process")
         self.update_listing()
 
     def a02_load_all_data(self):
-        print("... loading in ALL financial data")
+        print("... loading in ALL financial data ...")
 
         statement_list = []
-        year_range = dateh. get_valid_years()
+        year_range = dateh.get_valid_years()
 
         for year in year_range:
             for month in range(1, 12+1):
@@ -74,15 +78,45 @@ class TabLoadData(SubMenu):
                 statement_list.extend(tmp_list)
 
         print("\t... finished creating all Statement objects in range")
-
         print("\nCreating master Ledger object")
-        self.statement = loadh.create_master_ledger(statement_list)
+        self.statement = loadh.join_statement(statement_list)
 
         print("\t... done creating Ledger object.\n Updating listings and exiting.")
         self.update_listing()
 
     def a03_check_status(self):
         print("... checking data status ...")
+
+        # set up information on which account(s) we are interested in
+        # account_id = clih.get_account_id_manual() # METHOD 1: individual account
+        acc_id_arr = acch.get_all_acc_id()
+
+        # loop through month/year combos
+        acc_data_status = []
+        for year in dateh.get_valid_years():
+            for month in range(1, 12+1):
+                statement_arr = loadh.get_month_year_statement_list(
+                    self.basefilepath,
+                    year,
+                    month,
+                    printmode=False)
+                if len(statement_arr) > 0:
+                    for statement in statement_arr:
+                        tmp_month_status = [f"{year}-{month}"]
+                        for acc_id in acc_id_arr:
+                            if statement.account_id == acc_id:
+                                tmp_month_status.append(True)
+                            else:
+                                tmp_month_status.append(False)
+                        acc_data_status.append(tmp_month_status)
+
+        field_names = ["Month"]
+        for acc_id in acc_id_arr:
+            field_names.append(dbh.account.get_account_name_from_id(acc_id))
+        clip.print_variable_table(field_names, acc_data_status)
+
+        # TODO: add other checking mechanism for checking loaded files against actual data in .db
+
 
 ########              ##########################              ########
 #######  BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN ######
@@ -160,7 +194,7 @@ class TabLoadData(SubMenu):
         # append new actions to menu now that statement is loaded in
         new_actions = [
             Action("Categorize statement", self.a04_categorize_statement),
-            Action("Save to .csv", self.a05_save_statement_csv)
+            Action("Save to .csv", self.a05_save_statement_csv),
             Action("Print new Ledger", self.a06_print_ledger),
             Action("Sort ledger", self.a07_sort_ledger),
             Action("Save to database", self.a08_save_statement_db),

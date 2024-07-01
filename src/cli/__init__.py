@@ -31,6 +31,9 @@ class MainApplication:
     def initTabs(self):
         print("Creating tab nav bar and initializing tab content")
 
+        # TODO: perform some refactor of my base file path
+        #   1 - global variables (don't need to pass in for each Tab)
+        #   2 - multiple paths. Input data source path vs. output path?
         self.tab1 = a01_dashboard.TabMainDashboard("Main Dash", self.basefilepath)
         self.tab2 = a02_categories.TabCategory("Manage Categories", self.basefilepath)
         self.tab3 = a03_account.TabAccount("Manage Accounts", self.basefilepath)

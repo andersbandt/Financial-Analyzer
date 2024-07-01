@@ -14,6 +14,11 @@ types = [
 ]
 
 
+def get_all_acc_id():
+    return dbh.account.get_all_account_ids()
+
+
+
 # indexing starts at (1)
 def get_acc_type_mapping(account_int):
     return types[account_int-1]

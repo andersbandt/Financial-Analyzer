@@ -15,9 +15,9 @@ from prettytable.colortable import ColorTable, Themes
 # print_variable_table: prints a variable table
 #   @param  variable_names      strings for the top headers
 #   @param  values              a 2D array of the data to print
-def print_variable_table(variable_names, values):
+def print_variable_table(variable_names, values, theme=Themes.OCEAN):
     # table = PrettyTable()
-    table = ColorTable(theme=Themes.OCEAN)
+    table = ColorTable()
     # populate data
     table.field_names = variable_names
     table.add_rows(values)
