@@ -3,6 +3,9 @@ from loguru import logger
 import time
 
 
+BASEFILEPATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src"  # tag:hardcode
+
+
 def logfn(fn):
     from functools import wraps
 

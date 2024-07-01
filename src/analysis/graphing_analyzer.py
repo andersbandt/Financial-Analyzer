@@ -1,6 +1,9 @@
+import os
 
 # import needed modules
 import matplotlib.pyplot as plt
+import secrets
+import hashlib
 
 # import user created modules
 import analysis.graphing_helper as grah
@@ -27,11 +30,17 @@ class GraphingAnalyzerError(Exception):
 
 
 
+def save_fig():
+    # TODO: random hashes affects .pdf order generation
+    random_string = secrets.token_hex(16)  # Generate 32 random hexadecimal characters (16 bytes)
+    hashed_value = hashlib.sha256(random_string.encode()).hexdigest()  # Hash the random string using SHA-256
+    hash_p = hashed_value[:5]  # Extract the first 5 characters of the hash to get a 5-digit hash
+    plt.savefig(f"{os.getcwd()}/tmp/{hash_p}.png")
+
 
 ##############################################################################
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
-
 
 @logfn
 def create_pie_chart(transactions, categories, printmode=None):
@@ -116,10 +125,13 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     if xlabel is not None:
         ax.set_xlabel(xlabel)
 
-    plt.show(block=False)
+    # plt.show(block=False)
+    save_fig()
 
 
 # TODO: add support for labels
+# create_stacked_balances: creates a 'stacked' balances graph showing different asset types
+#     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
 @logfn
 def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None):
     plt.stackplot(x_axis, y_axis, labels=label)
@@ -153,7 +165,7 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     plt.grid(True, linestyle='--', alpha=0.7)
 
     plt.title(title)
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # create_mul_line_chart: creates multiple
@@ -182,45 +194,8 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=[], legend=Fals
     plt.grid(True, linestyle='--', alpha=0.7)
 
     plt.title(title)
-    plt.show()
-
-
-@logfn
-def create_summation_vs_time(transactions, categories):
-    exec_summary = analyzer_helper.return_transaction_exec_summary(transactions)
-    logger.info(
-        f"create_summation_vs_time got this for expenses {exec_summary['expenses']}"
-    )
-    logger.info(
-        f"create_summation_vs_time got this for incomes {exec_summary['incomes']}"
-    )
-
-
-##############################################################################
-####      BALANCES PLOTTING FUNCTIONS    ###################################
-##############################################################################
-
-# create_stacked_balances: creates a 'stacked' balances graph showing different asset types
-#     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
-@logfn
-def create_stacked_balances(days_prev, N):
-    # create the stacked bar chart figure
-    fig = plt.figure(1)
-    grah.get_stacked_bar_chart(
-        ind, investment, liquid, title, width, scale_factor, x_ticks=date_ticks
-    )
-    return fig
-
-
-# TODO: can't figure out this function until I get a good way to SET WHICH ACCOUNT_IDS CORRESPOND TO WHAT TYPE OF ACCOUNT
-@logfn
-def create_liquid_over_time(days_prev, N):
-    pass
-
-
-##############################################################################
-####      INVESTMENT PLOTTING FUNCTIONS    ###################################
-##############################################################################
+    # plt.show(block=False)
+    save_fig()
 
 # create_asset_alloc_chart: creates a pie chart representing asset allocation
 @logfn

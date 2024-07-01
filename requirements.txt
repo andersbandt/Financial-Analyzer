@@ -18,15 +18,15 @@ keyboard==0.13.5
 kiwisolver==1.4.4
 lambdas==0.1.0
 lxml==4.9.2
-matplotlib~=3.3.3
-numpy~=1.23.3
+matplotlib~=3.5.3
+numpy~=1.23.2
 packaging==22.0
-pandas==1.5.2
+pandas~=1.5.0
 parse==1.19.0
 Pillow==9.3.0
 pyee==8.2.2
 pyparsing==3.0.9
-PyPDF2~=1.26.0
+PyPDF2~=2.10.3
 pyppeteer==1.0.2
 pyquery==1.4.3
 python-dateutil~=2.8.1
@@ -52,3 +52,4 @@ isort==5.11.4
 loguru==0.6.0
 yfinance~=0.2.33
 utils~=1.0.1
+prettytable~=3.10.0

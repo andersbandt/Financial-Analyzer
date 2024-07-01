@@ -4,13 +4,16 @@
 
 """
 
-
 # import needed packages
 from datetime import datetime, timedelta
 from pprint import pprint
+import os
+import shutil
 
 # import user defined CLI modules
 import cli.cli_helper as clih
+import cli.cli_printer as clip
+import utils
 from cli.cli_class import SubMenu
 from cli.cli_class import Action
 
@@ -22,6 +25,8 @@ from analysis import graphing_analyzer as grapa
 from analysis import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
+from utils import log_helper as logh
+
 
 # import user defined modules
 from statement_types import Ledger
@@ -50,6 +55,18 @@ class TabSpendingHistory(SubMenu):
     # a01_exec_summary: creates a list of "executive summary items" about spending data
     def a01_exec_summary(self):
         print(" ... showing executive summary ...")
+        months_prev = 24
+        print("clearing tmp folder ...")
+        del_folder = utils.BASEFILEPATH + "/tmp"
+        for filename in os.listdir(del_folder):
+            file_path = os.path.join(del_folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
 
         # EXEC 1: plot data from previous timeframe
         self.exec_summary_01(
@@ -57,23 +74,28 @@ class TabSpendingHistory(SubMenu):
             6)  # number of bins (N)
 
         # EXEC 1b: plot data from previous N months
-        self.exec_summary_01b(12)
+        self.exec_summary_01b(months_prev)
 
         # EXEC 2: current categories with a big delta to past averages
         self.exec_summary_02(6)
 
         # EXEC 3: get gross stats
         today = datetime.today()
-        one_year_ago = today - timedelta(days=365)
-
-        # LOAD IN TRANSACTIONS FROM 12 MONTHS AGO
+        days_ago = today - timedelta(days=365 * 12 / months_prev)
         transactions = transr.recall_transaction_data(
-            one_year_ago.strftime('%Y-%m-%d'),
+            days_ago.strftime('%Y-%m-%d'),
             today.strftime('%Y-%m-%d'))
 
+        # generate pdf file AND open
+        print("\nGenerating .pdf ...")
+        image_folder = "tmp"
+        output_pdf = "tmp/summary_document.pdf"
+        logh.generate_summary_pdf(image_folder, output_pdf)
+
         ledger_stats = anah.return_ledger_exec_dict(transactions)
-        print("Got this for ledger statistics for past 12 months")
-        print(ledger_stats)
+        print(f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
+        clip.print_dict(ledger_stats)
+        return True
 
     #    a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):

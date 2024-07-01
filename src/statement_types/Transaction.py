@@ -10,6 +10,7 @@ from dateutil.parser import parse
 
 # import user created modules
 import db.helpers as dbh
+from categories import categories_helper as cath
 
 class Transaction:
     def __init__(self, date, account_id, category_id, amount, description, note=None, sql_key=None):
@@ -118,11 +119,11 @@ class Transaction:
         # if the category ID is blank (able to assign a new one)
         if self.category_id is None or self.category_id == 0:
             for (category) in categories:  # iterate through all provided Category objects in array
-                # if category.keyword is None:
-                #   print("Weird, a category has no keywords associated with it... that shouldn't happen")
                 try:
-                    if any(keyword in self.description.upper() for keyword in category.keyword):
-                        self.category_id = category.id
+                    for keyword in category.keyword:
+                        if keyword in self.description.upper():
+                            self.category_id = category.id
+                            self.note = self.note + ";keyword=" + keyword
                 except Exception as e:
                     print("ERROR: couldn't automatically categorize transaction:", e)
 

@@ -1,11 +1,17 @@
-# Pycharm stuff
-.idea/
+
+# PROJECT OUTPUTS
+# tmp folder - Added by Anders
+tmp/
+category_tree.PNG
 
 # Databases - to prevent personal financial information from being online!
 *.db
 
-# Project outputs
-category_tree.PNG
+
+
+# Pycharm stuff
+.idea/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
