@@ -18,7 +18,7 @@ class ChaseCard(Statement.Statement):
     # load_statement_data:
     def load_statement_data(self):
         transactions = []
-        print("Extracting raw Apple Card statement at: " + self.filepath)
+        print("Extracting raw Chase Card statement at: " + self.filepath)
 
         try:
             with open(self.filepath) as f:

@@ -37,7 +37,9 @@ def return_ledger_exec_dict(transactions):
     expenses = 0
     incomes = 0
 
-    not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]
+    not_counted = ["BALANCE", "SHARES", "TRANSFER", "VALUE", "INTERNAL"]  # tag:hardcode
+    print("\n\nCreating expenses/income summary for transactions without the following counted")
+    pprint(not_counted)
 
     for transaction in transactions:
         trans_category = cath.category_id_to_name(transaction.category_id)
@@ -53,7 +55,8 @@ def return_ledger_exec_dict(transactions):
                 incomes += trans_amount
 
     exec_summary = {"expenses": expenses,
-                    "incomes": incomes}
+                    "incomes": incomes,
+                    "delta (incomes-expenses): ": (incomes+expenses)}
 
     return exec_summary
 

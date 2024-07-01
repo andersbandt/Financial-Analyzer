@@ -4,6 +4,9 @@
 
 """
 
+# import needed modules
+import numpy as np
+
 # import user CLI stuff
 import cli.cli_helper as clih
 import cli.cli_printer as clip
@@ -14,14 +17,11 @@ from cli.cli_class import Action
 import db.helpers as dbh
 import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
-import analysis.graphing_analyzer as grapa
-import account.account_helper as acch
 import tools.date_helper as dateh
 
 
 # import logger
 from loguru import logger
-
 
 class TabBalances(SubMenu):
     def __init__(self, title, basefilepath):
@@ -31,7 +31,8 @@ class TabBalances(SubMenu):
                       Action("Add balance", self.a02_add_balance),
                       Action("Graph balances per account", self.a03_graph_account_balance),
                       Action("Retirement modeling", self.a04_retirement_modeling), 
-                      Action("Show recent .db balance", self.a05_show_recent_balance)]
+                      Action("Delete a balance", self.a05_delete_balance),
+                      Action("Print balance table", self.a06_print_balance_table)]
 
 
         # call parent class __init__ method
@@ -41,37 +42,35 @@ class TabBalances(SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
-    # a01_show_wealth
+    # a01_show_wealth: prints out tabular view of account balances (either from latest .db entry or live stock price)
+    # TODO: possibly omit any accounts with a balance of 0 (and print out which accounts were omitted)
     def a01_show_wealth(self):
-        acc_balances = []
-        acc_dates = []
-        acc_id_arr = dbh.account.get_all_account_ids()
+        values_table = []  # values table to print
+        for acc_id in dbh.account.get_all_account_ids():
+            bal_amount, bal_date = balh.get_account_balance(
+                acc_id)  # TODO: let's audit this function and possibly add some hooks for options (live stock price, latest recorded, etc)
+            values_table.append([dbh.account.get_account_name_from_id(acc_id), bal_amount, bal_date])
 
-        for acc_id in acc_id_arr:
-            bal_amount, bal_date = balh.get_account_balance(acc_id)
-            acc_balances.append(bal_amount)
-            acc_dates.append(bal_date)
-
-        # use cli_printer to print a table of balances
-        clip.print_balances(
-            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
-            acc_balances,
-            "BALANCE SUMMARY"
+        clip.print_variable_table(
+            ["Account id", "Amount", "Date"],
+            values_table,
+            format_finance_col=1
         )
-        print(acc_dates)
-
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
-    # TODO: add input for if the account is a retirement account or not
     def a02_add_balance(self):
         print("... adding a balance entry ...")
 
         # prompt user for account ID
         account_id = clih.account_prompt_all("What account do you want to add balance to?")
+        if account_id is False:
+            return False
 
         # prompt for balance amount
         bal_amount = clih.spinput("\nWhat is the amount for balance entry? (no $): ",
                                   inp_type="float")
+        if bal_amount is False:
+            return False
 
         # prompt user for date
         bal_date = clih.get_date_input("\nand what date is this balance record for?")
@@ -83,6 +82,7 @@ class TabBalances(SubMenu):
         status = balh.add_account_balance(account_id, bal_amount, bal_date)
         return status
 
+    # a03_graph_account_balance: produces some graphs of account balances across time
     def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
 
@@ -105,40 +105,17 @@ class TabBalances(SubMenu):
         account_names_array = [dbh.account.get_account_name_from_id(account_id) for account_id in account_id_array]
         values_array = [[a_A[account_id] for a_A in spl_Bx] for account_id in account_id_array]
 
-        # TYPE 1: by account ID
-        # TODO: add sort by account size
-        grapa.create_stackline_chart(edge_code_date[1:],
-                                     values_array,
-                                     title=f"Balances per account since {edge_code_date[0]}",
-                                     label=account_names_array,
-                                     y_format='currency')
+        # TYPE 1:
+        balh.graph_balance_1(edge_code_date, values_array, account_names_array)
 
         # TYPE 2: by account type
-        # do some post-processing to bin values by type
-        # TODO: this initialization of the `type_values_array` variable can be improved (ask Chat-GPT)
-        # type_values_array = []
-        # for j in range(0, len(account_id_array)):
-        #     type_values_array.append([])
-        #     for i in range(0, len(values_array[0])):
-        #         type_values_array[j].append(0)
+        balh.graph_balance_2(edge_code_date, values_array, account_id_array)
 
-        n = len(values_array[0])
-        m = acch.get_num_acc_type()
-        type_values_array = [[0 for _ in range(n)] for _ in range(m)]
-
-        for j in range(0, len(account_id_array)):
-            acc_type = dbh.account.get_account_type(account_id_array[j])
-            # if acc_type not in [1, 2, 3, 4]:
-            #     raise Exception(f"Uh oh account type is not valid for {account_id_array[j]}")
-            for i in range(0, len(values_array[0])):
-                type_values_array[acc_type-1][i] += values_array[j][i]
-
-        grapa.create_stackline_chart(edge_code_date[1:],
-                                     type_values_array,
-                                     title=f"Balances by account type",
-                                     label=acch.get_acc_type_arr(),
-                                     y_format='currency')
-
+        # TYPE 3: using .db data to model day by day balance
+        balance_history = balh.model_account_balance(2000000003)
+        dates = [date for date, balance in balance_history]
+        balances = [balance for date, balance in balance_history]
+        balh.graph_balance_3(dates, balances)
 
     # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
     def a04_retirement_modeling(self):
@@ -176,60 +153,50 @@ class TabBalances(SubMenu):
             f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
 
 
-# TODO: this function can use cleanup ...
-    def a05_show_recent_balance(self):
-        print("... showing recent balances as you request ...")
-        acc_id_arr = dbh.account.get_all_account_ids()
-        table_values = []
-        for acc_id in acc_id_arr:
-            balance = dbh.balance.get_recent_balance(acc_id, True)
-            print(balance)
-            table_values.append([
-                dbh.account.get_account_name_from_id(acc_id),
-                balance[0],
-                balance[1]])
-        clip.print_variable_table(
-            ["Account", "Balance", "Date"],
-            table_values
-        )
+    def a05_delete_balance(self):
+        self.a06_print_balance_table()
+        print("\nPlease enter the sql key of transactions you want to delete. Enter 'quit' or 'q' to finalize list")
+        status = True
+        sql_key_arr = []
+        while status:
+            sql_key = clih.spinput("\tsql_key: ", inp_type="int")
+            if sql_key is False:
+                status = False
+            else:
+                sql_key_arr.append(sql_key)
+                print(sql_key_arr)
+
+        # get one last user confirmation
+        if len(sql_key_arr) == 0:
+            print("Quitting balance delete!")
+
+        print("\n\n== BALANCES TO DELETE ==")
+        for sql_key in sql_key_arr:
+            print(dbh.balance.get_balance(sql_key))
+        print("\nGreat, planning on deleting the shown list of balances.")
+        res = clih.promptYesNo("Is that ok?")
+        if not res:
+            return False
+
+        # delete balances
+        for sql_key in sql_key_arr:
+            dbh.balance.delete_balance(sql_key)
         return True
 
+    # a06_print_balance_table: prints all recorded .db balances
+    def a06_print_balance_table(self):
+        # retrieve ledger data as tuples and convert into 2D array
+        balance_ledge = dbh.balance.get_balance_ledge_data()
+        balance_arr = np.array(balance_ledge)
 
-    # random shit that I have leftover for reference
-    # def show_liquid_over_time(self):
-    #     print("INFO: show_liquid_over_time running")
-    #
-    #     # set params
-    #     days_previous = 180  # half a year maybe?
-    #     N = 5
-    #
-    #     # get pyplot figure
-    #     figure = graphing_analyzer.create_liquid_over_time(days_previous, N)
-    #
-    #     # get data for displaying balances in tabular form
-    #     spl_Bx = analyzer_helper.gen_Bx_matrix(days_previous, N)
-    #     recent_Bx = spl_Bx[-1]
-    #
-    #     print("Working with this for tabulated data conversion")
-    #     print(recent_Bx)
+        # convert account ID to name
+        for entry in balance_arr:
+            entry[1] = dbh.account.get_account_name_from_id(entry[1])
 
-    # def show_wealth_by_type(self):
-    #     balance_by_type = []
-    #
-    #     # iterate across account types
-    #     for acc_type in range(1, 4 + 1):
-    #         acc_sum = 0
-    #         acc_id_by_type = dbh.account.get_account_id_by_type(acc_type)
-    #
-    #         for acc_id in acc_id_by_type:
-    #             print("Checking acc_id: " + str(acc_id))
-    #             bal = dbh.balance.get_recent_balance(acc_id)
-    #             print("Got balance of " + str(bal))
-    #             acc_sum += bal
-    #
-    #         balance_by_type.append(acc_sum)
-    #
-    #     print("Here is your recent balance history by account type")
-    #     print(balance_by_type)
-
-
+        # use clip to print table
+        clip.print_variable_table(
+            ["SQL key", "Balance", "Account", "Date"],
+            balance_arr,
+            format_finance_col=2
+        )
+        return True

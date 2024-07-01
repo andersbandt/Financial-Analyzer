@@ -21,13 +21,14 @@ import db.helpers as dbh
 from tools import date_helper as dateh
 
 
+# TODO: I need to add a function to parse ALL folders and conduct an analysis on potential months with missing data
+
 class TabLoadData(SubMenu):
     def __init__(self, title, basefilepath):
 
         self.statement = None
-        # self.statement_list = None # NOTE: should I try to phase this thing out...?
-
-        self.basefilepath = basefilepath # had to add this in, at some point maybe delete?
+        self.basefilepath = basefilepath  # had to add this in, at some point maybe delete?
+        self.updated = False
 
         # initialize information about sub menu options
         action_arr = [
@@ -47,12 +48,17 @@ class TabLoadData(SubMenu):
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
-        [year, month] = clih.prompt_year_month()
-        if month == -1 or year == -1:
+        # I was feeling pretty high and weird writing below code so maybe give it an audit on efficacy
+        try:
+            [year, month] = clih.prompt_year_month()
+        except TypeError:
             res = clih.promptYesNo("Bad date input. Try again?")
             if res:
-                [year, month] = clih.prompt_year_month
+                [year, month] = clih.prompt_year_month()
+            else:
+                return False
 
+        # create list of Statement objects for each file for the particular month/year combination
         statement_list = loadh.get_month_year_statement_list(
             self.basefilepath,
             year,
@@ -65,15 +71,16 @@ class TabLoadData(SubMenu):
 
         print("Statement loaded successfully, can continue with load process")
         self.update_listing()
+        return True
+
 
     def a02_load_all_data(self):
-        print("... loading in ALL financial data ...")
-
+        print("... loading in ALL financial data")
         statement_list = []
         year_range = dateh.get_valid_years()
 
         for year in year_range:
-            for month in range(1, 12+1):
+            for month in range(1, 12 + 1):
                 tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
                 statement_list.extend(tmp_list)
 
@@ -105,18 +112,17 @@ class TabLoadData(SubMenu):
                         tmp_month_status = [f"{year}-{month}"]
                         for acc_id in acc_id_arr:
                             if statement.account_id == acc_id:
-                                tmp_month_status.append(True)
+                                tmp_month_status.append("1")
                             else:
-                                tmp_month_status.append(False)
+                                tmp_month_status.append("0")
                         acc_data_status.append(tmp_month_status)
 
         field_names = ["Month"]
         for acc_id in acc_id_arr:
             field_names.append(dbh.account.get_account_name_from_id(acc_id))
-        clip.print_variable_table(field_names, acc_data_status)
+        clip.print_variable_table(field_names, acc_data_status, min_width=5, max_width=5, max_width_column=5)
 
         # TODO: add other checking mechanism for checking loaded files against actual data in .db
-
 
 ########              ##########################              ########
 #######  BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN ######
@@ -165,13 +171,11 @@ class TabLoadData(SubMenu):
         except Exception as e:
             print("Can't save statement: ", e)
 
-
     # a06_print_ledger: prints the currently loaded ledger
     def a06_print_ledger(self):
         print(" ... printing current Ledger object")
         self.statement.sort_date_desc()
         self.statement.print_statement()
-
 
     # a07_sort_ledger: sorts the ledger by some metric
     def a07_sort_ledger(self):
@@ -181,10 +185,10 @@ class TabLoadData(SubMenu):
         self.statement.sort_trans_asc()
         self.statement.print_statement()
 
-
     def a08_save_statement_db(self):
         print("... saving statement to .db file ...")
-        self.statement.save_statement()
+        status = self.statement.save_statement()
+        return status
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
@@ -201,11 +205,6 @@ class TabLoadData(SubMenu):
         ]
 
         self.actions.extend(new_actions)
+        self.updated = True
         return True
-
-
-    def categorize_automatic(self):
-        pass
-
-
 

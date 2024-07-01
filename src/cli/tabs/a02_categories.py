@@ -48,12 +48,14 @@ class TabCategory(SubMenu):
             parent_id = 1
 
         # prompt for name
-        category_name = clih.spinput("What is this new category name?: ")
+        category_name = clih.spinput("\nWhat is this new category name?: ", inp_type="text")
 
         # insert_category: inserts a category into the SQL database
         dbh.category.insert_category(category_name, parent_id)
         return True
 
+
+# TODO: there might be a bug where some top level gets chopped off.... experienced "Shopping" getting dropped from printout
     def a02_check_category(self):
         print("... checking categories ...")
 
@@ -64,10 +66,13 @@ class TabCategory(SubMenu):
         tree_ascii = tree.get_ascii(compact=False, show_internal=True)
         tree.get_ascii()
         print(tree_ascii)
+        return True
 
+    # TODO: some category check improvements
         # perform some verification on database integrity
         #   - no double names
         #   - no disconnected categories (all in tree structure)
+
 
     def a03_manage_keywords(self):
         print("... managing keywords ...")
@@ -92,6 +97,7 @@ class TabCategory(SubMenu):
 
         print("Ok, added keyword: ", keyword_string)
         print("\tfor category", cath.category_id_to_name(category_id))
+
 
     def a04_print_keywords(self):
         print("... printing keywords ...")
@@ -123,11 +129,17 @@ class TabCategory(SubMenu):
         categories = dbh.category.get_category_ledger_data()
 
         for item in categories:
-            print(item)
+            print(item) # TODO: make this printout better (put into table?)
 
-        category_id = clih.spinput("What is the category ID you want to DROP?", type="int")
+        category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
+        if category_id is False:
+            return False
         dbh.category.delete_category(category_id)
         print("Ok deleted category with ID: " + str(category_id))
+        return True
+
+        # TODO: make recursive (keep prompting for delete inputs until exit)
+
 
     def a06_move_parent(self):
         print("... moving parent category for ID ...")
@@ -153,6 +165,7 @@ class TabCategory(SubMenu):
 
         print(
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
+
 
     # TODO: finish this function to delete a keyword
     def a07_delete_keyword(self):

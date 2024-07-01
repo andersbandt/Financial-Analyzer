@@ -21,7 +21,7 @@ from utils import logfn
 
 # load_categories: returns an array containing all the category objects
 def load_categories():
-    logger.debug("cath.load_categories: loading category ID's")
+    # logger.debug("cath.load_categories: loading category ID's")
     all_category_id = dbh.category.get_all_category_id()
     categories = []
     for category_id in all_category_id:
@@ -99,6 +99,8 @@ def category_name_to_id(category_name):
 
 # category_id_to_name
 def category_id_to_name(category_id):
+    if category_id is None:
+        return "NA" #tag:hardcode?
     return dbh.category.get_category_name_from_id(category_id)
 
 

@@ -11,8 +11,10 @@ from datetime import datetime
 from loguru import logger
 
 # helper modules for CLI interface
+from account import account_helper as acch
 from categories import categories_helper as cath
 from categories import Category
+from tools import date_helper as dateh
 import db.helpers as dbh
 
 
@@ -38,6 +40,15 @@ def esc_cmd(inp):
 #                           float    will return any float value (maybe POSITIVE ONLY?)
 #
 def parse_inp_type(inp, inp_type):
+    # TYPE: (int)
+    if inp_type == "int":
+        inp = inp.replace(',', '')  # get rid of commas
+        try:
+            inp = int(inp)
+        except ValueError as e:
+            print("was that really an int?")
+            print(e)
+            return -1
     # TYPE: (text)
     if inp_type == "text":
         return inp
@@ -55,6 +66,14 @@ def parse_inp_type(inp, inp_type):
             print("was that really a float/int?")
             return False
         return inp
+
+    # TYPE: (float)
+    elif inp_type == "float":
+        inp = inp.replace(',', '')  # get rid of commas
+        return float(inp)
+
+    # TYPE: (yes or no)
+    # if type == 'yn':
 
     # UNKNOWN TYPE!
     else:
@@ -156,7 +175,11 @@ def prompt_year_month():
     print("\n... prompting user to find file for Statement")
     # get date information to determine which folder to look in
     y = get_year_input()
+    if y is False:
+        return False
     m = get_month_input()
+    if m is False:
+        return False
     return [y, m]
 
 
@@ -164,8 +187,11 @@ def prompt_year_month():
 #   and then another one after the next MM is entered
 def get_date_input(prompt_str):
     print(prompt_str)
+    print("\tpssst -- can enter 'today' for current date")
     while True:
         date_str = input("Enter the date (YYYY-MM-DD): ")
+        if date_str == "today":
+            return dateh.get_cur_str_date()
 
         # handle QUIT commands
         if (date_str == "q") or (date_str == "quit"):
@@ -174,14 +200,15 @@ def get_date_input(prompt_str):
         # try to convert into datetime object
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            return date_obj.date()  # Return only the date part, not the time
+            # return date_obj.date()  # Return only the date part, not the time
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
-
+        return date_str
 
 ##############################################################################
 ####      CATEGORY INPUT FUNCTIONS    ########################################
 ##############################################################################
+
 
 # param         prompt_str    string to print to user
 # @param        display       print out all the categories or NOT
@@ -198,14 +225,13 @@ def category_prompt_all(prompt_str, display):
 
     if cat_inp == -1:
         print("category_prompt_all received bad response.")
-        return -1
+        return False
     else:
         return cath.category_name_to_id(cat_inp)
 
 
 # category_prompt: walks the user through selecting a Category from given array input
-# TODO: 1) reduce size      2) figure out how to return value with recursive calls
-# I also rarely use this function in practice ....
+# TODO: reduce size. Separate parsing or make recursive. Or both.
 def category_tree_prompt():
     category_arr = cath.load_top_level_categories()
 
@@ -218,30 +244,26 @@ def category_tree_prompt():
         return cat_obj
 
     status = True
-    first_run = True
-    cur_cat_obj = None
+    cur_cat_obj = Category.Category(0)
+    cur_cat_obj.set_parent(1)
+    prev_cat_obj = cur_cat_obj
     while status:
-        if not first_run:
-            print("Type 'y' to finalize category")
-            print("Type 'x' to go one level up")
-        first_run = False
+        print("Type 'y' to finalize category")
+        print("Type 'x' to go one level up")
 
         # call inp_auto() to walk user through an autocomplete input experience
         cat_inp = inp_auto("What is the category?: ",
                            [cat.name for cat in category_arr],
                            echo=True,
                            exact_match=False)
-        prev_cat_obj = cur_cat_obj
-        cur_cat_obj = find_category(category_arr, cat_inp)
-
-        # handle user input
+        # HANDLE USER STRING COMMANDS
         if cat_inp == 'y':
-            print("Returning FINAL Category: " + prev_cat_obj.name)
+            print("Returning for parent category: " + prev_cat_obj.name)
             return prev_cat_obj.id
         elif cat_inp == 'x':
             print("Backing up Category tree... ")
             print("\tattempting to create Category with id: ", cur_cat_obj.parent)
-            if (cur_cat_obj.parent == 1):
+            if cur_cat_obj.parent == 1:
                 new_arr = cath.load_top_level_categories()
             else:
                 new_arr = cath.get_category_children_obj(Category.Category(cur_cat_obj.parent))
@@ -250,15 +272,20 @@ def category_tree_prompt():
             return -1
         elif cat_inp is None:
             print("Ruh oh, bad category input")
-        else:
+
+        # PARSE INPUT CATEGORY FOR TREE SEARCH
+        cur_cat_obj = find_category(category_arr, cat_inp)
+        prev_cat_obj = cur_cat_obj
+        if cur_cat_obj is not None:
             print("\nGoing deeper into Category tree... ")
             print("Forming new array based on: " + cur_cat_obj.name)
-            # form new arrays of Category based on current selected Category
             category_arr = cath.get_category_children_obj(cur_cat_obj)
             if len(category_arr) == 0:
+                print("No children for selected category. Returning automatically")
                 return cur_cat_obj.id
 
     return False
+
 
     category_arr2 = []
     category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
@@ -270,6 +297,58 @@ def category_tree_prompt():
         cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
                             exact_match=False)
 
+    # category_arr2 = []
+    # category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
+    # status = True
+    # while status:
+    #     # print(prompt)
+    #     print("Type 'y' to finalize category")
+    #     print("Type 'x' to go one level up")
+    #     cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
+    #                         exact_match=False)
+
+
+# TODO: I think I should refactor this to be outside cli_helper
+# get_category_input: this function should display a transaction to the user and prompt them through categorization
+#   with the end result being returning the associated category_id with the transaction in question
+def get_category_input(transaction, mode=2):
+    # create initial category tree
+    # categories = cath.load_categories()
+    # tree = cath.create_Tree(categories)
+    # print(tree)
+    # tree_ascii = tree.get_ascii()
+    # print(tree_ascii)
+
+    # print transaction and prompt
+    print("\n\n")
+    trans_prompt = transaction.printTransaction()
+
+    # MODE1: descend into tree
+    if mode == 1:
+        # set up autocomplete information
+        #   by calling category_prompt(on top level of categories)
+        cat = category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
+    # MODE2: list all prompts in DB
+    elif mode == 2:
+        cat = category_prompt_all(trans_prompt,
+                                  False)  # second param controls if I print all the categories each transaction or not
+    else:
+        print("Uh oh, invalid category selection mode!")
+        return None
+
+    # do some error handling on category
+    if cat == -1:
+        print("category input (-1) return reached.")
+        return -1  # can't return 0 here because the category NA has an ID of 0 !!!
+
+    # set new Category to Transaction and print for lolz
+    # print("Adding category " + cat.getName())
+    transaction.setCategory(cat)
+    print("\nCategorized transaction below")
+    transaction.printTransaction()
+
+    # return newly associated Category ID so upper layer can properly change Transaction data
+    return cat
 
 
 ##############################################################################
@@ -288,7 +367,7 @@ def account_prompt_type(prompt_str, acc_type):
     ac_inp = inp_auto(prompt_str, accounts, echo=True, exact_match=True)
     if ac_inp is False:
         return False
-    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    ac_inp_id = acch.account_name_to_id(ac_inp)
     return ac_inp_id
 
 
@@ -302,7 +381,7 @@ def account_prompt_all(prompt_str):
         return
 
     ac_inp = inp_auto(prompt_str, accounts, echo=True)
-    ac_inp_id = dbh.account.get_account_id_from_name(ac_inp)
+    ac_inp_id = acch.account_name_to_id(ac_inp)
     return ac_inp_id
 
 

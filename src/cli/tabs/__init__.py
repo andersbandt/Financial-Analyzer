@@ -1,8 +1,5 @@
 
 
-
-
-
 from cli.tabs import a01_dashboard
 from cli.tabs import a02_categories
 from cli.tabs import a03_account

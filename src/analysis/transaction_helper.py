@@ -18,8 +18,9 @@ from utils import logfn
 
 # TODO: can add some functions from analyzer_helper.py into here when that gets too big
 
+
 def sum_transaction_total(transactions):
-    sum = 0
+    sum_t = 0
     for transaction in transactions:
         sum += transaction.amount
     return sum
@@ -64,4 +65,3 @@ def get_trans_category_cli(transaction, mode=2):
 
     # return newly associated Category ID so upper layer can properly change Transaction data
     return cat
-

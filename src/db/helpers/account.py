@@ -70,7 +70,6 @@ def get_account_type(account_id):
     return account_type
 
 
-
 def get_account_id_from_name(account_name):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()

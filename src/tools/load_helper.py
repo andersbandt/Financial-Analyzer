@@ -6,13 +6,18 @@
 
 # import needed modules
 import os
+import numpy as np
 
 # import user created modules
 import db.helpers as dbh
 from cli import cli_helper as clih
 from tools import date_helper
+from account import account_helper as acch
 from statement_types import Statement
 import statement_types as st
+from cli import cli_printer as clip
+from cli import cli_helper as clih
+
 
 # import logger
 from loguru import logger
@@ -128,45 +133,21 @@ def get_year_month_files(basefilepath, year, month):
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
-    # MARCUS
-    if False:
-        return 2000000007
+    # METHOD 1: simple
+    account_id = dbh.file_mapping.get_account_id_from_string(filepath)
 
-    # WELLS CHECKING
-    if "Checking1" in filepath:
-        return 2000000002
-
-    # WELLS SAVING
-    if "Savings2" in filepath:
-        return 2000000003
-
-    # WELLS CREDIT
-    if "CreditCard4" in filepath:
-        print("\t\tcontains 'CreditCard4")
-        return 2000000004
-
-    # VENMO
-    if "venmo" in filepath.lower() or 'transaction_history' in filepath.lower():
-        print("\t\tcontains 'venmo' or 'transaction_history'")
-        return 2000000007
-
-    # APPLE CARD
-    if "apple" in filepath.lower():
-        print("\t\tcontains 'apple'")
-        return 2000000009
-
-    # CHASE
-    if "chase" in filepath.lower():
-        print("\t\tContains 'chase'")
-        return 2000000012
-
-    if "bilt" in filepath.lower() or 'CreditCard3' in filepath.lower():
-        print("\t\tContains 'bilt' or 'CreditCard3'")
-        return 2000000016
+    # METHOD 2: handling the search logic in this function
+    account_file_map_ledge = dbh.file_mapping.get_file_mapping_ledge_data()
+    # for entry in account_file_map_ledge:
+    #     if entry[2]
 
     # return None if we didn't match anything
-    print("\t\t... account not found!!!")
-    return None
+    if account_id is False:
+        print(f"\t\t... account not found!!!")
+        print(f"\t\t\tfilepath-->{filepath}")
+        return None
+    else:
+        return account_id
 
 
 ##############################################################################
@@ -201,6 +182,7 @@ def join_statement(statement_list):
     return statement
 
 
+# tag: HARDCODE
 def create_statement(year, month, filepath, account_id_prompt=False):
     # determine account_id
     print("\nCreating statement at: " + filepath)
@@ -243,19 +225,31 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         return stat
     elif account_id == 2000000009:  # Apple Card
         stat = st.AppleCard.AppleCard(account_id, year, month, filepath, -1, -1, -1, -1)
+        # stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
+        #                                     1,
+        #                                     3,
+        #                                     2,
+        #                                     -1)  # date_col, amount_col, description_col, category_col
         return stat
     elif account_id == 2000000012:  # Chase Card
         stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)
         return stat
-
+    elif account_id == 2000000017: # CitiMastercard AAdvantage
+        stat = st.CitiMasterCard.CitiMastercard(account_id, year, month, filepath,
+                                            1,
+                                            3,
+                                            4,
+                                        2,
+                                            -1,
+                                                exclude_header=True)  # date_col, amount_col, description_col, category_col
+        return stat
     # if no valid account_id was found
     else:
+        print("\n\n#################### CRITICAL PROGRAM SOURCE ERROR   ###################################")
         print("No valid account selected in tools-load_helper-create_statement()")
         print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
         print("You likely need to edit the create_statement() function hardcode !!!")
         raise Exception()
-
-    return None
 
 
 # get_month_year_statement_list:
@@ -265,6 +259,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
 
     statement_list = []
     status_list = []
+    account_list = []
     for file in file_list:
         statement = create_statement(year, month, file, account_id_prompt=False)
         # NOTE: added this check to prevent returned statement list from having None in there
@@ -272,10 +267,13 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             statement_list.append(statement)
             # logger.debug("Statement created, going to load in data")
             status_list.append(True)
+            # account_name = dbh.account.get_account_name_from_id(statement_list[-1].account_id)
+            account_list.append(statement_list[-1].account_id)
 
             try:
                 statement.load_statement_data()
             except Exception as e:
+
                 print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
                 raise e
 
@@ -284,34 +282,21 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
         else:
             print("... seems like no statement could be created")
             status_list.append(False)
+            account_list.append(False)
+
+    # print out what accounts got loaded in
+    acch.print_account_status(account_list)
 
     # print out final status list and return
-    print_status_table(file_list, status_list)
+    concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+    clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
     return statement_list
 
 
 # TODO: possibly refactor to cli_printer ? And make more general ?
-def print_status_table(file_list, status_list):
-    # Check if both lists are of the same length
-    if len(file_list) != len(status_list):
-        print("Error: statement_list and status_list must have the same length.")
-        return
+# def print_status_table(file_list, status_list):
+#     # Check if both lists are of the same length
+#     if len(file_list) != len(status_list):
+#         print("Error: statement_list and status_list must have the same length.")
+#         return
 
-    # Print table header
-    print("| Status | Filepath   |")
-    print("|--------|------------|")
-
-    # Print rows
-    for i in range(len(file_list)):
-        file = file_list[i]
-        status = status_list[i]
-        if status is True:
-            status = "Found!"
-        else:
-            status = "FAIL!"
-
-        # Adjust the width of the columns based on your data
-        print(f"| {status.ljust(16)} | {file.ljust(8)} |")
-
-    # Print table footer
-    print("|------------------|----------|")

@@ -7,44 +7,45 @@
 from prettytable import PrettyTable
 from prettytable.colortable import ColorTable, Themes
 
+# available THEMES
+
+
 
 ##############################################################################
 ####      CONSOLE PRINTING FUNCTIONS     #####################################
 ##############################################################################
 
-# print_variable_table: prints a variable table
-#   @param  variable_names      strings for the top headers
-#   @param  values              a 2D array of the data to print
-def print_variable_table(variable_names, values, theme=Themes.OCEAN):
-    # table = PrettyTable()
-    table = ColorTable()
+
+#   @param  variable_names          strings for the top headers
+#   @param  values                  a 2D array of the data to print
+#   @param  format_finance_col      index of column number to format as financial data
+#   @param  max_width_column        the max width of ANY column in the table
+def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None, max_width_column=None):
+    table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
+
+    # if we want to set a width limit
+    if max_width_column is not None:
+        table._max_width = {max_width_column: 90}
+
+    # set MIN column width for EVERY column
+    table._max_table_width = 200
+    table._min_width = {col: min_width for col in variable_names}
+    table._max_width = {col: max_width for col in variable_names}
+
+    # if we want to format into finance
+    if format_finance_col is not None:
+        for entry in values:
+            formatted_value = "${:,.2f}".format(float(entry[format_finance_col]))
+            entry[format_finance_col] = formatted_value
+
     # populate data
     table.field_names = variable_names
     table.add_rows(values)
     # set alignment and formatting
-    table.align = "r"
-    table.align["DESC"] = "l"
+    table.align = "l"
+    # table.align["DESC"] = "l"
     table.padding_width = 1
     print(table)
-
-
-# this function will print some tabular financial data (commonly account names and balances)
-def print_balances(names, values, title):
-    print(f"\n\n========= {title} =========")
-    # check for length mismatch
-    if len(names) != len(values):
-        print("Can't print desired array! Mismatched lengths in program")
-        return False
-
-    table_values = []
-    for i in range(0, len(names)):
-        formatted_value = "${:,.2f}".format(values[i])
-        # print(f"\t{names[i].ljust(25)}: {formatted_value}")
-        table_values.append([names[i], values[i]])
-    print_variable_table(
-        ["ACCOUNT", "AMOUNT"],
-        table_values
-    )
 
 
 # getSpaces: gets the number of spaces needed for pretty printing in straight columns

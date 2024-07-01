@@ -1,5 +1,10 @@
+
+
 # import needed packages
 import sqlite3
+import os
+import sys
+
 
 # import user defined modules
 from db import DATABASE_DIRECTORY
@@ -14,7 +19,8 @@ class TabMainDashboard(SubMenu):
         action_arr = [Action("High level summary", self.a01_summary),
                       Action("System configuration", self.a02_config),
                       Action("Execute RAW SQL statement", self.a03_execute_sql),
-                      Action("TEST METHOD", self.a04_test_method)
+                      Action("TEST METHOD", self.a04_test_method),
+                      Action("Reboot program", self.a05_reboot)
                       ]
 
         # call parent class __init__ method
@@ -44,3 +50,8 @@ class TabMainDashboard(SubMenu):
         print("... executing test method ...")
         account_names = dbh.account.get_account_names()
         print(account_names)
+
+# TODO: finish this function to reboot the program (for instance if code source changed)
+    def a05_reboot(self):
+        os.execv(sys.executable, ['python'] + sys.argv)
+
