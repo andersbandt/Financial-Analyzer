@@ -122,23 +122,25 @@ class Transaction:
                 try:
                     for keyword in category.keyword:
                         if keyword in self.description.upper():
+                            # ASSIGN CATEGORY, EDIT/CREATE NOTE, and EXIT
                             self.category_id = category.id
-                            self.note = self.note + ";keyword=" + keyword
+                            if self.note is not None:
+                                self.note = self.note + ";keyword=" + keyword
+                            else:
+                                self.note = f"keyword={keyword}"
+                            return True
                 except Exception as e:
                     print("ERROR: couldn't automatically categorize transaction:", e)
 
         # if there is already a category ID
         else:
             print("Uh oh, transaction already has category assigned.")
-            return
+            return False
 
         # if no category got assigned set as NA category (0)
         if self.category_id is None:
             self.category_id = 0
 
-    # categorizeTransactionManual: manually categorizes a transaction using input description
-    # def categorizeTransactionManual(self, description):
-    #     self.description = description
 
     ##############################################################################
     ####      PRINTING FUNCTIONS           #######################################

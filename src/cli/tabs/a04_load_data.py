@@ -204,7 +204,7 @@ class TabLoadData(SubMenu):
             Action("Save to database", self.a08_save_statement_db),
         ]
 
-        self.actions.extend(new_actions)
+        self.action_arr.extend(new_actions)
         self.updated = True
         return True
 
