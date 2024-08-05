@@ -123,23 +123,12 @@ def get_year_month_files(basefilepath, year, month):
     return dir_list
 
 
-# attempts to take in a raw financial data file and return what account number it is tied to
-# IDEA (captured in Obsidian as well): store what files I use and match them to accounts in order to
-#   create some algorithm that predicts based on things like file name, extension, size, etc
-#   to make the decision to match to account
-# tag:HARDCODE for this whole function
-# TODO: To really make this app usable for the general public I should turn this function in a table in the .db file
-# would make it easier on me to for reviewing purposes
+# match_file_to_account: takes in a filepath and returns account_id
 def match_file_to_account(filepath):
     print("\t\t... Attempting to match file to account ...")
 
     # METHOD 1: simple
     account_id = dbh.file_mapping.get_account_id_from_string(filepath)
-
-    # METHOD 2: handling the search logic in this function
-    account_file_map_ledge = dbh.file_mapping.get_file_mapping_ledge_data()
-    # for entry in account_file_map_ledge:
-    #     if entry[2]
 
     # return None if we didn't match anything
     if account_id is False:
@@ -292,11 +281,4 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
     return statement_list
 
-
-# TODO: possibly refactor to cli_printer ? And make more general ?
-# def print_status_table(file_list, status_list):
-#     # Check if both lists are of the same length
-#     if len(file_list) != len(status_list):
-#         print("Error: statement_list and status_list must have the same length.")
-#         return
 

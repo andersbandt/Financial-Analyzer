@@ -58,9 +58,10 @@ def check_sql_date_format(date_string):
     return True
 
 
-# TODO: complete this function instead of hardcoding it in
+# TODO: for this function need some way to determine starting search point ...
 def get_valid_years():
-    return ["2020", "2021", "2022", "2023", "2024"]  # tag:hardcode
+    current_year = datetime.now().year
+    return list(range(2020, current_year + 1))  # tag:hardcode
 
 
 ##############################################################################

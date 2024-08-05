@@ -17,7 +17,7 @@ class Action:
         return self.title
 
 
-class SubMenu():
+class SubMenu:
     def __init__(self, title, basefilepath, action_arr):
         self.title = title
         self.basefilepath = basefilepath

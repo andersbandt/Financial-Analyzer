@@ -48,6 +48,7 @@ def print_ticker_info(ticker):
 # get_ticker_price: returns the current live price for a certain ticker
 # @logfn
 # TODO: could contemplate having some error handling for no Internet connection
+# TODO: this function could use less datalog bloat, and more robust checking (I'm getting 0 for some niche mutual fund prices)
 def get_ticker_price(ticker):
     # attempt to get live price using yahoo_fin
     try:
