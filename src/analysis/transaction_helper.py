@@ -43,25 +43,25 @@ def get_trans_category_cli(transaction, mode=2):
 
     # MODE1: descend into tree
     if mode == 1:
-        cat = clih.category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
+        cat_id = clih.category_tree_prompt(cath.load_top_level_categories(), trans_prompt)
     # MODE2: list all prompts in DB
     elif mode == 2:
-        cat = clih.category_prompt_all(trans_prompt,
+        cat_id = clih.category_prompt_all(trans_prompt,
                                   False)  # second param controls if I print all the categories each transaction or not
     else:
         print("Uh oh, invalid category selection mode!")
         return None
 
     # do some error handling on category
-    if cat == -1:
+    if cat_id == -1:
         print("category input (-1) return reached.")
         return -1  # NOTE: can't return 0 (or False ?) because 0 is valid category_id (NA)
 
     # set new Category to Transaction and print for lolz
-    print(f"Setting category {cat.getName()} for transaction.")
-    transaction.setCategory(cat)
+    print(f"Setting category {cath.category_id_to_name(cat_id)} for transaction.")
+    transaction.setCategory(cat_id)
     print("\nNewly categorized transaction below")
     transaction.printTransaction()
 
     # return newly associated Category ID so upper layer can properly change Transaction data
-    return cat
+    return cat_id

@@ -177,6 +177,7 @@ class TabLoadData(SubMenu):
         self.statement.sort_date_desc()
         self.statement.print_statement()
 
+    # TODO: either split out into 1-amount or 2-date or add some user input on sorting method in here
     # a07_sort_ledger: sorts the ledger by some metric
     def a07_sort_ledger(self):
         print(" ... sorting Ledger object")

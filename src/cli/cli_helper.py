@@ -55,8 +55,11 @@ def parse_inp_type(inp, inp_type):
 
     # TYPE: (int) or (float)
     elif inp_type == "int" or "float":
-        inp = inp.replace(',', '')  # get rid of commas
-        # TODO: perform check for correctly positioned commands here
+        try:
+            # TODO: perform check for correctly positioned commands here
+            inp = inp.replace(',', '')  # get rid of commas
+        except AttributeError:
+            pass
         try:
             if inp_type == "int":
                 inp = int(inp)
