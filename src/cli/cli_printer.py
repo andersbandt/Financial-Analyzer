@@ -24,6 +24,7 @@ my_custom_theme = Theme(default_color="91", # bright red
 ####      CONSOLE PRINTING FUNCTIONS     #####################################
 ##############################################################################
 
+# TODO: when printing legders maybe add a switch for just adding row number ...
 
 #   @param  variable_names          strings for the top headers
 #   @param  values                  a 2D array of the data to print

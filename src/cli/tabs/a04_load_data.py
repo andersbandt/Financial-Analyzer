@@ -188,13 +188,14 @@ class TabLoadData(SubMenu):
 
     def a08_save_statement_db(self):
         print("... saving statement to .db file ...")
-        status = self.statement.save_statement()
+        status = self.statement.save_statement() # TODO: whatever is called here. I think it actually saves before prompting user
         return status
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
+# TODO: if you load multiple statements in the same session, this list will grow arbitrarily long
     def update_listing(self):
         # append new actions to menu now that statement is loaded in
         new_actions = [

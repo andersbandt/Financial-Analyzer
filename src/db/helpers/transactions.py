@@ -12,6 +12,8 @@ from db import DATABASE_DIRECTORY
 from statement_types.Transaction import Transaction
 
 
+# TODO: when I add a transaction the datetime added is like UTC time maybe? Not local time.... Issue ?
+
 ##############################################################################
 ####      DATABASE MODIFICATION FUNCTIONS    #################################
 ##############################################################################
