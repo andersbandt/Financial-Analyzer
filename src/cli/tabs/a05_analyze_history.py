@@ -260,18 +260,19 @@ class TabSpendingHistory(SubMenu):
         # prompt user to eliminate any transactions
         print(found_sql_key)
         status = True
-        while status:
-            sql_to_remove = clih.spinput(
-                "\nPlease enter sql key of transaction to remove from update list (q to continue without removal): ", "int")
-            if sql_to_remove is False:
-                status = False
-            else:
-                found_sql_key.remove(sql_to_remove)
-                # reprint updated list
-                print("\n")
-                for id_key in found_sql_key:
-                    transaction = transr.get_transaction(id_key)
-                    transaction.printTransaction(include_sql_key=True)
+        if search_type == 1:
+            while status:
+                sql_to_remove = clih.spinput(
+                    "\nPlease enter sql key of transaction to remove from update list: ", "int")  # TODO: I need this to actually work!
+                if sql_to_remove is False:
+                    status = False
+                else:
+                    found_sql_key.remove(sql_to_remove)
+                    # reprint updated list
+                    print("\n")
+                    for id_key in found_sql_key:
+                        transaction = transr.get_transaction(id_key)
+                        transaction.printTransaction(include_sql_key=True)
 
         if len(found_sql_key) == 0:
             print("No transaction left to update. Quitting")
