@@ -33,13 +33,15 @@ def get_trans_category_cli(transaction, mode=2):
     # create initial category tree and print it
     categories = cath.load_categories()
     tree = cath.create_Tree(categories)
-    print(tree)
-    tree_ascii = tree.get_ascii()
-    print(tree_ascii)
+
+    # TODO: the following tree is based on category_id instead of category_name
+    # print(tree)
+    # tree_ascii = tree.get_ascii()
+    # print(tree_ascii)
 
     # print transaction and prompt
     print("\n\n")
-    trans_prompt = transaction.printTransaction()
+    trans_prompt = transaction.printTransaction(print_mode=False)
 
     # MODE1: descend into tree
     if mode == 1:

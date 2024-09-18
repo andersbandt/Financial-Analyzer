@@ -83,6 +83,8 @@ class TabBalances(SubMenu):
         return status
 
     # a03_graph_account_balance: produces some graphs of account balances across time
+    # TODO: for all of these graphs i need a way to have them appear the SAME value when there is no data available. Instead of 0
+    #    just run the damn thing and it will make sense
     def a03_graph_account_balance(self):
         print("... showing all liquid and investment assets ...")
 
