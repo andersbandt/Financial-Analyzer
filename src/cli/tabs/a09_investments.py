@@ -9,7 +9,6 @@
 import datetime
 from pprint import pprint
 
-
 # import user CLI modules
 import cli.cli_helper as clih
 import cli.cli_printer as clip
@@ -17,8 +16,9 @@ from cli.cli_class import SubMenu
 from cli.cli_class import Action
 
 # import user defined modules
+from statement_types.Ledger import Ledger
 from analysis import investment_helper as invh
-from analysis.data_recall import transaction_recall as trans
+from analysis.data_recall import transaction_recall as transr
 import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
@@ -34,11 +34,13 @@ class TabInvestment(SubMenu):
 
         # initialize information about sub menu options
         action_arr = [Action("Check investments", self.a01_check_investments),
-                      # Action("Print investment database", self.a02_print_db_inv),
+                      Action("Print investment database", self.a02_print_db_inv),
                       Action("Add investment transaction", self.a03_add_investment),
                       Action("Check account balances/summary", self.a04_check_accounts),
                       Action("Show current value snapshot history", self.a05_cur_value_history),
-                      Action("Add investment balance", self.a06_add_inv_balances)
+                      Action("Add investment balance", self.a06_add_inv_balances),
+                      Action("Add dividend", self.a07_add_dividend),
+                      Action("Delete investment", self.a08_delete_investment)
                       ]
 
         # call parent class __init__ method
@@ -53,17 +55,11 @@ class TabInvestment(SubMenu):
         print("Anders you gotta finish this function!")
         return True
 
-# TODO: finish this function to print investment transactions
     def a02_print_db_inv(self):
-        # METHOD 1: cheap
-        ledge_data = dbh.investments.get_investment_ledge_data()
-        pprint(ledge_data)
-
-        # METHOD 2: actuallyy doing it right
-        transactions = transr.recall_transaction_data() # TODO: need to finish a function to recall InvestmentTransaction data. But where to put?
-        tmp_ledger = Ledger.Ledger("All Investment Data")
+        transactions = transr.recall_investment_transaction()
+        tmp_ledger = Ledger("All Investment Data")
         tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement()
+        tmp_ledger.print_statement(include_sql_key=True)
 
     def a03_add_investment(self):
         print("... adding investment transaction ...")
@@ -95,11 +91,10 @@ class TabInvestment(SubMenu):
             print("... exiting add investment")
             return
 
-        inv_type = ""
         if buy_sell_int == 1:
             inv_type = "BUY"
         elif buy_sell_int == 2:
-            inv_type == "SELL"
+            inv_type = "SELL"
         else:
             print("Fuck man you entered something other than 1 or 2. I gotta quit now.")
             return False
@@ -122,15 +117,11 @@ class TabInvestment(SubMenu):
             print("... exiting add investment")
             return
 
-        # add note (OPTIONAL)
-        res = clih.promptYesNo("Do you want to add a note?")
-        if res:
-            note = clih.spinput("What is the note for this investment transaction? \tnote: ", inp_type="text")
-            if note is False:
-                print("... exiting add investment")
-                return
-        else:
-            note = None
+        # add note
+        note = clih.spinput("What is the note for this investment transaction? \tnote: ", inp_type="text")
+        if note is False:
+            print("... exiting add investment")
+            return
 
         # insert the investment into the database
         dbh.investments.insert_investment(date,
@@ -311,3 +302,18 @@ class TabInvestment(SubMenu):
                                           note=note)
         return True
 
+    # TODO: add an API around this structure for every "find SQL key and perform some action" funciton I have
+    def a08_delete_investment(self):
+        self.a02_print_db_inv()
+        sql_key = clih.prompt_for_int_array("Please enter int of sql key to delete: ")
+
+        print(sql_key)
+        # TODO: would be nice to print mini summary table of the found SQL keys
+        res = clih.promptYesNo("Ok, do you want to do the previous transactions?")
+
+        if res:
+            print("Ok, deleting investments")
+            # TODO: add function to actually delete the investments here
+        else:
+            return False
+        return True

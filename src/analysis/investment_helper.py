@@ -6,6 +6,7 @@ import pandas as pd
 import datetime
 import yahoo_fin.stock_info as si
 import yfinance as yf
+import warnings
 
 # import user created modules
 import db.helpers as dbh
@@ -48,18 +49,19 @@ def print_ticker_info(ticker):
 # get_ticker_price: returns the current live price for a certain ticker
 # @logfn
 # TODO: could contemplate having some error handling for no Internet connection
-# TODO: this function could use less datalog bloat, and more robust checking (I'm getting 0 for some niche mutual fund prices)
 def get_ticker_price(ticker):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
     # attempt to get live price using yahoo_fin
     try:
         price = si.get_live_price(ticker)
-    except AssertionError as e:
-        print(e)
+    except AssertionError:
+        pass
 
     # if yahoo_fin found ticker but price is nan, try using yfinance (yf)
     if np.isnan(price):
-        print("Ticker found with si.get_live_price() but not valid price")
-        print("Trying another method")
+        print("\nTicker found with si.get_live_price() but not valid price")
+        print("Trying another method!\n")
         data = yf.download(ticker,
                            dateh.get_date_previous(1),
                            datetime.datetime.now())
@@ -71,6 +73,7 @@ def get_ticker_price(ticker):
         # return last closing price as fallback method from live
         price = data['Close'].iloc[-1]
 
+    warnings.filterwarnings("default")
     return price
 
 
@@ -101,25 +104,25 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
 ##############################################################################
 
 # summarize_account: this function is for showcasing account view and holdings
-# @logfn
 def summarize_account(account_id, printmode=True):
     transactions = dbh.investments.get_active_ticker(account_id)
-    print(f"\n\t {dbh.account.get_account_name_from_id(account_id)} : ")
-
     account_value = 0
     ticker_table = []
     for transaction in transactions:
         ticker = transaction[0]
         shares = transaction[2]
 
-        # calculate the value of the asset ticker
-        price = get_ticker_price(ticker)
-        value = shares*price
-        account_value += value
+        # add shares only if they are not 0
+        if shares != 0:
+            # calculate the value of the asset ticker
+            price = get_ticker_price(ticker)
+            value = shares*price
+            account_value += value
 
-        ticker_table.append([ticker, shares, value])
+            ticker_table.append([ticker, shares, value])
 
     if printmode:
+        print(f"\n\n\t {dbh.account.get_account_name_from_id(account_id)} : ")
         clip.print_variable_table(
             ["Ticker", "Shares", "Value"],
             ticker_table,

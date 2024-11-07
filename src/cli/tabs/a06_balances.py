@@ -25,7 +25,6 @@ from loguru import logger
 
 class TabBalances(SubMenu):
     def __init__(self, title, basefilepath):
-
         # initialize information about sub menu options
         action_arr = [Action("Show executive wealth summary", self.a01_show_wealth),
                       Action("Add balance", self.a02_add_balance),
@@ -63,7 +62,7 @@ class TabBalances(SubMenu):
 
         # prompt user for account ID
         account_id = clih.account_prompt_all("What account do you want to add balance to?")
-        if account_id is False:
+        if account_id is False or None:
             return False
 
         # prompt for balance amount
@@ -74,7 +73,7 @@ class TabBalances(SubMenu):
 
         # prompt user for date
         bal_date = clih.get_date_input("\nand what date is this balance record for?")
-        if bal_date is False:
+        if bal_date is False or bal_date is None:
             print("Ok, quitting add balance")
             return False
 
@@ -153,7 +152,6 @@ class TabBalances(SubMenu):
         monthly_withdrawal = (retirement_age_balance * r) / (1 - pow((1 + r), -1 * 12 * years_retired))
         print(
             f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
-
 
     def a05_delete_balance(self):
         self.a06_print_balance_table()

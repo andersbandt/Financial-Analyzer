@@ -3,7 +3,8 @@
 import sqlite3
 
 # setup database master file
-DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
+# DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
+DATABASE_DIRECTORY = "db/financials.db"
 
 
 """
@@ -55,7 +56,7 @@ class TableStatements:
     investment = """CREATE TABLE investment
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
                     date                    DATE,
-                    account_id              INT(10) REFERENCES account(id),
+                    account_id              FOREIGN KEY INT(10) REFERENCES account(id),
                     category_id             INT(10) REFERENCES category(id),
                     ticker                  VARCHAR,
                     shares                  NUMERIC(10,2),
@@ -66,15 +67,15 @@ class TableStatements:
                     date_added              DATETIME);"""
     file_mapping = """CREATE TABLE file_mapping
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-                    account_id              INT(10) REFERENCES account(id),
+                    account_id              FOREIGN KEY INT(10) REFERENCES account(id),
                     file_search_str         VARCHAR(300));"""
     file_history = """CREATE TABLE file_history
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-                    account_id              INT(10) REFERENCES account(id),
+                    account_id              FOREIGN KEY INT(10) REFERENCES account(id),
                     file_name               VARCHAR(300));"""
     goals = """CREATE TABLE goals
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-                    account_id              INT(10) REFERENCES account(id),
+                    account_id              FOREIGN KEY INT(10) REFERENCES account(id),
                     amount                  NUMERIC(10,2),
                     date                    DATE)"""
 

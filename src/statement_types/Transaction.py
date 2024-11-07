@@ -21,12 +21,6 @@ class Transaction:
         self.note = note
         self.description = description
 
-        # try:
-        #     if self.amount[0] == "$":
-        #         self.amount = self.amount[1 : len(self.amount)]
-        # except TypeError as e:
-        #     pass
-
         try:
             self.amount = float(self.amount)
         except ValueError as e:
@@ -213,3 +207,14 @@ class Transaction:
         }
 
         return string_dict
+
+
+class InvestmentTransaction(Transaction):
+    def __init__(self, date, account_id, category_id, ticker, shares, trans_type, value, description, note=None, sql_key=None):
+        super().__init__(date, account_id, category_id, value, description, note, sql_key)
+
+        self.ticker = ticker
+        self.shares = shares
+        self.trans_type = trans_type
+        self.value = value
+

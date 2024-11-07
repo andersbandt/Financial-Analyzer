@@ -27,7 +27,6 @@ from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 from utils import log_helper as logh
 
-
 # import user defined modules
 from statement_types import Ledger
 
@@ -39,15 +38,15 @@ class TabSpendingHistory(SubMenu):
 
         # initialize information about sub menu options
         action_arr = [Action("Executive summary", self.a01_exec_summary),
-                          Action("Print database transactions", self.a02_print_db_trans),
-                          Action("Search transactions", self.a03_search_trans),
-                          Action("Graph category data", self.a04_graph_category),
-                          Action("Generate sankey (not working)", self.a05_make_sankey),
-                          Action("Review specific month transactions", self.a06_review_month),
-                          Action("Add note to transaction", self.a07_add_note),
-                          Action("Update transaction category", self.a08_update_transaction_category),
-                          Action("Examine specific category", self.a09_examine_category)
-                          ]
+                      Action("Print database transactions", self.a02_print_db_trans),
+                      Action("Search transactions", self.a03_search_trans),
+                      Action("Graph category data", self.a04_graph_category),
+                      Action("Generate sankey (not working)", self.a05_make_sankey),
+                      Action("Review specific month transactions", self.a06_review_month),
+                      Action("Add note to transaction", self.a07_add_note),
+                      Action("Update transaction category", self.a08_update_transaction_category),
+                      Action("Examine specific category", self.a09_examine_category)
+                      ]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_arr)
@@ -93,11 +92,12 @@ class TabSpendingHistory(SubMenu):
         logh.generate_summary_pdf(image_folder, output_pdf)
 
         ledger_stats = anah.return_ledger_exec_dict(transactions)
-        print(f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
+        print(
+            f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
         clip.print_dict(ledger_stats)
         return True
 
-    #    a02_print_db_trans: prints EVERY transaction in ledger .db
+    # a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
         transactions = transr.recall_transaction_data()
         tmp_ledger = Ledger.Ledger("All Statement Data")
@@ -105,10 +105,10 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.sort_date_desc()
         tmp_ledger.print_statement(include_sql_key=True)
 
-
     # TODO: cleanup on this function (quite unruly)
     # TODO: add some options to do some things like running my Ledger sort functions on the output of search
     # TODO: add filtering of multiple options at once (description and amount amount < M, etc)
+    # TODO: add searching by account
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
@@ -263,7 +263,8 @@ class TabSpendingHistory(SubMenu):
         if search_type == 1:
             while status:
                 sql_to_remove = clih.spinput(
-                    "\nPlease enter sql key of transaction to remove from update list: ", "int")  # TODO: I need this to actually work!
+                    "\nPlease enter sql key of transaction to remove from update list: ",
+                    "int")  # TODO: I need this to actually work!
                 if sql_to_remove is False:
                     status = False
                 else:
@@ -291,15 +292,13 @@ class TabSpendingHistory(SubMenu):
                 key,
                 new_category_id)
 
-
     def a09_examine_category(self):
         category_id = clih.category_prompt_all("What is the category to examine?", display=False)
         return False
 
-
-##############################################################################
-####      GENERAL HELPER FUNCTIONS    ########################################
-##############################################################################
+    ##############################################################################
+    ####      GENERAL HELPER FUNCTIONS    ########################################
+    ##############################################################################
 
     # exec_summary_01: produces a graph of the top-level categories over time
     def exec_summary_01(self, days_prev, num_slices):
@@ -359,8 +358,7 @@ class TabSpendingHistory(SubMenu):
                                     legend=True,
                                     y_format='currency')
 
-
-# TODO: finish this function to produce a summary of per-month transactions. Try to be smart about code reuse with the function above and the one below
+    # TODO: finish this function to produce a summary of per-month transactions. Try to be smart about code reuse with the function above and the one below
     # exec_summary_01b: produces graph of previous month ranges
     def exec_summary_01b(self, months_prev):
         # LOAD CATEGORIES
@@ -374,7 +372,6 @@ class TabSpendingHistory(SubMenu):
             if month < 1:
                 month = 12
                 year -= 1
-
 
         # TODO: I this this below for loop can become a helper function that can be reused
         date_bin_dict_arr = []  # this will be an array of dictionaries
@@ -426,7 +423,6 @@ class TabSpendingHistory(SubMenu):
                                     labels=top_cat_str,
                                     legend=True,
                                     y_format='currency')
-
 
     # exec_summary_02:
     # TODO: to allow for 'comp_month_prev' to be > 12 I can use the mod % operator on it and then subtract from year

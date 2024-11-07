@@ -6,14 +6,16 @@
 
 # import needed packages
 import csv
+import time
 
-# import user defined modules
+# import user defined CLI modules
 import cli.cli_helper as clih
 import cli.cli_printer as clip
 from cli.cli_class import SubMenu
 from cli.cli_class import Action
 
-
+# import user defined helper modules
+from statement_types.Transaction import Transaction
 from categories import categories_helper
 from account import account_helper as acch
 from tools import load_helper as loadh
@@ -34,7 +36,8 @@ class TabLoadData(SubMenu):
         action_arr = [
             Action("Load data", self.a01_load_data),
             Action("Load ALL data", self.a02_load_all_data),
-            Action("Check data status", self.a03_check_status)
+            Action("Add manual transaction", self.a03_add_manual_transaction),
+            Action("Check data status", self.a04_check_status)
         ]
 
         # call parent class __init__ method
@@ -91,7 +94,48 @@ class TabLoadData(SubMenu):
         print("\t... done creating Ledger object.\n Updating listings and exiting.")
         self.update_listing()
 
-    def a03_check_status(self):
+
+    def a03_add_manual_transaction(self):
+        print("... attempting to manually load in a transaction. Kinda scary. Don't mess up.")
+
+        # get account information
+        account_id = clih.account_prompt_all("What is the account for this one-time transaction?")
+        time.sleep(0.2)
+        if account_id is False or account_id is None:
+            return False
+
+        # get description
+        description = clih.spinput("What is the transaction description?: ", "text")
+        time.sleep(0.2)
+
+        # get amount
+        amount = clih.spinput("What is the transaction amount?: ", "float")
+        time.sleep(0.2)
+        if amount is False or amount is None:
+            return False
+
+        # get category information
+        category_id = clih.category_prompt_all("What is the category to search for?: ", False)
+        time.sleep(0.2)
+        if category_id is False or category_id is None:
+            return False
+
+        # prompt user for date
+        trans_date = clih.get_date_input("\nand what date is this balance record for?: ")
+        time.sleep(0.2)
+        if trans_date is False or trans_date is None:
+            return False
+
+        # create transaction
+        transaction = Transaction(trans_date, account_id, category_id, amount, description, note="MANUALLY ADDED")
+
+        # INSERT TRANSACTION
+        success = dbh.ledger.insert_transaction(transaction)
+        return success
+
+
+    # TODO: don't have this function parse investment accounts. Lots of bloat in the final table
+    def a04_check_status(self):
         print("... checking data status ...")
 
         # set up information on which account(s) we are interested in
@@ -129,7 +173,7 @@ class TabLoadData(SubMenu):
 ######################                          ######################
 
     # a03_categorize_statement: helps user categorize currently loaded statement data
-    def a04_categorize_statement(self):
+    def a05_categorize_statement(self):
         print("\n\na03: Automatically categorizing Statement")
         categories = categories_helper.load_categories()
 
@@ -144,7 +188,7 @@ class TabLoadData(SubMenu):
             print("Ok, leaving statement with just automatic categorization applied")
 
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
-    def a05_save_statement_csv(self):
+    def a06_save_statement_csv(self):
         print("... saving statement to .csv")
         try:
             # open the file
@@ -172,21 +216,21 @@ class TabLoadData(SubMenu):
             print("Can't save statement: ", e)
 
     # a06_print_ledger: prints the currently loaded ledger
-    def a06_print_ledger(self):
+    def a07_print_ledger(self):
         print(" ... printing current Ledger object")
         self.statement.sort_date_desc()
         self.statement.print_statement()
 
     # TODO: either split out into 1-amount or 2-date or add some user input on sorting method in here
     # a07_sort_ledger: sorts the ledger by some metric
-    def a07_sort_ledger(self):
+    def a08_sort_ledger(self):
         print(" ... sorting Ledger object")
         # method = ["$ up", "$ down", "date up", "date down"]
         #  inp_auto(prompt, strings_arr, echo=True, stat=None)
         self.statement.sort_trans_asc()
         self.statement.print_statement()
 
-    def a08_save_statement_db(self):
+    def a09_save_statement_db(self):
         print("... saving statement to .db file ...")
         status = self.statement.save_statement() # TODO: whatever is called here. I think it actually saves before prompting user
         return status
@@ -199,11 +243,11 @@ class TabLoadData(SubMenu):
     def update_listing(self):
         # append new actions to menu now that statement is loaded in
         new_actions = [
-            Action("Categorize statement", self.a04_categorize_statement),
-            Action("Save to .csv", self.a05_save_statement_csv),
-            Action("Print new Ledger", self.a06_print_ledger),
-            Action("Sort ledger", self.a07_sort_ledger),
-            Action("Save to database", self.a08_save_statement_db),
+            Action("Categorize statement", self.a05_categorize_statement),
+            Action("Save to .csv", self.a06_save_statement_csv),
+            Action("Print new Ledger", self.a07_print_ledger),
+            Action("Sort ledger", self.a08_sort_ledger),
+            Action("Save to database", self.a09_save_statement_db),
         ]
 
         self.action_arr.extend(new_actions)

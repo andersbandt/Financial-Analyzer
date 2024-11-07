@@ -51,7 +51,7 @@ def db_init():
 
 # thing that's gotta be here
 if __name__ == "__main__":
-    status = db_init() # only used if database doesn't exist
+    status = db_init()  # only used if database doesn't exist
     if not status:
         print("Something went wrong with database. EXITING!")
         sys.exit()

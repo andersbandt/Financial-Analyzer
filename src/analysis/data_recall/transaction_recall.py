@@ -17,6 +17,7 @@ from utils import logfn
 @logfn
 class TransactionRecallError(Exception):
     """Transaction Recall Error"""
+
     def __init__(self, origin="TransactionRecall", msg="Error encountered"):
         self.msg = f"{origin} error encountered: {msg}"
         # return self.msg
@@ -44,13 +45,33 @@ def convert_ledge_to_transactions(ledger_data):
     for item in ledger_data:
         transactions.append(
             Transaction.Transaction(
-                item[1], # date
-                item[2], # account ID
-                item[3], # category ID
-                item[4], # amount
-                item[5], # description
-                note=item[7], # note
-                sql_key=item[0] # SQL key
+                item[1],  # date
+                item[2],  # account ID
+                item[3],  # category ID
+                item[4],  # amount
+                item[5],  # description
+                note=item[7],  # note
+                sql_key=item[0]  # SQL key
+            )
+        )
+    return transactions
+
+
+def convert_ledge_to_investment_transactions(ledger_data):
+    transactions = []  # clear transactions
+    for item in ledger_data:
+        transactions.append(
+            Transaction.InvestmentTransaction(
+                item[1],  # date
+                item[2],  # account ID
+                item[3],  # category ID
+                item[4],  # ticker
+                item[5],  # shares,
+                item[6],  # trans_type
+                item[7],  # value
+                item[8],  # description
+                note=item[9],  # note
+                sql_key=item[0]  # SQL key
             )
         )
     return transactions
@@ -113,3 +134,9 @@ def recall_transaction_category(category_id):
     ledger_data = dbh.transactions.get_transactions_by_category_id(category_id)
     transactions = convert_ledge_to_transactions(ledger_data)
     return transactions
+
+
+def recall_investment_transaction():
+    ledger_data = dbh.investments.get_investment_ledge_data()
+    investment_transactions = convert_ledge_to_investment_transactions(ledger_data)
+    return investment_transactions

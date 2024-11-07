@@ -1,11 +1,9 @@
-
 # import needed modules
 import datetime
 import sqlite3
 
 # import user created modules
 from db import DATABASE_DIRECTORY
-
 
 
 # insert_investment: insert an investment into the database
@@ -16,9 +14,9 @@ def insert_investment(date, account_id, ticker, shares, inv_type, value, descrip
     # update description if not provided
     if description is None:
         if inv_type == "BUY":
-            description = "BUY " + str(shares) + " @ " + str(value/shares)
+            description = "BUY " + str(shares) + " @ " + str(value / shares)
         elif inv_type == "SELL":
-            description = "SELL " + str(shares) + " @ " + str(value/shares)
+            description = "SELL " + str(shares) + " @ " + str(value / shares)
 
     # insert into table 'investment'
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
@@ -55,7 +53,6 @@ def get_account_ticker(account_id):
     return ledger_data
 
 
-
 def get_ticker_shares(account_id, ticker):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -71,7 +68,6 @@ def get_ticker_shares(account_id, ticker):
             AND ticker = ?""", (account_id, ticker))
         ledger_data = cur.fetchall()
     return ledger_data
-
 
 
 # TODO: eliminate this function in favor of the previous one and iterate through tickers
@@ -90,6 +86,7 @@ def get_active_ticker(account_id):
             GROUP BY ticker""", (account_id,))
         ledger_data = cur.fetchall()
     return ledger_data
+
 
 #         cur.execute("""
 #             SELECT ticker FROM investment
@@ -114,7 +111,3 @@ def get_all_ticker():
         cur.execute("SELECT ticker FROM investment")
         tickers = cur.fetchall()
     return tickers
-
-
-
-

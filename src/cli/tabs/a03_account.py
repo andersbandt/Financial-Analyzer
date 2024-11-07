@@ -5,7 +5,6 @@
 
 """
 
-# import needed packages
 
 # import user defined modules
 import cli.cli_helper as clih
@@ -38,6 +37,7 @@ class TabAccount(SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
+# TODO: this function could print out more info (account type, etc)
     def a01_check_accounts(self):
         print("... checking accounts ...")
         for name in dbh.account.get_account_names():

@@ -25,10 +25,12 @@ import db.helpers as dbh
 # esc_cmd: helper function to handle valid command / input escape strings
 def esc_cmd(inp):
     if inp == 'q':
-        return False
+        return True
     elif inp == 'quit':
-        return False
+        return True
     elif inp == "exit":
+        return True
+    else:
         return False
 
 
@@ -38,7 +40,6 @@ def esc_cmd(inp):
 #                           text     string return of input
 #                           int      will return any POSITIVE VALUE (will return -1 on bad input) # TODO: verify this actually can't handle "-" minus sign
 #                           float    will return any float value (maybe POSITIVE ONLY?)
-#
 def parse_inp_type(inp, inp_type):
     # TYPE: (int)
     if inp_type == "int":
@@ -49,6 +50,7 @@ def parse_inp_type(inp, inp_type):
             print("was that really an int?")
             print(e)
             return -1
+        return inp
     # TYPE: (text)
     if inp_type == "text":
         return inp
@@ -84,12 +86,15 @@ def parse_inp_type(inp, inp_type):
 
 
 # spinput: really general input function to help with flow control
+#   @param[in]        inp_type   (see the variable description in function inp_type)
 def spinput(prompt_str, inp_type):
     while True:
         inp = input(prompt_str)
+        if esc_cmd(inp):
+            return False
+
         p_inp = parse_inp_type(inp, inp_type)
-        if p_inp is not False:
-            return p_inp
+        return p_inp
 
 
 # promptYesNo: function for prompting user for a YES or NO input
@@ -118,6 +123,13 @@ def prompt_num_options(prompt_str, prompt_string_arr):
     except ValueError:
         return False
 
+def prompt_for_int_array(prompt_str):
+    int_arr = []
+    while True:
+        new_int = input("Enter int to add: ")
+        if esc_cmd(new_int):
+            return int_arr
+        int_arr.append(new_int)
 
 ##############################################################################
 ####      prompt_toolkit FUNCTIONS        ####################################
@@ -203,10 +215,11 @@ def get_date_input(prompt_str):
         # try to convert into datetime object
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            # return date_obj.date()  # Return only the date part, not the time
+            # return date_obj.date()  # Return only the date part, not the time # TODO: do I want to return this instead for some extra insurance?
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
-        return date_str
+        else:
+            return date_str
 
 ##############################################################################
 ####      CATEGORY INPUT FUNCTIONS    ########################################
