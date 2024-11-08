@@ -12,6 +12,7 @@ from dateutil.parser import parse
 import db.helpers as dbh
 from categories import categories_helper as cath
 
+
 class Transaction:
     def __init__(self, date, account_id, category_id, amount, description, note=None, sql_key=None):
         self.account_id = account_id
@@ -30,9 +31,7 @@ class Transaction:
 
         # create SQL key (optional parameter)
         if sql_key is not None:
-            self.sql_key = sql_key
-        else:
-            self.sql_key = None
+            self.sql_key = int(sql_key)
 
         # __init__ error handling
         if self.description is None:
@@ -47,7 +46,7 @@ class Transaction:
             try:
                 parse(self.date)
                 return True
-            except:
+            except:  # TODO: evaluate this exception clause (and parsing function above)
                 print("ERROR (TRANSACTION): date might be wrong")
                 return False
         return False
@@ -71,7 +70,7 @@ class Transaction:
         return True
 
     ##############################################################################
-    ####      GETTER FUNCTIONS    ################################################
+    ####      SETTER and GETTER FUNCTIONS    #####################################
     ##############################################################################
 
     # getAmount: returns transaction amount
@@ -88,10 +87,6 @@ class Transaction:
             return False
         else:
             return True
-
-    ##############################################################################
-    ####      SETTER FUNCTIONS    ################################################
-    ##############################################################################
 
     # setCategory: sets the category
     def setCategory(self, c_id):
@@ -135,7 +130,6 @@ class Transaction:
         if self.category_id is None:
             self.category_id = 0
 
-
     ##############################################################################
     ####      PRINTING FUNCTIONS           #######################################
     ##############################################################################
@@ -156,18 +150,19 @@ class Transaction:
 
         # add remaining columns
         stringToPrint += (
-            "DATE: "
-            + "".join(self.date)
-            + " || AMOUNT: "
-            + "".join(str(self.amount))
-            + self.getSpaces(len(str(self.amount)), 8)
-            + " || DESC: "
-            + "".join(self.description[0:80])
-            + self.getSpaces(len(self.description), 80)
+                "DATE: "
+                + "".join(self.date)
+                + " || AMOUNT: "
+                + "".join(str(self.amount))
+                + self.getSpaces(len(str(self.amount)), 8)
+                + " || DESC: "
+                + "".join(self.description[0:80])
+                + self.getSpaces(len(self.description), 80)
         )
         if self.category_id is not None:
             category_name = dbh.category.get_category_name_from_id(self.category_id)
-            stringToPrint = stringToPrint + " || CATEGORY: " + str(category_name) + self.getSpaces(len(str(category_name)), 15)
+            stringToPrint = stringToPrint + " || CATEGORY: " + str(category_name) + self.getSpaces(
+                len(str(category_name)), 15)
 
         stringToPrint = stringToPrint + " || ACCOUNT: " + "".join(
             dbh.account.get_account_name_from_id(self.account_id)) + self.getSpaces(len(str(self.account_id)), 18)
@@ -178,22 +173,6 @@ class Transaction:
         if print_mode:
             print(stringToPrint)
         return stringToPrint
-
-
-    # getSaveString: gets an array of what to save to CSV file for the transaction
-    # NOTE: where is this function used? What is it actually doing?
-    #   check where I call
-    def getSaveStringArray(self):
-        saveStringArray = [
-            "".join(self.date),
-            "".join(str(self.amount)),
-            "".join(self.description),
-        ]
-
-        if self.category_id != None:
-            saveStringArray.append("".join(self.category_id))
-
-        return saveStringArray
 
     # getStringDict: returns a string of transaction content contained in a dictionary
     def getStringDict(self):
@@ -210,11 +189,11 @@ class Transaction:
 
 
 class InvestmentTransaction(Transaction):
-    def __init__(self, date, account_id, category_id, ticker, shares, trans_type, value, description, note=None, sql_key=None):
+    def __init__(self, date, account_id, category_id, ticker, shares, trans_type, value, description, note=None,
+                 sql_key=None):
         super().__init__(date, account_id, category_id, value, description, note, sql_key)
 
         self.ticker = ticker
         self.shares = shares
         self.trans_type = trans_type
         self.value = value
-

@@ -126,10 +126,11 @@ class TabCategory(SubMenu):
         )
 
     def a05_delete_category(self):
+        # print out all categories
+        # TODO: make this printout better (put into PrettyTable?)
         categories = dbh.category.get_category_ledger_data()
-
         for item in categories:
-            print(item) # TODO: make this printout better (put into table?)
+            print(item)
 
         category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
         if category_id is False:

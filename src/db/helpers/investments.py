@@ -44,6 +44,13 @@ def insert_investment(date, account_id, ticker, shares, inv_type, value, descrip
     return True
 
 
+# delete_transaction: deletes a Transaction
+def delete_investment(sql_key: str) -> bool:
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM investment WHERE id=?", (sql_key,))
+    return True
+
 # get_account_ticker: gets all the tickers for an account
 def get_account_ticker(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

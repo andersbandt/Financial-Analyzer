@@ -74,7 +74,7 @@ def update_transaction_note_k(sql_key, note):
 def delete_transaction(sql_key: str) -> bool:
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute("DELETE FROM transactions WHERE key=?", (sql_key,))
+        cur.execute("DELETE FROM transactions WHERE id=?", (sql_key,))
     return True
 
 

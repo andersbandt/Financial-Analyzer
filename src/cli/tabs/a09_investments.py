@@ -7,7 +7,6 @@
 
 # import needed modules
 import datetime
-from pprint import pprint
 
 # import user CLI modules
 import cli.cli_helper as clih
@@ -19,6 +18,7 @@ from cli.cli_class import Action
 from statement_types.Ledger import Ledger
 from analysis import investment_helper as invh
 from analysis.data_recall import transaction_recall as transr
+from analysis import transaction_helper as transh
 import analysis.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
@@ -302,18 +302,10 @@ class TabInvestment(SubMenu):
                                           note=note)
         return True
 
-    # TODO: add an API around this structure for every "find SQL key and perform some action" funciton I have
     def a08_delete_investment(self):
         self.a02_print_db_inv()
-        sql_key = clih.prompt_for_int_array("Please enter int of sql key to delete: ")
-
-        print(sql_key)
-        # TODO: would be nice to print mini summary table of the found SQL keys
-        res = clih.promptYesNo("Ok, do you want to do the previous transactions?")
-
-        if res:
-            print("Ok, deleting investments")
-            # TODO: add function to actually delete the investments here
-        else:
-            return False
+        clih.action_on_int_array("Please enter SQL key of investments you want to delete",
+                                 None, # TODO: need to ELEGANTLY define a printing function for investments. Will take some thought
+                                 invh.delete_investment_list)
         return True
+

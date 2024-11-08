@@ -133,7 +133,7 @@ def summarize_account(account_id, printmode=True):
 
 
 ##############################################################################
-######      DATABASE CONVERSION FUNCTIONS      ###############################
+######      DATABASE FUNCTIONS      ##########################################
 ##############################################################################
 
 @logfn
@@ -154,3 +154,6 @@ def create_active_investment_dict():
     return inv_data
 
 
+def delete_investment_list(sql_key_arr):
+    for key in sql_key_arr:
+        dbh.investments.delete_investment(key)

@@ -123,13 +123,33 @@ def prompt_num_options(prompt_str, prompt_string_arr):
     except ValueError:
         return False
 
-def prompt_for_int_array(prompt_str):
+
+def prompt_for_int_array():
     int_arr = []
     while True:
         new_int = input("Enter int to add: ")
         if esc_cmd(new_int):
             return int_arr
         int_arr.append(new_int)
+
+
+# TODO: perform an audit that I am using this for every use-case
+def action_on_int_array(prompt_str, print_func, action_func):
+    print(prompt_str)
+    int_arr = prompt_for_int_array()
+
+    if print_func is not None:
+        print_func(int_arr)
+    print(prompt_str)
+
+    res = promptYesNo("DO YOU WANT TO COMPLETE ABOVE ACTION ON THIS LIST?")
+    if res:
+        print("Ok, completing action on found INT array")
+        action_func(int_arr)
+    else:
+        return False
+    return True
+
 
 ##############################################################################
 ####      prompt_toolkit FUNCTIONS        ####################################
@@ -221,6 +241,7 @@ def get_date_input(prompt_str):
         else:
             return date_str
 
+
 ##############################################################################
 ####      CATEGORY INPUT FUNCTIONS    ########################################
 ##############################################################################
@@ -301,7 +322,6 @@ def category_tree_prompt():
                 return cur_cat_obj.id
 
     return False
-
 
     category_arr2 = []
     category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
