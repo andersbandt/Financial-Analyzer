@@ -16,6 +16,23 @@ from cli import cli_printer as clip
 # import logger
 from utils import logfn
 
+
+class Ticker:
+    def __init__(self, ticker, shares):
+        self.ticker = ticker
+        self.shares = shares
+        self.price = get_ticker_price(ticker)
+        self.value = shares*self.price
+        self.type = get_ticker_asset_type(ticker)
+
+
+def create_ticker_from_transaction(transaction):
+    ticker = transaction[0]
+    shares = transaction[2]
+    ticker_class = Ticker(ticker, shares)
+    return ticker_class
+
+
 ##############################################################################
 ######      INDIVIDUAL TICKER FUNCTIONS      #################################
 ##############################################################################
@@ -32,7 +49,6 @@ def validate_ticker(ticker):
 
 
 # print_ticker_info: prints the info for a certain ticker to the console
-# @logfn
 def print_ticker_info(ticker):
     print("printing ticker info for ticker: ", ticker)
 
@@ -47,7 +63,6 @@ def print_ticker_info(ticker):
 
 
 # get_ticker_price: returns the current live price for a certain ticker
-# @logfn
 # TODO: could contemplate having some error handling for no Internet connection
 def get_ticker_price(ticker):
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -79,7 +94,6 @@ def get_ticker_price(ticker):
 
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
-@logfn
 def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekdays=False):
     hist_price_data = si.get_data(
         ticker,
@@ -99,9 +113,35 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
     return hist_price_data
 
 
+def get_ticker_asset_type(ticker):
+    ticker = yf.Ticker(ticker)
+    info = ticker.info
+    asset_type = info.get("quoteType")
+    # industry = info.get("industry")
+    # sector = info.get("sector")
+    # exchange = info.get("exchange")
+    # print(f"\nLooking at {ticker}")
+    # print(quoteType)
+    # print(industry)
+    # print(sector)
+    # print(exchange)
+    return asset_type
+
+
 ##############################################################################
 ######      OVERALL ANALYSIS FUNCTIONS      ##################################
 ##############################################################################
+
+def get_all_active_ticker():
+    ticker_list = []
+    for acc_id in dbh.account.get_all_account_ids():
+        transactions = dbh.investments.get_active_ticker(acc_id)
+        for transaction in transactions:
+            ticker = create_ticker_from_transaction(transaction)
+            if ticker.shares != 0:
+                ticker_list.append(ticker)
+    return ticker_list
+
 
 # summarize_account: this function is for showcasing account view and holdings
 def summarize_account(account_id, printmode=True):
@@ -109,22 +149,19 @@ def summarize_account(account_id, printmode=True):
     account_value = 0
     ticker_table = []
     for transaction in transactions:
-        ticker = transaction[0]
-        shares = transaction[2]
-
-        # add shares only if they are not 0
-        if shares != 0:
-            # calculate the value of the asset ticker
-            price = get_ticker_price(ticker)
-            value = shares*price
-            account_value += value
-
-            ticker_table.append([ticker, shares, value])
+        ticker = create_ticker_from_transaction(transaction)
+        if ticker.shares != 0:
+            account_value += ticker.value
+            ticker_table.append([
+                ticker.ticker,
+                ticker.shares,
+                ticker.value,
+                ticker.type])
 
     if printmode:
         print(f"\n\n\t {dbh.account.get_account_name_from_id(account_id)} : ")
         clip.print_variable_table(
-            ["Ticker", "Shares", "Value"],
+            ["Ticker", "Shares", "Value", "Type"],
             ticker_table,
             format_finance_col=2
         )

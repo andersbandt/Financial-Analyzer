@@ -11,64 +11,46 @@ from utils import logfn
 ####      PLOTTING FUNCTIONS    ##############################################
 ##############################################################################
 
-
-@logfn
-def get_cat_pie_plot(amounts, categories, explode=0.1, title=None):
-    # generate labels
-    labels = []
-    for i in range(0, len(amounts)):
-        labels.append(categories[i].name + ": " + str(amounts[i]))
-
-    myexplode = []
-    for i in range(0, len(amounts)):
-        myexplode.append(explode)
-
-    plt.pie(amounts, labels=labels, explode=myexplode, shadow=False, normalize=True)
-
-    # add legend and title
-    # plt.legend(patches, labels, loc="best")
-    plt.title(title)
-
-    # Set aspect ratio to be equal so that pie is drawn as a circle.
-    plt.axis("equal")
-    plt.tight_layout()
-
-
-@logfn
 def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
-    # clear current plot
+    # Clear the current figure
     plt.clf()
 
-    # set explore
-    myexplode = []
-    for i in range(0, len(amounts)):
-        myexplode.append(explode)
+    # Automatically create explode array based on the length of `amounts`
+    explode_values = [explode] * len(amounts) if explode else [0] * len(amounts)
 
-    # add plot
-    plt.pie(amounts, labels=labels, explode=myexplode, shadow=False, normalize=True)
+    # Add plot with additional options for better appearance
+    wedges, texts, autotexts = plt.pie(
+        amounts,
+        labels=labels,
+        explode=explode_values,
+        autopct='%1.1f%%',  # Display percentages
+        shadow=True,
+        startangle=140,
+        normalize=True
+    )
 
-    # add legend and title
-    patches = labels
+    # Optionally add a legend and title
     if legend:
-        plt.legend(patches, labels, loc="best")
-    plt.title(title)
+        plt.legend(wedges, labels, loc="best")
+    if title:
+        plt.title(title)
 
-    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    # Set aspect ratio to ensure the pie is drawn as a circle
     plt.axis("equal")
     plt.tight_layout()
 
+    # Show plot
+    plt.show()
 
-# @logfn
+
 def get_line_chart(x_axis, y_axis, label=None, color=None):
     # make plot
     # plt.plot(x_axis, y_axis)
     plt.plot(x_axis, y_axis, marker='o', linestyle='-', color=None, label=label)
 
 
-
 # @usage  fig, ax = plt.subplots(num_slices, 1, figsize=(15, 3), sharex=True)
 #           pass in 'ax' as variable, then use plt.show() as normal
-# @logfn
 def get_bar_chart(ax, i, labels, amounts, title=None):
     y_pos = np.arange(len(labels))
     ax[i].barh(y_pos, amounts, align="center", color="green", ecolor="black")
@@ -81,7 +63,6 @@ def get_bar_chart(ax, i, labels, amounts, title=None):
 
 
 # get_stacked_bar_chart: creates a bar chart with multiple 'stacked' values on the y axis
-@logfn
 def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=None, y_3=None, y_4=None):
     # clear current plot
     plt.clf()

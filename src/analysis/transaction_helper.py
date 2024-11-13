@@ -16,14 +16,11 @@ from loguru import logger
 from utils import logfn
 
 
-# TODO: can add some functions from analyzer_helper.py into here when that gets too big
-
-
 def sum_transaction_total(transactions):
     sum_t = 0
     for transaction in transactions:
-        sum += transaction.amount
-    return sum
+        sum_t += transaction.amount
+    return sum_t
 
 
 # get_category_input: this function should display a transaction to the user and prompt them through categorization

@@ -17,11 +17,13 @@ from cli.cli_class import Action
 import db.helpers as dbh
 import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
+import analysis.investment_helper as invh
+import analysis.graphing_analyzer as grapa
 import tools.date_helper as dateh
-
 
 # import logger
 from loguru import logger
+
 
 class TabBalances(SubMenu):
     def __init__(self, title, basefilepath):
@@ -29,10 +31,10 @@ class TabBalances(SubMenu):
         action_arr = [Action("Show executive wealth summary", self.a01_show_wealth),
                       Action("Add balance", self.a02_add_balance),
                       Action("Graph balances per account", self.a03_graph_account_balance),
-                      Action("Retirement modeling", self.a04_retirement_modeling), 
+                      Action("Retirement modeling", self.a04_retirement_modeling),
                       Action("Delete a balance", self.a05_delete_balance),
-                      Action("Print balance table", self.a06_print_balance_table)]
-
+                      Action("Print raw balance table", self.a06_print_balance_table),
+                      Action("View asset allocation", self.a07_asset_allocation)]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_arr)
@@ -200,3 +202,30 @@ class TabBalances(SubMenu):
             format_finance_col=2
         )
         return True
+
+    def a07_asset_allocation(self):
+        # add liquid assets
+        asset_total = {
+            "CASH": balh.get_liquid_balance()
+        }
+
+        # add investment assets
+        tickers = invh.get_all_active_ticker()
+        for ticker in tickers:
+            # keep pie chart clean by grouping similiar categories. tag:HARDCODE
+            if ticker.type == "ETF":
+                ticker.type = "MUTUALFUND"
+            elif ticker.type == "MONEYMARKET":
+                ticker.type = "CASH"
+
+            # Add ticker value, initialize with 0 if the key does not exist
+            asset_total[ticker.type] = asset_total.get(ticker.type, 0) + ticker.value
+
+        # make pie plot
+        grapa.create_pie_chart(
+            asset_total.values(),
+            asset_total.keys(),
+            explode=0,
+            title="Asset Allocation"
+        )
+        grapa.show_plots()

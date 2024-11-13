@@ -1,3 +1,4 @@
+
 # import needed modules
 from datetime import *
 from datetime import timedelta
@@ -16,22 +17,34 @@ def get_account_balance(account_id):
     acc_type = dbh.account.get_account_type(account_id)
 
     # if account is an investment account
-    if acc_type == 4:
+    if acc_type == 4:  # tag:HARDCODE
         bal = invh.summarize_account(account_id, printmode=True)
         bal_date = dateh.get_cur_str_date()
     else:
         # leverage database 'balance' helper to get most recent balance entry by DATE
         bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
 
-    return bal, bal_date
+    return bal, bal_date  # TODO: this tuple becomes problematic when I only want the date
 
 
-def get_account_balance_on_date(account_id, date):
-    balance_data = dbh.balance.get_balance_on_date(account_id, date)
+def get_account_balance_on_date(account_id, date_var):
+    balance_data = dbh.balance.get_balance_on_date(account_id, date_var)
     if len(balance_data) == 0:
         return False
     else:
         return balance_data[0][2]  # NOTE: this used to return the full `balance_data`
+
+
+def get_liquid_balance():
+    # get all accounts of type 1 (savings) and type 2 (checkings)
+    acc_id_liquid = acch.get_account_id_by_type(1)
+    acc_id_liquid.extend(acch.get_account_id_by_type(2))
+
+    # iterate through `liquid` account types
+    total = 0
+    for acc_id in acc_id_liquid:
+        total += get_account_balance(acc_id)[0]
+    return total
 
 
 def add_account_balance(account_id, bal_amount, bal_date):

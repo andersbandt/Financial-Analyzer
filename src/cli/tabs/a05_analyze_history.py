@@ -186,6 +186,7 @@ class TabSpendingHistory(SubMenu):
                                month_totals,
                                xlabel="Months previous",
                                title=f"Graph of category {cath.category_id_to_name(category_id)}")
+        grapa.show_plots()
 
     # TODO: Large task. Work on generating sankey diagram
     def a05_make_sankey(self):

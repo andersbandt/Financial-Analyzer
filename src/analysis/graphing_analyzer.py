@@ -14,7 +14,7 @@ from utils import logfn
 from loguru import logger
 
 
-# TODO: This module can remain, but needs a lot of cleanup
+# TODO: evaluate functions in this module and possibly delete
 
 
 @logfn
@@ -38,39 +38,20 @@ def save_fig():
     plt.savefig(f"{os.getcwd()}/tmp/{hash_p}.png")
 
 
+def show_plots():
+    plt.show(block=False)
+
+
 ##############################################################################
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
 
 @logfn
-def create_pie_chart(transactions, categories, printmode=None):
+def create_pie_chart(values, labels, explode=0.1, title="Pie Chart"):
     logger.debug("Running graphing_analyzer: create_pie_chart")
-
-    # create an array of category strings and array of amount floats
-    #   using an array of Transactions and an array of Category objects
-    categories, amounts = analyzer_helper.create_category_amounts_array(
-        transactions, categories
-    )
-
-    # strip transaction data
-    categories, amounts = graphing_helper.strip_non_graphical_transactions(
-        categories, amounts
-    )
-    categories, amounts = graphing_helper.strip_non_expense_categories(
-        categories, amounts
-    )
-    categories, amounts = graphing_helper.strip_zero_categories(categories, amounts)
-    amounts = graphing_helper.format_expenses(amounts)
-
-    # print Transaction list to console
-    if printmode is not None:
-        for i in range(0, len(amounts) - 1):
-            graphing_helper.print_category_amount(categories[i], amounts[i])
-
-    #  create and return figure
     fig = plt.figure(1)
-    graphing_helper.get_pie_plot(amounts, categories, explode=0.1, title="Pie Chart")
-    return fig, categories, amounts
+    grah.get_pie_plot(values, labels, explode, title)
+    return fig
 
 
 # create_top_pie_chart: return a pyplot figure of a summation of all top level categories
@@ -125,7 +106,6 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     if xlabel is not None:
         ax.set_xlabel(xlabel)
 
-    # plt.show(block=False)
     save_fig()
 
 

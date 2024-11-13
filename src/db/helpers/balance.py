@@ -4,14 +4,11 @@
 
 """
 
-
-
 # import needed modules
 import sqlite3
 
 # import user definitions
 from db import DATABASE_DIRECTORY
-
 
 
 def get_balance(sql_key):
@@ -25,14 +22,15 @@ def get_balance(sql_key):
     return balances_data
 
 
-def insert_account_balance(account_id, amount, date):
+def get_balance_by_account_id(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO balance (account_id, amount, bal_date) VALUES(?, ?, ?)",
-            (account_id, amount, date),
+            "SELECT * FROM balance WHERE account_id=?",
+            (account_id,),
         )
-    return True
+        balances_data = cur.fetchall()
+    return balances_data
 
 
 def get_recent_balance(account_id, add_date=False):
@@ -79,6 +77,16 @@ def get_balances_between_date(date_start, date_end):
     return balances_data
 
 
+def insert_account_balance(account_id, amount, date):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO balance (account_id, amount, bal_date) VALUES(?, ?, ?)",
+            (account_id, amount, date),
+        )
+    return True
+
+
 def delete_balance(sql_key):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -94,5 +102,3 @@ def get_balance_ledge_data():
         )
         ledger_data = cur.fetchall()
     return ledger_data
-
-

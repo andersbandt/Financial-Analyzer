@@ -109,7 +109,6 @@ def get_all_account_ids():
         return account_id
 
 
-
 # get_account_names: return a string of all account names
 def get_account_names():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

@@ -1,4 +1,3 @@
-
 # import needed modules
 import sys
 from collections import defaultdict
@@ -17,9 +16,13 @@ def formatter(record):
     return "<" + color_tag + ">[{name}]</> <bold>{message}</>\n{exception}"
 
 
-
-# main: main function of the program. Really just calls gui_driver
+# main: main function of the programr
 def main():
+    # set log level
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+
+    # run main CLI
     cli.main()
 
 
@@ -35,7 +38,7 @@ def db_init():
     statements = []
     for value in TableStatements.__dict__.values():
         if str(value).startswith(
-            "CREATE"
+                "CREATE"
         ):  # Only append the values of the variables. Without this we would get the built-ins and the docstring.
             statements.append(value)
 
@@ -55,5 +58,4 @@ if __name__ == "__main__":
     if not status:
         print("Something went wrong with database. EXITING!")
         sys.exit()
-
     main()
