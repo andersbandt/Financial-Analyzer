@@ -85,16 +85,16 @@ of importing the TableStatements class for
 dependency injection reasons.
 """
 def all_tables_init(statements: list, database_directory: str) -> bool:
-    print("Initializing all tables in database .db file!!! Exciting!!!")
     try:
         with sqlite3.connect(database_directory) as conn:
-            conn.set_trace_callback(print)
+            # conn.set_trace_callback(print) # TODO: somehow add this back in when I set the log debug level
             cursor = conn.cursor()
             for statement in statements:
                 try:
                     cursor.execute(statement)
                 except sqlite3.OperationalError as e:
-                    print(e)
+                    pass
+                    # print(e)
             conn.set_trace_callback(None)
     except sqlite3.OperationalError as e:
         print(f"\n{e}")
@@ -135,11 +135,12 @@ def populate_tables(database_directory: str):
 
     statements = [account_statement, categories_statement, keyword_statement]
     with sqlite3.connect(database_directory) as conn:
-        conn.set_trace_callback(print)
+        # conn.set_trace_callback(print)
         cursor = conn.cursor()
         for statement in statements:
             try:
                 cursor.executescript(statement)
             except sqlite3.IntegrityError as e:
-                print(e)
+                pass
+                # print(e)
         conn.set_trace_callback(None)
