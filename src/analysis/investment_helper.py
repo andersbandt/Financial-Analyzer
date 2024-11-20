@@ -1,5 +1,3 @@
-
-
 # import needed modules
 import numpy as np
 import pandas as pd
@@ -7,6 +5,7 @@ import datetime
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import warnings
+import requests
 
 # import user created modules
 import db.helpers as dbh
@@ -17,12 +16,38 @@ from cli import cli_printer as clip
 from utils import logfn
 
 
+# TODO: is this the best spot for this function?
+def is_connected():
+    try:
+        # Try connecting to a reliable website
+        requests.get("https://www.google.com", timeout=5)
+        return True
+    except (requests.ConnectionError, requests.Timeout):
+        return False
+
+
+# Usage
+if is_connected():
+    print("Internet connection is active.")
+else:
+    print("No internet connection.")
+
+
+class InvestmentHelperError(Exception):
+    def __init__(self, origin="InvestmentHelper", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+
+    def __str__(self):
+        return self.msg
+
+
 class Ticker:
     def __init__(self, ticker, shares):
         self.ticker = ticker
         self.shares = shares
         self.price = get_ticker_price(ticker)
-        self.value = shares*self.price
+        self.value = self.shares * self.price
         self.type = get_ticker_asset_type(ticker)
 
 
@@ -63,29 +88,27 @@ def print_ticker_info(ticker):
 
 
 # get_ticker_price: returns the current live price for a certain ticker
-# TODO: could contemplate having some error handling for no Internet connection
 def get_ticker_price(ticker):
+    # check for internet connection
+    if not is_connected():
+        print('Not connected to Internet!')
+        return False
+
+    # set warnings to "ignore"
     warnings.filterwarnings("ignore", category=FutureWarning)
 
-    # attempt to get live price using yahoo_fin
-    try:
-        price = si.get_live_price(ticker)
-    except AssertionError:
-        pass
-
-    # if yahoo_fin found ticker but price is nan, try using yfinance (yf)
-    if np.isnan(price):
-        print("\nTicker found with si.get_live_price() but not valid price")
-        print("Trying another method!\n")
-        data = yf.download(ticker,
-                           dateh.get_date_previous(1),
-                           datetime.datetime.now())
-
-        if data.empty:
-            print("No data available for given ticker")
-            return False
-
-        # return last closing price as fallback method from live
+    data = yf.download(ticker,
+                       dateh.get_date_previous(1),
+                       datetime.datetime.now())
+    if data.empty:
+        try:
+            # attempt to get live price using yahoo_fin
+            price = si.get_live_price(ticker)
+            if np.isnan(price):
+                price = None
+        except AssertionError:
+            pass
+    else:
         price = data['Close'].iloc[-1]
 
     warnings.filterwarnings("default")
@@ -111,6 +134,23 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
         hist_price_data = hist_price_data[hist_price_data['date'].dt.dayofweek < 5]
 
     return hist_price_data
+
+
+def ticker_info_dump(ticker):
+    ticker = yf.Ticker(ticker)
+    info = ticker.info
+    import pprint
+    pprint.pprint(info)
+    asset_type = info.get("quoteType")
+    industry = info.get("industry")
+    sector = info.get("sector")
+    exchange = info.get("exchange")
+    print(f"\nLooking at {ticker.ticker}")
+    print(f"asset_type: {asset_type}")
+    print(f"sector: {sector}")
+    print(f"industry: {industry}")
+    print(f"exchange: {exchange}")
+    return None
 
 
 def get_ticker_asset_type(ticker):
@@ -141,6 +181,13 @@ def get_all_active_ticker():
             if ticker.shares != 0:
                 ticker_list.append(ticker)
     return ticker_list
+
+
+def get_account_ticker_shares(account_id, ticker):
+    ticker_tuple = dbh.investments.get_ticker_shares(account_id, ticker)
+    if len(ticker_tuple) > 1:
+        raise InvestmentHelperError(msg="Something is weird retrieving ticker shares per account")
+    return ticker_tuple[0][2]
 
 
 # summarize_account: this function is for showcasing account view and holdings

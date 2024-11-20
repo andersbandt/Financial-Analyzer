@@ -43,43 +43,31 @@ def esc_cmd(inp):
 def parse_inp_type(inp, inp_type):
     # TYPE: (int)
     if inp_type == "int":
+        # TODO: add check for correctly-position commas (also applies for float down below)
+        # TODO: consider deleting this int check and adding one that covers both int and float
         inp = inp.replace(',', '')  # get rid of commas
         try:
             inp = int(inp)
         except ValueError as e:
             print("was that really an int?")
             print(e)
-            return -1
+            return False
         return inp
     # TYPE: (text)
-    if inp_type == "text":
+    elif inp_type == "text":
         return inp
-
-    # TYPE: (int) or (float)
-    elif inp_type == "int" or "float":
+    # TYPE: (float)
+    elif inp_type == "float":
         try:
-            # TODO: perform check for correctly positioned commands here
             inp = inp.replace(',', '')  # get rid of commas
         except AttributeError:
             pass
         try:
-            if inp_type == "int":
-                inp = int(inp)
-            elif inp_type == "float":
-                inp = float(inp)
+            inp = float(inp)
         except ValueError as e:
-            print("was that really a float/int?")
+            print("was that really a float?")
             return False
         return inp
-
-    # TYPE: (float)
-    elif inp_type == "float":
-        inp = inp.replace(',', '')  # get rid of commas
-        return float(inp)
-
-    # TYPE: (yes or no)
-    # if type == 'yn':
-
     # UNKNOWN TYPE!
     else:
         raise BaseException("Unknown clih.spinput type!")
@@ -94,7 +82,8 @@ def spinput(prompt_str, inp_type):
             return False
 
         p_inp = parse_inp_type(inp, inp_type)
-        return p_inp
+        if p_inp is not False:
+            return p_inp
 
 
 # promptYesNo: function for prompting user for a YES or NO input

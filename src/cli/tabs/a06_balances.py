@@ -44,19 +44,20 @@ class TabBalances(SubMenu):
     ##############################################################################
 
     # a01_show_wealth: prints out tabular view of account balances (either from latest .db entry or live stock price)
-    # TODO: possibly omit any accounts with a balance of 0 (and print out which accounts were omitted)
     def a01_show_wealth(self):
         values_table = []  # values table to print
+        total_value = 0
         for acc_id in dbh.account.get_all_account_ids():
-            bal_amount, bal_date = balh.get_account_balance(
-                acc_id)  # TODO: let's audit this function and possibly add some hooks for options (live stock price, latest recorded, etc)
+            bal_amount, bal_date = balh.get_account_balance(acc_id)
             values_table.append([dbh.account.get_account_name_from_id(acc_id), bal_amount, bal_date])
+            total_value += bal_amount
 
         clip.print_variable_table(
-            ["Account id", "Amount", "Date"],
+            ["Account Name", "Balance", "Updated Date"],
             values_table,
             format_finance_col=1
         )
+        print(f"Total of all assets: ${total_value}")
 
     # a02_add_balance: inserts data for an account balance record into the SQL database
     def a02_add_balance(self):
@@ -212,10 +213,8 @@ class TabBalances(SubMenu):
         # add investment assets
         tickers = invh.get_all_active_ticker()
         for ticker in tickers:
-            # keep pie chart clean by grouping similiar categories. tag:HARDCODE
-            if ticker.type == "ETF":
-                ticker.type = "MUTUALFUND"
-            elif ticker.type == "MONEYMARKET":
+            # keep pie chart clean by grouping similar categories. tag:HARDCODE
+            if ticker.type == "MONEYMARKET":
                 ticker.type = "CASH"
 
             # Add ticker value, initialize with 0 if the key does not exist

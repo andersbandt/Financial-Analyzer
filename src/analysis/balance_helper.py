@@ -12,6 +12,7 @@ from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
 
+# TODO: let's audit this function and possibly add some hooks for options (live stock price, latest recorded, etc)
 def get_account_balance(account_id):
     # get account type
     acc_type = dbh.account.get_account_type(account_id)

@@ -36,11 +36,11 @@ class TabInvestment(SubMenu):
         action_arr = [Action("Check investments", self.a01_check_investments),
                       Action("Print investment database", self.a02_print_db_inv),
                       Action("Add investment transaction", self.a03_add_investment),
-                      Action("Check account balances/summary", self.a04_check_accounts),
-                      Action("Show current value snapshot history", self.a05_cur_value_history),
-                      Action("Add investment balance", self.a06_add_inv_balances),
-                      Action("Add dividend", self.a07_add_dividend),
-                      Action("Delete investment", self.a08_delete_investment)
+                      Action("Show current value snapshot history", self.a04_cur_value_history),
+                      Action("Add snapshot of live investment balances to database", self.a05_add_inv_balances),
+                      Action("Add dividend", self.a06_add_dividend),
+                      Action("Delete investment", self.a07_delete_investment),
+                      Action("Ticker investigation", self.a08_check_ticker)
                       ]
 
         # call parent class __init__ method
@@ -51,88 +51,6 @@ class TabInvestment(SubMenu):
     ##############################################################################
 
     def a01_check_investments(self):
-        print("... checking investment data ...")
-        print("Anders you gotta finish this function!")
-        return True
-
-    def a02_print_db_inv(self):
-        transactions = transr.recall_investment_transaction()
-        tmp_ledger = Ledger("All Investment Data")
-        tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement(include_sql_key=True)
-
-    def a03_add_investment(self):
-        print("... adding investment transaction ...")
-
-        # get account information
-        account_id = clih.account_prompt_type("What is the corresponding account for this investment?: ", 4)
-        if account_id is False:
-            print("... exiting add investment")
-            return
-
-        # get ticker information
-        ticker = clih.spinput("\nWhat is the ticker of this investment?: ", inp_type="text")
-        if ticker is False:
-            print("... exiting add investment")
-            return
-
-        # do some checking on validity of ticker
-        ticker_valid = invh.validate_ticker(ticker)
-        if ticker_valid is False:
-            res = clih.promptYesNo("\nSeems like ticker is not validated. Do you want to continue with entry?")
-            if not res:
-                print("Ok. Cancelling adding investment")
-                return
-
-        # TODO: buy and sell is not properly being recorded
-        # check if InvestmentTransaction is a buy or sell
-        buy_sell_int = clih.spinput("\nIs this a buy or sell? \t(1 for buy, 2 for sell): ", inp_type="int")
-        if buy_sell_int is False:
-            print("... exiting add investment")
-            return
-
-        if buy_sell_int == 1:
-            inv_type = "BUY"
-        elif buy_sell_int == 2:
-            inv_type = "SELL"
-        else:
-            print("Fuck man you entered something other than 1 or 2. I gotta quit now.")
-            return False
-
-        # get the number of shares
-        shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
-        if shares is False:
-            print("... exiting add investment")
-            return
-
-        # get investment value at time of buy/sell
-        value = clih.spinput("What was the value of this investment for this transaction?: ", inp_type="float")
-        if value is False:
-            print("... exiting add investment")
-            return
-
-        # get investment date
-        date = clih.get_date_input("What is the date of this investment transaction?: ")
-        if date is False:
-            print("... exiting add investment")
-            return
-
-        # add note
-        note = clih.spinput("What is the note for this investment transaction? \tnote: ", inp_type="text")
-        if note is False:
-            print("... exiting add investment")
-            return
-
-        # insert the investment into the database
-        dbh.investments.insert_investment(date,
-                                          account_id,
-                                          ticker,
-                                          shares,
-                                          inv_type,
-                                          value,
-                                          note=note)
-
-    def a04_check_accounts(self):
         print("... checking investment data for each account ...")
 
         # populate array of accounts with type=4
@@ -154,7 +72,88 @@ class TabInvestment(SubMenu):
         )
         return True
 
-    def a05_cur_value_history(self):
+    # TODO: getting this to print out investment specific stuff would be dope (instead of hack job with Transaction printout)
+    def a02_print_db_inv(self):
+        transactions = transr.recall_investment_transaction()
+        tmp_ledger = Ledger("All Investment Data")
+        tmp_ledger.set_statement_data(transactions)
+        tmp_ledger.print_statement(include_sql_key=True)
+
+    def a03_add_investment(self):
+        print("... adding investment transaction ...")
+
+        # get account information
+        account_id = clih.account_prompt_type("What is the corresponding account for this investment?: ", 4)
+        if account_id is False:
+            print("... exiting add investment")
+            return False
+
+        # get ticker information
+        ticker = clih.spinput("\nWhat is the ticker of this investment?: ", inp_type="text")
+        if ticker is False:
+            print("... exiting add investment")
+            return False
+
+        # do some checking on validity of ticker
+        ticker_valid = invh.validate_ticker(ticker)
+        if ticker_valid is False:
+            res = clih.promptYesNo("\nSeems like ticker is not validated. Do you want to continue with entry?")
+            if not res:
+                print("Ok. Cancelling adding investment")
+                return False
+            # TODO: could possibly add check here to detect if it's a money market fund
+
+        # check if InvestmentTransaction is a buy or sell
+        buy_sell_int = clih.spinput("\nIs this a buy or sell? \t(1 for buy, 2 for sell): ", inp_type="int")
+        if buy_sell_int is False:
+            print("... exiting add investment")
+            return False
+
+        if buy_sell_int == 1:
+            inv_type = "BUY"
+        elif buy_sell_int == 2:
+            inv_type = "SELL"
+        else:
+            print("Fuck man you entered something other than 1 or 2. I gotta quit now.")
+            return False
+
+        # TODO: add some prompt here to see if user wants to make a money market BUY after a SELL event
+
+        # get the number of shares
+        shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
+        if shares is False:
+            print("... exiting add investment")
+            return False
+
+        # get investment value at time of buy/sell
+        value = clih.spinput("What was the value of this investment for this transaction?: ", inp_type="float")
+        if value is False:
+            print("... exiting add investment")
+            return False
+
+        # get investment date
+        date = clih.get_date_input("What is the date of this investment transaction?: ")
+        if date is False:
+            print("... exiting add investment")
+            return False
+
+        # add note
+        note = clih.spinput("What is the note for this investment transaction? \tnote: ", inp_type="text")
+        if note is False:
+            print("... exiting add investment")
+            return False
+
+        # insert the investment into the database
+        dbh.investments.insert_investment(date,
+                                          account_id,
+                                          ticker,
+                                          shares,
+                                          inv_type,
+                                          value,
+                                          note=note)
+        return True
+
+    def a04_cur_value_history(self):
         print("... summarizing value history ...")
 
         # set some parameters and populate my "active" investment data
@@ -217,7 +216,7 @@ class TabInvestment(SubMenu):
 
         print("Done running a04_cur_value_history with days previous of: ", days_prev)
 
-    def a06_add_inv_balances(self):
+    def a05_add_inv_balances(self):
         print("... adding investment balances to financials database ...")
         # populate array of accounts with type=4
         inv_acc_id = dbh.account.get_account_id_by_type(4)
@@ -242,7 +241,7 @@ class TabInvestment(SubMenu):
                 # print out balance addition confirmation
                 print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
 
-    def a07_add_dividend(self):
+    def a06_add_dividend(self):
         print("... adding dividend for a ticker ...")
         # get account information
         account_id = clih.account_prompt_type("What is the corresponding account for this investment dividend?: ", 4)
@@ -251,18 +250,19 @@ class TabInvestment(SubMenu):
             return
 
         # get ticker information
+        # TODO: I could possibly make a sub-function for ticker CLI collection .... reused in a03_add_investment
         ticker = clih.spinput("\nWhat is the ticker of this investment dividend?: ", inp_type="text")
         if ticker is False:
             print("... exiting add dividend.")
             return
-
-        # do some checking on validity of ticker
-        ticker_valid = invh.validate_ticker(ticker)
-        if ticker_valid is False:
-            res = clih.promptYesNo("\nSeems like ticker is not validated. Do you want to continue with entry?")
-            if not res:
-                print("... exiting add dividend.")
-                return
+        else:
+            # do some checking on validity of ticker
+            ticker_valid = invh.validate_ticker(ticker)
+            if ticker_valid is False:
+                res = clih.promptYesNo("\nSeems like ticker is not validated. Do you want to continue with entry?")
+                if not res:
+                    print("... exiting add dividend.")
+                    return
 
         # get the TOTAL number of shares CURRENTLY owned
         total_shares = clih.spinput("What is the TOTAL number of shares currently owned?: ", inp_type="float")
@@ -271,8 +271,7 @@ class TabInvestment(SubMenu):
             return
 
         # perform some calculation on (current_total - recorded_total) to get dividend amount to add
-        recorded_total = dbh.investments.get_ticker_shares(account_id, ticker)
-        print(recorded_total)
+        recorded_total = invh.get_account_ticker_shares(account_id, ticker)
         dividend_shares = total_shares - recorded_total
 
         # add note (OPTIONAL)
@@ -302,10 +301,16 @@ class TabInvestment(SubMenu):
                                           note=note)
         return True
 
-    def a08_delete_investment(self):
+    def a07_delete_investment(self):
         self.a02_print_db_inv()
         clih.action_on_int_array("Please enter SQL key of investments you want to delete",
                                  None, # TODO: need to ELEGANTLY define a printing function for investments. Will take some thought
                                  invh.delete_investment_list)
         return True
+
+    def a08_check_ticker(self):
+        ticker = clih.spinput("What is the ticker you want to look at?: ", "text")
+        invh.ticker_info_dump(ticker)
+        price = invh.get_ticker_price(ticker)
+        print(f"Price: {price}")
 
