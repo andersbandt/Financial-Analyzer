@@ -1,4 +1,3 @@
-
 # import needed modules
 import csv
 import os
@@ -27,7 +26,6 @@ class Venmo(csvStatement.csvStatement):
 
         # initialize identifying statement info
         self.title = self.title + " - Venmo"
-
 
     def load_statement_data(self):
         # verify statement file integrity

@@ -43,12 +43,8 @@ class Transaction:
     # check_date: checks if a Transaction date variable is valid
     def check_date(self):
         if self.date:
-            try:
-                parse(self.date)
-                return True
-            except:  # TODO: evaluate this exception clause (and parsing function above)
-                print("ERROR (TRANSACTION): date might be wrong")
-                return False
+            parse(self.date)
+            return True
         return False
 
     # check_amount: checks if a Transaction amount variable is valid

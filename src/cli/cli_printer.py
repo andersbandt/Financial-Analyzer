@@ -5,9 +5,14 @@
 """
 
 
+# import needed modules
 from pprint import pprint
-# from prettytable import PrettyTable
-from prettytable.colortable import ColorTable, Theme, Themes
+from prettytable.colortable import ColorTable, Theme
+
+
+# import logger
+from loguru import logger
+from utils import logfn
 
 
 my_custom_theme = Theme(default_color="91", # bright red
@@ -24,14 +29,13 @@ my_custom_theme = Theme(default_color="91", # bright red
 ####      CONSOLE PRINTING FUNCTIONS     #####################################
 ##############################################################################
 
-# TODO: when printing legders maybe add a switch for just adding row number ...
-
 #   @param  variable_names          strings for the top headers
 #   @param  values                  a 2D array of the data to print
 #   @param  format_finance_col      index of column number to format as financial data
 #   @param  max_width_column        the max width of ANY column in the table
+@logfn
 def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None,
-                         max_width_column=None):
+                         max_width_column=None, add_row_numbers=True):
     # table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
     # table = CustomColorTable()
     table = ColorTable(theme=my_custom_theme)  # green text with blue outline
@@ -51,12 +55,18 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
             formatted_value = "${:,.2f}".format(float(entry[format_finance_col]))
             entry[format_finance_col] = formatted_value
 
+    # if we want to add row numbers
+    if add_row_numbers:
+        pass
+        # TODO: this isn't working for example when I load data with a04_load_data
+        # values = [[i + 1] + row for i, row in enumerate(values)]
+        # variable_names = ["Row"] + variable_names
+
     # populate data
     table.field_names = variable_names
     table.add_rows(values)
     # set alignment and formatting
     table.align = "l"
-    # table.align["DESC"] = "l"
     table.padding_width = 1
     print(table)
 

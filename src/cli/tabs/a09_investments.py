@@ -111,6 +111,7 @@ class TabInvestment(SubMenu):
 
         if buy_sell_int == 1:
             inv_type = "BUY"
+            # TODO: possibly add another check here for a transfer from money market fund?
         elif buy_sell_int == 2:
             inv_type = "SELL"
         else:

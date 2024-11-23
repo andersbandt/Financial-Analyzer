@@ -35,7 +35,7 @@ from statement_types import Ledger
 ####      GENERAL HELPER FUNCTIONS    ########################################
 ##############################################################################
 # exec_summary_01: produces a graph of the top-level categories over time
-def exec_summary_01(self, days_prev, num_slices):
+def exec_summary_01(days_prev, num_slices):
     # LOAD CATEGORIES
     categories = cath.load_categories()
 
@@ -95,7 +95,7 @@ def exec_summary_01(self, days_prev, num_slices):
 
 # TODO: finish this function to produce a summary of per-month transactions. Try to be smart about code reuse with the function above and the one below
 # exec_summary_01b: produces graph of previous month ranges
-def exec_summary_01b(self, months_prev):
+def exec_summary_01b(months_prev):
     # LOAD CATEGORIES
     categories = cath.load_categories()
 
@@ -350,6 +350,7 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.sort_date_desc()
         tmp_ledger.print_statement(include_sql_key=True)
+        return True
 
     # TODO: add some options to do some things like running my Ledger sort functions on the output of search
     # TODO: add filtering of multiple options at once (description and amount amount < M, etc)

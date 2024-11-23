@@ -107,16 +107,18 @@ def get_statement_folder(base_filepath, year, month):
     return statement_folder
 
 
-@logfn
-def get_year_month_files(basefilepath, year, month):
+# get_year_month_files: simply takes in a base path, year, and month and returns a list of all the files
+def get_year_month_files(base_filepath, year, month):
     # look in the folder to determine loaded files
-    dir_path = get_statement_folder(basefilepath, year, month)
-    print("Looking at path: " + dir_path)
+    dir_path = get_statement_folder(base_filepath, year, month)
+    print(f"Looking at path: {dir_path} for statement files")
     dir_list = os.listdir(dir_path)
+
+    # handle empty directory case
     if len(dir_list) == 0:
         print("Yikes! No files found")
 
-    # add back the search base to get full filepaths\
+    # add back the search base to get full filepaths
     for i in range(0, len(dir_list)):
         dir_list[i] = dir_path + dir_list[i]
 
@@ -254,7 +256,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
         # NOTE: added this check to prevent returned statement list from having None in there
         if statement is not None:
             statement_list.append(statement)
-            # logger.debug("Statement created, going to load in data")
+            logger.debug("Statement created, going to load in data")
             status_list.append(True)
             # account_name = dbh.account.get_account_name_from_id(statement_list[-1].account_id)
             account_list.append(statement_list[-1].account_id)
@@ -271,7 +273,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
         else:
             print("... seems like no statement could be created")
             status_list.append(False)
-            account_list.append(False)
+            account_list.append(None)
 
     # print out what accounts got loaded in
     acch.print_account_status(account_list)

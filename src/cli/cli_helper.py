@@ -207,8 +207,8 @@ def prompt_year_month():
     return [y, m]
 
 
-# TODO: ask ChatGPT to make version that automatically adds a dash "-" after the first four YYYY is entered
-#   and then another one after the next MM is entered
+# get_date_input: a crude date input function that requires user to type exactly
+#   a date in the format of "YYYY-MM-DD"
 def get_date_input(prompt_str):
     print(prompt_str)
     print("\tpssst -- can enter 'today' for current date")
@@ -218,13 +218,12 @@ def get_date_input(prompt_str):
             return dateh.get_cur_str_date()
 
         # handle QUIT commands
-        if (date_str == "q") or (date_str == "quit"):
+        if esc_cmd(date_str):
             return False
 
         # try to convert into datetime object
         try:
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            # return date_obj.date()  # Return only the date part, not the time # TODO: do I want to return this instead for some extra insurance?
+            datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             print("Invalid date format. Please use YYYY-MM-DD.")
         else:
