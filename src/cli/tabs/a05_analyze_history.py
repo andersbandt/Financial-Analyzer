@@ -30,6 +30,9 @@ from utils import log_helper as logh
 # import user defined modules
 from statement_types import Ledger
 
+# import logger
+from loguru import logger
+
 
 ##############################################################################
 ####      GENERAL HELPER FUNCTIONS    ########################################
@@ -87,99 +90,81 @@ def exec_summary_01(days_prev, num_slices):
     # set up graphing stuff
     grapa.create_mul_line_chart(x_ax,
                                 y_axis_arr,
-                                title="Top categories across time",
+                                title="ExB 01: Top categories across time",
                                 labels=top_cat_str,
+                                rotate_labels=True,
                                 legend=True,
                                 y_format='currency')
 
 
-# TODO: finish this function to produce a summary of per-month transactions. Try to be smart about code reuse with the function above and the one below
+# TODO: the order of this is not intuitive (oldest appears on far right)
+# TODO: this is simply the above executive summary with a different array of binned transactions. COMBINE
 # exec_summary_01b: produces graph of previous month ranges
 def exec_summary_01b(months_prev):
-    # LOAD CATEGORIES
-    categories = cath.load_categories()
-
+    # populate array of date-binned transaction arrays
     date_bin_trans = []
+    labels = []
     [year, month, day] = dateh.get_date_int_array()
     for i in range(0, months_prev):
         date_bin_trans.append(transr.recall_transaction_month_bin(year, month))
+        labels.append(f"{year}-{month}")
         month -= 1
-        if month < 1:
+        if month < 1: # handle new year wraparound
             month = 12
             year -= 1
 
-    # TODO: I this this below for loop can become a helper function that can be reused
-    date_bin_dict_arr = []  # this will be an array of dictionaries
-    print("Analyzing spending on top categories for date binned transactions")
-    i = 0
-    for trans in date_bin_trans:
-        print("\n\n")
-        top_cat_str, amounts = anah.create_top_category_amounts_array(trans, categories, count_NA=False)
+    # perform analysis to sum
+    logger.debug("Analyzing spending on top categories for date binned transactions")
+    date_bin_dict_arr = anah.gen_bin_analysis_dict(date_bin_trans) # TODO: audit that I'm reusing this function in other exec summaries
 
-        # do some post-processing on top-level categories and amounts
-        top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
-
-        # append dict to an array of all date ranges
-        date_bin_dict_arr.append(
-            # {"date_range": "m_start" + " to " + "m_end",
-            {"date_range": i,
-             "amounts": amounts,
-             }
-        )
-        i += 1
-
-    # print our created array
-    pprint(date_bin_dict_arr)
-
+    # do even more analysis?
+    top_cat_str = date_bin_dict_arr[0]["categories"]
     top_cat_dict = {}
     for cat_str in top_cat_str:
         top_cat_dict[cat_str] = []
-
-    x_ax = []
     for d_bin in date_bin_dict_arr:
-        x_ax.append(d_bin["date_range"])
         i = 0
         for amount in d_bin["amounts"]:
             amount = -1 * amount
             top_cat_dict[top_cat_str[i]].append(amount)
             i += 1
 
-    pprint(top_cat_dict)
-
-    # populate array of y axis values (needed for graphing_analyzer function)
+    # SET UP Y-AXIS
     y_axis_arr = []
     for cat_str in top_cat_str:
         y_axis_arr.append(top_cat_dict[cat_str])
 
     # set up graphing stuff
-    grapa.create_mul_line_chart(x_ax,
+    grapa.create_mul_line_chart(labels,
                                 y_axis_arr,
-                                title="Top categories across time",
+                                title=f"ExS 01b: Top categories across previous {months_prev} months",
                                 labels=top_cat_str,
+                                rotate_labels=True,
                                 legend=True,
                                 y_format='currency')
 
 
 # exec_summary_02:
 # TODO: to allow for 'comp_month_prev' to be > 12 I can use the mod % operator on it and then subtract from year
+# TODO: this function really does not work. The percents are always like equal to 100%
 # @brief 02 of my analysis spending history
 # @desc this function will compare the previous month to some predetermined date range of previous month spending
 # @param    comp_month_prev    this variable will determine how many months back to use as comparison "baseline"
-def exec_summary_02(self, comp_month_prev):
-    print("\n\n\n... comparing previous month spending to running averages ...")
+def exec_summary_02(comp_month_prev):
+    logger.info("\n\n\n... comparing previous month spending to running averages ...")
 
     # STEP 1: get transactions from previous month
-    # TODO: this date logic doesn't make sense
     cur_date_arr = dateh.get_date_int_array()
     prev_year = cur_date_arr[0]  # index 0 dateh.get_date_int_array() is YEAR
     prev_month = cur_date_arr[1] - 1  # index 1 of dateh.get_date_int_array() is MONTH then less 1 for PREV MONTH
     if prev_month < 1:
         prev_month = 12
         prev_year -= 1
-
     prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
+    logger.info(f"Done retrieving transactions from previous month\n\t {prev_year}-{prev_month}")
 
     # STEP 2: get transactions from baseline data (before previous month)
+    # TODO: step 2 logic could really be simplified. I need some nice date functions to handle this logic
     baseline_month_start = prev_month - comp_month_prev
     baseline_month_end = prev_month - 1
     prev_year_start = prev_year
@@ -198,14 +183,11 @@ def exec_summary_02(self, comp_month_prev):
         prev_year_end,
         baseline_month_end
     )
-
     baseline_trans = transr.recall_transaction_data(
         baseline_range_start[0],
         baseline_range_end[1],
     )
-
-    print(f"Done retrieving transactions from previous month\n\t {prev_year}-{prev_month}")
-    print(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")
+    logger.info(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")
 
     # STEP 3: extract totals and make comparison
     top_cat_str, prev_amounts = anah.create_top_category_amounts_array(prev_month_trans,
@@ -217,7 +199,6 @@ def exec_summary_02(self, comp_month_prev):
 
     # do some division on baseline to "normalize" it
     baseline_amounts = [x / comp_month_prev for x in baseline_amounts]
-
     percent_diffs = []
     for i in range(0, len(prev_amounts)):
         if baseline_amounts[i] == 0:
@@ -231,7 +212,7 @@ def exec_summary_02(self, comp_month_prev):
         # do some printout
         print(f"\t{top_cat_str[i]}\n\t\tDelta: {delta} %\n\t\t{baseline_amounts[i]} vs. {prev_amounts[i]}")
 
-    title = f"Delta from past {comp_month_prev} months"
+    title = f"ExS 02: Delta from past {comp_month_prev} months"
     grapa.create_bar_chart(
         top_cat_str,
         percent_diffs,
@@ -240,7 +221,7 @@ def exec_summary_02(self, comp_month_prev):
 
 
 def search_01():
-    search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description? : ",
+    search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description?",
                               "text")
     transactions = transr.recall_transaction_desc_keyword(search_str)
     return transactions
@@ -248,7 +229,7 @@ def search_01():
 
 def search_02():
     # determine user choice of type of category search
-    cat_search_type = clih.prompt_num_options("What type of category search?: ",
+    cat_search_type = clih.prompt_num_options("What type of category search?",
                                               ["recursive (children)", "individual"])
     if cat_search_type == 1:
         search_str = clih.category_tree_prompt()
@@ -257,7 +238,7 @@ def search_02():
         for child_id in children_id:
             transactions.extend(transr.recall_transaction_category(child_id))
     elif cat_search_type == 2:
-        search_str = clih.category_prompt_all("What is the category to search for?: ", False)
+        search_str = clih.category_prompt_all("What is the category to search for?", False)
         transactions = transr.recall_transaction_category(search_str)
     elif cat_search_type is False:
         print("Ok, quitting transaction search.\n")
@@ -275,6 +256,11 @@ def search_03():
         return False
     transactions = transr.recall_transaction_data(start_date, end_date)
     return transactions
+
+
+# TODO: finish this search by ACCOUNT
+def search_04():
+    return None
 
 
 class TabSpendingHistory(SubMenu):
@@ -299,49 +285,43 @@ class TabSpendingHistory(SubMenu):
 
     # a01_exec_summary: creates a list of "executive summary items" about spending data
     def a01_exec_summary(self):
-        print(" ... showing executive summary ...")
-        months_prev = 24
-        print("clearing tmp folder ...")
-        del_folder = utils.BASEFILEPATH + "/tmp"
-        for filename in os.listdir(del_folder):
-            file_path = os.path.join(del_folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
+        months_prev = clih.spinput("How many months previous would you like to examine?", inp_type="int")
+
+        # clear tmp folder
+        logh.clear_tmp_folder()
 
         # EXEC 1: plot data from previous timeframe
-        self.exec_summary_01(
-            800,  # number of days previous
+        exec_summary_01(
+            months_prev * 30,  # number of days previous
             6)  # number of bins (N)
 
         # EXEC 1b: plot data from previous N months
-        self.exec_summary_01b(months_prev)
+        exec_summary_01b(months_prev)
 
         # EXEC 2: current categories with a big delta to past averages
-        self.exec_summary_02(6)
+        exec_summary_02(months_prev)
 
         # EXEC 3: get gross stats
+        # TODO: utilize a date helper function for this?
         today = datetime.today()
         days_ago = today - timedelta(days=365 * 12 / months_prev)
         transactions = transr.recall_transaction_data(
             days_ago.strftime('%Y-%m-%d'),
             today.strftime('%Y-%m-%d'))
-
-        # generate pdf file AND open
-        print("\nGenerating .pdf ...")
-        image_folder = "tmp"
-        output_pdf = "tmp/summary_document.pdf"
-        logh.generate_summary_pdf(image_folder, output_pdf)
-
         ledger_stats = anah.return_ledger_exec_dict(transactions)
         print(
             f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
         clip.print_dict(ledger_stats)
+
+        # generate pdf file AND open
+        print("\nGenerating .pdf ...")
+        image_folder = "tmp"
+        output_pdf = "tmp/spending_document.pdf"
+        logh.generate_summary_pdf(image_folder, output_pdf)
+
+        # great, we made it
         return True
+
 
     # a02_print_db_trans: prints EVERY transaction in ledger .db
     def a02_print_db_trans(self):
@@ -352,15 +332,14 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.print_statement(include_sql_key=True)
         return True
 
-    # TODO: add some options to do some things like running my Ledger sort functions on the output of search
+
     # TODO: add filtering of multiple options at once (description and amount amount < M, etc)
-    # TODO: add searching by account
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
 
         # get input on what type of search to do
-        search_options = ["DESCRIPTION", "CATEGORY", "DATE"]
+        search_options = ["DESCRIPTION", "CATEGORY", "DATE", "ACCOUNT"]
         search_type = clih.prompt_num_options("What type of search do you want to perform?: ",
                                               search_options)
         if search_type is False:
@@ -374,6 +353,8 @@ class TabSpendingHistory(SubMenu):
             transactions = search_02()
         elif search_type == 3:
             transactions = search_03()
+        elif search_type == 4:
+            transactions = search_04()
         else:
             print(f"Can't perform search with search type of: {search_type}")
             return False
@@ -383,6 +364,8 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement(include_sql_key=True)
 
+        # TODO: add some "enter statement" CLI hook here where I can perform my normal search functions.
+
         ledger_exec = anah.return_ledger_exec_dict(transactions)
         print("\n")
         pprint(ledger_exec)
@@ -391,14 +374,16 @@ class TabSpendingHistory(SubMenu):
     # a04_graph_category: walks user through producing a graph of a certain category
     def a04_graph_category(self):
         # determine user choice of type of category graph
-        cat_graph_type = clih.prompt_num_options("What type of category graph?",
+        cat_graph_type = clih.prompt_num_options("What type of category graph?: ",
                                                  ["recursive (children)", "individual"])
 
         if cat_graph_type == 1:
             pass
-        if cat_graph_type == 2:
+        elif cat_graph_type == 2:
             category_id = clih.category_prompt_all("What is the category to graph?", False)
             transactions = transr.recall_transaction_category(category_id)
+        else:
+            return False
 
         months_prev = 12
         month_totals = anah.month_bin_transaction_total(transactions, months_prev)
@@ -410,7 +395,7 @@ class TabSpendingHistory(SubMenu):
                                title=f"Graph of category {cath.category_id_to_name(category_id)}")
         grapa.show_plots()
 
-    # TODO: Large task. Work on generating sankey diagram
+    # TODO (big): Work on generating sankey diagram
     def a05_make_sankey(self):
         pass
 
@@ -439,13 +424,13 @@ class TabSpendingHistory(SubMenu):
         # get note content
         note_str = clih.spinput("What do you want the note to say?: ", "text")
 
-        # TODO: add one last user check - print transaction and note and prompt yes no
+        # update and print new transaction
         print(f"Confirming transaction update for item with sql_key={sql_key}")
         trans.note = note_str
         trans.printTransaction()
-
         print(f"\nNew note ---> {note_str}\n")
 
+        # do one last sanity check
         res = clih.promptYesNo("Are you sure you want to change the transaction listed above?: ")
         if not res:
             print(f"Ok, not adding note to transaction with sql_key={sql_key}")
@@ -455,9 +440,9 @@ class TabSpendingHistory(SubMenu):
             dbh.transactions.update_transaction_note_k(sql_key, note_str)
             return True
 
+    # TODO: I have my doubts this function works
     def a08_update_transaction_category(self):
         print(" ... updating transaction categories ...")
-        print("Commencing a03_search_trans !!!")
 
         # get input on what type of search to do
         search_options = ["SEARCH", "MANUAL"]
@@ -478,8 +463,6 @@ class TabSpendingHistory(SubMenu):
         elif search_type == 2:
             found_sql_key.append(clih.spinput("Please enter sql key to update: ", inp_type="int"))
 
-        # TODO: add some printing of transaction with sql_key in `found_sql_key`
-
         # prompt user to eliminate any transactions
         print(found_sql_key)
         status = True
@@ -487,7 +470,7 @@ class TabSpendingHistory(SubMenu):
             while status:
                 sql_to_remove = clih.spinput(
                     "\nPlease enter sql key of transaction to remove from update list: ",
-                    "int")  # TODO: I need this to actually work!
+                    "int")
                 if sql_to_remove is False:
                     status = False
                 else:
@@ -506,8 +489,6 @@ class TabSpendingHistory(SubMenu):
         new_category_id = clih.category_prompt_all(
             "What is the new category for this grouping of transactions?",
             False)  # display = False
-
-        # TODO: add final printout of transactions to be updated
 
         # iterate through final list of keys and update their category ID
         for key in found_sql_key:

@@ -11,21 +11,26 @@ from analysis import graphing_analyzer as grapa
 from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
+# import logger
+from utils import logfn
 
-# TODO: let's audit this function and possibly add some hooks for options (live stock price, latest recorded, etc)
+@logfn
+class BalanceHelperError(Exception):
+    def __init__(self, origin="Balance Helper", msg="Error encountered"):
+        self.msg = f"{origin} error encountered: {msg}"
+        return self.msg
+
+    def __str__(self):
+        return self.msg
+
+
 def get_account_balance(account_id):
-    # get account type
-    acc_type = dbh.account.get_account_type(account_id)
+    # TODO: following investment specific thing not working properly
+    #     bal = invh.summarize_account(account_id, printmode=True)
+    #     bal_date = dateh.get_cur_str_date()
 
-    # if account is an investment account
-    if acc_type == 4:  # tag:HARDCODE
-        bal = invh.summarize_account(account_id, printmode=True)
-        bal_date = dateh.get_cur_str_date()
-    else:
-        # leverage database 'balance' helper to get most recent balance entry by DATE
-        bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
-
-    return bal, bal_date  # TODO: this tuple becomes problematic when I only want the date
+    bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
+    return bal, bal_date
 
 
 def get_account_balance_on_date(account_id, date_var):
@@ -67,13 +72,13 @@ def add_account_balance(account_id, bal_amount, bal_date):
 
 def get_retirement_balances():
     acc_balances = []
-    acc_id_arr = dbh.account.get_retirement_accounts(1)
+    retirement_acc_id_arr = acch.get_retirement_account_id()
 
-    for acc_id in acc_id_arr:
+    for acc_id in retirement_acc_id_arr:
         bal_amount, bal_date = get_account_balance(acc_id)
         acc_balances.append(bal_amount)
 
-    return acc_id_arr, acc_balances
+    return retirement_acc_id_arr, acc_balances
 
 
 def model_balance(starting_balance, transactions):
@@ -128,12 +133,23 @@ def model_account_balance(account_id):
 
 
 # GRAPH TYPE 1: by account ID
+@logfn
 def graph_balance_1(edge_code_date, values_array, account_names_array):
-    # TODO: add sort by account size
+    # Create a list of tuples (last_value, account_values, account_name) for sorting
+    combined = [(account_value[-1], account_value, account_name) for account_value, account_name in
+                zip(values_array, account_names_array)]
+
+    # Sort the combined list by the last value in each account_value array (first element in tuple)
+    combined.sort(key=lambda x: x[0], reverse=True)  # Sort in descending order if desired
+
+    # Unpack the sorted data back into separate arrays
+    sorted_values_array = [item[1] for item in combined]
+    sorted_account_names_array = [item[2] for item in combined]
+
     grapa.create_stackline_chart(edge_code_date[1:],
-                                 values_array,
-                                 title=f"Balances per account since {edge_code_date[0]}",
-                                 label=account_names_array,
+                                 sorted_values_array,
+                                 title=f"bG 01: Balances per account since {edge_code_date[0]}",
+                                 label=sorted_account_names_array,
                                  y_format='currency')
 
 
@@ -152,11 +168,11 @@ def graph_balance_2(edge_code_date, values_array, account_id_array):
 
     grapa.create_stackline_chart(edge_code_date[1:],
                                  type_values_array,
-                                 title=f"Balances by account type",
+                                 title=f"bG 02: Balances by account type",
                                  label=acch.get_acc_type_arr(),
                                  y_format='currency')
 
 
 # GRAPH TYPE 3: day by day (to be used with `model_balance`
 def graph_balance_3(dates, balances):
-    grapa.create_line_chart(dates, balances, "Account Balance Over Time")
+    grapa.create_line_chart(dates, balances, "bG 03: Account Balance Over Time")

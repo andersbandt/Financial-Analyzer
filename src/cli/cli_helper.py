@@ -76,8 +76,9 @@ def parse_inp_type(inp, inp_type):
 # spinput: really general input function to help with flow control
 #   @param[in]        inp_type   (see the variable description in function inp_type)
 def spinput(prompt_str, inp_type):
+    for_prompt_str = prompt_str + ": "
     while True:
-        inp = input(prompt_str)
+        inp = input(for_prompt_str)
         if esc_cmd(inp):
             return False
 

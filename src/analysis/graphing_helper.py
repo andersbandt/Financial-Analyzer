@@ -100,9 +100,8 @@ def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=N
 
 # strip_non_graphical_transactions: strips certain transactions that are part of categories
 #   that don't graph well
-@logfn
 def strip_non_graphical_transactions(categories, amounts):
-    non_graphical = ["BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"]
+    non_graphical = ["BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"] # tag:HARDCODE
 
     new_categories = []
     new_amounts = []
@@ -115,11 +114,8 @@ def strip_non_graphical_transactions(categories, amounts):
     return new_categories, new_amounts
 
 
-# strip_non_graphical_transactions: strips certain transactions that are part of categories
-#   that don't graph well
-@logfn
 def strip_non_expense_categories(cat_str_arr, amounts):
-    to_remove = ["INCOME", "INTERNAL", "INVESTMENT", "MISC FINANCE"]
+    to_remove = ["INCOME", "INTERNAL", "INVESTMENT", "MISC FINANCE"] # tag:HARDCODE
 
     new_categories = []
     new_amounts = []

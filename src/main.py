@@ -17,10 +17,12 @@ def formatter(record):
 
 
 # main: main function of the programr
+# TODO: add an argument path that runs a certain sub menu action. Like "python main.py -64 would run 06_balances/04_retirement_modeling"
 def main():
     # set log level
     logger.remove()
-    logger.add(sys.stderr, level="INFO")
+    level = ["INFO", "DEBUG"]
+    logger.add(sys.stdout, level=level[1])
 
     # run main CLI
     cli.main()

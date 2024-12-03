@@ -2,7 +2,6 @@
 @file a09_investments.py
 @brief sub menu for loading in raw financial data and storing in database
 
-
 """
 
 # import needed modules
@@ -54,7 +53,7 @@ class TabInvestment(SubMenu):
         print("... checking investment data for each account ...")
 
         # populate array of accounts with type=4
-        inv_acc_id = dbh.account.get_account_id_by_type(4)
+        inv_acc_id = acch.get_account_id_by_type(4)
 
         # populate arrays
         values = []
@@ -220,7 +219,7 @@ class TabInvestment(SubMenu):
     def a05_add_inv_balances(self):
         print("... adding investment balances to financials database ...")
         # populate array of accounts with type=4
-        inv_acc_id = dbh.account.get_account_id_by_type(4)
+        inv_acc_id = acch.get_account_id_by_type(4)
         # populate arrays
         acc_val_arr = []
         for account_id in inv_acc_id:

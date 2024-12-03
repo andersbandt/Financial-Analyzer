@@ -26,15 +26,6 @@ def sum_transaction_total(transactions):
 # get_category_input: this function should display a transaction to the user and prompt them through categorization
 #   with the end result being returning the associated category_id with the transaction in question
 def get_trans_category_cli(transaction, mode=2):
-    # create initial category tree and print it
-    categories = cath.load_categories()
-    tree = cath.create_Tree(categories)
-
-    # TODO: the following tree is based on category_id instead of category_name
-    # print(tree)
-    # tree_ascii = tree.get_ascii()
-    # print(tree_ascii)
-
     # print transaction and prompt
     print("\n\n")
     trans_prompt = transaction.printTransaction(print_mode=False)

@@ -1,3 +1,4 @@
+
 # import needed modules
 import numpy as np
 import pandas as pd
@@ -10,27 +11,12 @@ import requests
 # import user created modules
 import db.helpers as dbh
 from tools import date_helper as dateh
+from account import account_helper as acch
 from cli import cli_printer as clip
+from utils import internet_helper
 
 # import logger
 from utils import logfn
-
-
-# TODO: is this the best spot for this function?
-def is_connected():
-    try:
-        # Try connecting to a reliable website
-        requests.get("https://www.google.com", timeout=5)
-        return True
-    except (requests.ConnectionError, requests.Timeout):
-        return False
-
-
-# Usage
-if is_connected():
-    print("Internet connection is active.")
-else:
-    print("No internet connection.")
 
 
 class InvestmentHelperError(Exception):
@@ -89,27 +75,30 @@ def print_ticker_info(ticker):
 
 # get_ticker_price: returns the current live price for a certain ticker
 def get_ticker_price(ticker):
+    price = 0
+
     # check for internet connection
-    if not is_connected():
+    if not internet_helper.is_connected():
         print('Not connected to Internet!')
         return False
 
     # set warnings to "ignore"
     warnings.filterwarnings("ignore", category=FutureWarning)
 
+    # download data from yf module
     data = yf.download(ticker,
                        dateh.get_date_previous(1),
                        datetime.datetime.now())
-    if data.empty:
+    if not data.empty:
+        price = data['Close'].iloc[-1]
+    else:
         try:
             # attempt to get live price using yahoo_fin
             price = si.get_live_price(ticker)
             if np.isnan(price):
-                price = None
+                price = 0
         except AssertionError:
             pass
-    else:
-        price = data['Close'].iloc[-1]
 
     warnings.filterwarnings("default")
     return price
@@ -222,7 +211,7 @@ def summarize_account(account_id, printmode=True):
 
 @logfn
 def create_active_investment_dict():
-    inv_acc_id = dbh.account.get_account_id_by_type(4)
+    inv_acc_id = acch.get_account_id_by_type(4)
     inv_ledge = []
     for account_id in inv_acc_id:
         inv_ledge.extend(dbh.investments.get_active_ticker(account_id))

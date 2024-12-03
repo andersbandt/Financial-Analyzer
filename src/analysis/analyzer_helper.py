@@ -9,6 +9,7 @@ import db.helpers as dbh
 from categories import categories_helper as cath
 import analysis.transaction_helper as transh
 import analysis.data_recall.transaction_recall as transaction_recall
+import analysis.graphing_helper as grah
 import tools.date_helper as dateh
 
 # import logger
@@ -62,6 +63,7 @@ def return_ledger_exec_dict(transactions):
 
 
 # month_bin_transaction_total: takes in a list of transactions and counts total for each month
+# TODO: analyze usage and function of this function more deeply
 @logfn
 def month_bin_transaction_total(transactions, months_prev):
     # get current month
@@ -71,7 +73,7 @@ def month_bin_transaction_total(transactions, months_prev):
     if cur_month - months_prev < 1:
         start_year = cur_year - int(months_prev/12)
         if months_prev % 12 > 0:
-            start_year = cur_year - (months_prev % 12) # TODO: finish this calculation of year change <--- what did I mean by this?
+            start_year = cur_year - (months_prev % 12)
         start_month = cur_month - months_prev + 12
     else:
         start_year = cur_year
@@ -200,7 +202,6 @@ def filter_transactions_date(transactions, date_start, date_end):
 #       @return    spl_Bx             an array of dictionary entries with entry[account_id] = balance amount
 #       @return    edge_code_date     date edge codes (string format YYYY-MM-DD)
 @logfn
-# TODO: I could change my "get_balances" function to already date bin balance data. Similiar to way I handle transactions
 def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date object 'days_prev' less
     date_range_start = dateh.get_date_days_prev(date_range_end, days_prev)
@@ -214,17 +215,17 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date edge limits
     edge_code_date = dateh.get_edge_code_dates(date_range_end, days_prev, N)
 
-    added_sql_key = []
+    added_sql_key = [] # TODO (low priority): figure out if this thing is actually needed or we can restructure the flow
     # search through edge code limits to add N bin A vectors
     for i in range(0, N):
-
+        # init A vector (dict)
         a_A = {}
-        # init A vector
         for account_id in dbh.account.get_all_account_ids():
             a_A[account_id] = 0
 
         # iterate through all balances data
         for bx in balance_data:
+            # TODO: possible could create a Balance class.... could be parent of Transaction honestly?
             # bx outline
             # bx[0] = sql key
             # bx[1] = account_id
@@ -236,20 +237,23 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
                 bx_datetime = datetime.strptime(bx[3], "%Y-%m-%d")
                 bx_date = bx_datetime.date()
             except ValueError as e:
-                logger.exception(
-                    f"Error converting string to datetime object: {bx[3]} with exception details {e}"
-                )
+                logger.exception(f"Error converting string to datetime object: {bx[3]} with exception details {e}")
                 raise AnalyzerHelperError("Can't proceed with populating Bx A vector")
 
             # if date is less than edge code (in the date bin)
             if bx_date < datetime.strptime(edge_code_date[i+1], "%Y-%m-%d").date():
                 if bx[0] not in added_sql_key:
+                    # set balance value for account_id (bx[1]) in the a_A vector
                     a_A[bx[1]] = bx[2]
                     added_sql_key.append(bx[0])
-                # NOTE: took out below code so the current code is just adding latest ones
-                # if the balance is higher than what we currently have than replace Bx in spl_Bx
-                #    in this way we get the 'dominant' vector (high value)
-                # if bx[2] > a_A[bx[1]]:
+
+        # NOTE: added check for 0 valued balances when we have a balance registered in previous vector
+        for account_id in dbh.account.get_all_account_ids():
+            if a_A[account_id] == 0:
+                try:
+                    a_A[account_id] = spl_Bx[-1][account_id]
+                except IndexError:  # had to add this check for first-pass
+                    pass
 
         # append vector to spl_Bx after search for 'dominant' vector is complete
         spl_Bx.append(a_A)
@@ -257,48 +261,27 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
     return spl_Bx, edge_code_date
 
 
-@logfn
-def gen_bin_A_matrix(spl_Bx):
-    # set which type number corresponds to which type of account
-    inv_acc = [4]
-    liquid_acc = [0, 1, 2, 3]
+# gen_bin_analysis_dict: takes in an array of binned transactions and returns an array of dictionaries with a summary
+#   param[in]   binned transactions   an array of arrays. [bin1, bin2, bin3, ..... binN] where bin1 is an array
+#   param[out]  bin_dict_array        an array of dictionary objects with summary information
+def gen_bin_analysis_dict(binned_transactions):
+    # LOAD CATEGORIES
+    categories = cath.load_categories()
 
-    # create containers for final totals
-    investment = []
-    liquid = []
+    bin_dict_arr = []
+    i = 0
+    for trans_arr in binned_transactions:
+        top_cat_str, amounts = create_top_category_amounts_array(trans_arr, categories, count_NA=False)
 
-    acc_cont = {}
+        # do some post-processing on top-level categories and amounts
+        top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
 
-    for i in range(0, len(args)):
-        acc_cont[i] = 0
-
-    # iterate through our collection of subset Bx balances
-    for Bx in spl_Bx:
-        invest_total = 0
-        liquid_total = 0
-        for account_id in dbh.account.get_all_account_ids():
-            acc_type = dbh.account.get_account_type(account_id)
-
-            i = 0
-            for acc_type_bin in args:
-                if acc_type in acc_type_bin:
-                    acc_cont[i] += Bx[account_id]
-
-            if acc_type in inv_acc:
-                invest_total += Bx[account_id]
-
-            if acc_type in liquid_acc:
-                liquid_total += Bx[account_id]
-
-        # cont = []
-        # for i in range(0, len(args)):
-        #     cont[i] = []
-        #
-        # for i in range(0, len(args)):
-        #     cont[i].append(acc_cont[i])
-
-        investment.append(invest_total)
-        liquid.append(liquid_total)
-
-    return [investment, liquid]
-
+        # append dict to an array of all date ranges
+        bin_dict_arr.append(
+            {"number": i,
+             "categories": top_cat_str,
+             "amounts": amounts,
+             }
+        )
+        i += 1
+    return bin_dict_arr

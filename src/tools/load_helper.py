@@ -10,7 +10,6 @@ import numpy as np
 
 # import user created modules
 import db.helpers as dbh
-from cli import cli_helper as clih
 from tools import date_helper
 from account import account_helper as acch
 from statement_types import Statement
@@ -176,21 +175,22 @@ def join_statement(statement_list):
 # tag: HARDCODE
 def create_statement(year, month, filepath, account_id_prompt=False):
     # determine account_id
-    print("\nCreating statement at: " + filepath)
+    logger.debug("\nCreating statement at: " + filepath)
 
     ### GRAB ACCOUNT_ID either automatic or based on filepath
     account_id = match_file_to_account(filepath)
 
     if account_id is None:
         if account_id_prompt:
-            print("\tCouldn't automatically match account_id, manually loading in")
+            logger.debug("\tCouldn't automatically match account_id, manually loading in")
             account_id = clih.get_account_id_manual()
         else:
             return None
     else:
-        print("\tFound account ID: ", account_id)
+        logger.debug("\tFound account ID: ", account_id)
 
-    # TODO: really need to get rid of this hardcode to Statement if I want to make this app mainstream
+    # TODO (big): really need to get rid of this hardcode to Statement if I want to make this app mainstream
+    # TODO (big): somehow basically save the preset columns for everything as XML or something
     # tag:HARDCODE
     if account_id == 2000000001:  # Marcus
         stat = st.Marcus.Marcus(account_id, year, month, filepath)
@@ -256,7 +256,6 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
         # NOTE: added this check to prevent returned statement list from having None in there
         if statement is not None:
             statement_list.append(statement)
-            logger.debug("Statement created, going to load in data")
             status_list.append(True)
             # account_name = dbh.account.get_account_name_from_id(statement_list[-1].account_id)
             account_list.append(statement_list[-1].account_id)
@@ -264,7 +263,6 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             try:
                 statement.load_statement_data()
             except Exception as e:
-
                 print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
                 raise e
 
@@ -276,11 +274,13 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             account_list.append(None)
 
     # print out what accounts got loaded in
-    acch.print_account_status(account_list)
+    if printmode:
+        acch.print_account_status(account_list)
 
     # print out final status list and return
-    concat_table_arr = np.vstack((status_list, account_list, file_list)).T
-    clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
+    if printmode:
+        concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+        clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
     return statement_list
 
 

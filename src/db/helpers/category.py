@@ -39,7 +39,6 @@ def insert_category(category_name, parent):
             return category_id
 
 
-
 def get_category_info(category_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -99,7 +98,6 @@ def get_category_name_from_id(category_id):
             #         return None
 
 
-
 def check_category_table_empty():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
@@ -122,7 +120,6 @@ def delete_category(category_id):
         cur.execute("DELETE FROM category WHERE category_id=?", (category_id,))
         print(cur.fetchall())
     return True
-
 
 
 def update_parent(category_id, new_parent_id) -> bool:

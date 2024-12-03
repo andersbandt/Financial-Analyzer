@@ -1,3 +1,8 @@
+"""
+@file load_helper.py
+@brief tool for helping load in RAW financial data from saved statements on filesystem
+
+"""
 
 
 # import needed modules
@@ -8,6 +13,10 @@ import os
 import statement_types.Statement as Statement
 import statement_types.Transaction as Transaction
 
+
+# import logger
+from loguru import logger
+from utils import logfn
 
 # below are the indexes (column numbers) of the source data from the CSV file
 # date
@@ -45,21 +54,17 @@ class csvStatement(Statement.Statement):
         # initialize identifying statement info
         self.title = self.title + " - .csv file"
 
-    def csv_check(self):
-        # verify statement file integrity
-        if self.filepath_val is not True:
-            print("Can't load in. Bad filepath for .csv statement: ", self.filepath)
-            return
 
     def load_statement_data(self):
         # verify statement file integrity
-        if self.filepath_val is not True:
-            print("Can't load in. Bad filepath for .csv statement: ", self.filepath)
+        if self.filepath_val is False:
+            logger.debug("Can't load in. Bad filepath for .csv statement: ", self.filepath)
+            print("ANDERS YOUR SHIT IS WORKING")
+            self.transactions = [] # TODO: learn how to handle this more elegantly
             return
 
         # loop through .csv file and extract transactions based on supplied parameters
         transactions = []
-        print("Extracting .csv statement at: " + self.filepath)
         try:
             with open(self.filepath) as f:
                 csv_reader = csv.reader(f, delimiter=",")

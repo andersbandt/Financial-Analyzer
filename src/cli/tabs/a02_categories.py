@@ -19,7 +19,7 @@ class TabCategory(SubMenu):
 
         # initialize information about sub menu options
         action_arr = [Action("Add category", self.a01_add_category),
-                      Action("Print categories", self.a02_check_category),
+                      Action("Print categories", self.a02_print_category),
                       Action("Add keyword", self.a03_manage_keywords),
                       Action("Print keywords", self.a04_print_keywords),
                       Action("Delete category", self.a05_delete_category),
@@ -54,21 +54,22 @@ class TabCategory(SubMenu):
         dbh.category.insert_category(category_name, parent_id)
         return True
 
-
-# TODO: there might be a bug where some top level gets chopped off.... experienced "Shopping" getting dropped from printout
-    def a02_check_category(self):
-        print("... checking categories ...")
+    def a02_print_category(self):
+        print("... printing categories ...")
 
         # print out ASCII tree of categories
         tree = cath.create_Tree(cath.load_categories(), cat_type="name")
-
-        # METHOD 1: using get_ascii function
         tree_ascii = tree.get_ascii(compact=False, show_internal=True)
         tree.get_ascii()
         print(tree_ascii)
+
+        # print out raw SQl table
+        categories = dbh.category.get_category_ledger_data()
+        clip.print_variable_table(["Category ID", "Parent ID", "NAme"],
+                                  categories)
         return True
 
-    # TODO: some category check improvements
+    # TODO (low-priority): some category check improvements
         # perform some verification on database integrity
         #   - no double names
         #   - no disconnected categories (all in tree structure)
@@ -127,19 +128,16 @@ class TabCategory(SubMenu):
 
     def a05_delete_category(self):
         # print out all categories
-        # TODO: make this printout better (put into PrettyTable?)
-        categories = dbh.category.get_category_ledger_data()
-        for item in categories:
-            print(item)
+        self.a02_print_category()
 
-        category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
-        if category_id is False:
-            return False
-        dbh.category.delete_category(category_id)
-        print("Ok deleted category with ID: " + str(category_id))
-        return True
-
-        # TODO: make recursive (keep prompting for delete inputs until exit)
+        print("Infinite loop started to delete categories. Enter 'q' or 'quit' at anytime to exit")
+        status = True
+        while status:
+            category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
+            if category_id is False:
+                return None
+            dbh.category.delete_category(category_id)
+            print("Ok deleted category with ID: " + str(category_id))
 
 
     def a06_move_parent(self):
@@ -168,14 +166,19 @@ class TabCategory(SubMenu):
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
 
 
-    # TODO: finish this function to delete a keyword
+    # a07_delete_keyword: prompts user to delete keywords. Modeleed after a05_delete_category
     def a07_delete_keyword(self):
-        print("... deleting keyword ...")
+        # print out keywords
+        self.a04_print_keywords()
 
-        res = clih.promptYesNo("Do you want to delete keyword (y or n)?: ")
-        if not res:
-            print("Ok not deleting keyword")
-            return
+        print("Infinite loop started to delete keyword. Enter 'q' or 'quit' at anytime to exit")
+        status = True
+        while status:
+            keyword_id = clih.spinput("What is the keyword ID you want to DROP?", inp_type="int")
+            if keyword_id is False:
+                return None
+            dbh.keywords.delete_keyword(keyword_id)
+            print("Ok deleted keyword with SQL ID: " + str(keyword_id))
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

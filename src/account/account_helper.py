@@ -7,19 +7,20 @@
 
 # import needed modules
 import numpy as np
+from enum import Enum
 
 # import user defined modules
 import db.helpers as dbh
 from cli import cli_printer as clip
 
+
 # THIS IS THE PLACE WHERE ACCOUNT TYPES ARE HARD CODED IN
-# tag:hardcode
-types = [
-    "Saving",  # ID (1)
-    "Checking",
-    "Credit Card",
-    "Investment"  # ID (4)
-]
+# tag:HARDCODE
+class types(Enum):
+    SAVING = 1
+    CHECKING = 2
+    CREDIT_CARD = 3
+    INVESTMENT = 4
 
 
 def get_all_acc_id():
@@ -39,10 +40,14 @@ def get_num_acc_type():
     return len(types)
 
 
-# TODO: audit that this is used everywhere instead of a raw dbh call
 def get_account_id_by_type(acc_type):
     acc_id = dbh.account.get_account_id_by_type(acc_type)
     return acc_id
+
+
+def get_retirement_account_id():
+    retirement_acc_id_arr = dbh.account.get_retirement_accounts(1)
+    return retirement_acc_id_arr
 
 
 # account_name_to_id: converts an account name to the ID

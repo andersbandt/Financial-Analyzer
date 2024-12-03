@@ -1,41 +1,30 @@
-import os
+"""
+@file graphing_analyzer.py
+@brief
+
+"""
 
 # import needed modules
 import matplotlib.pyplot as plt
+import os
 import secrets
-import hashlib
 
 # import user created modules
 import analysis.graphing_helper as grah
-import analysis.investment_helper as invh
 
 # import logger
 from utils import logfn
 from loguru import logger
 
 
-# TODO: evaluate functions in this module and possibly delete
-
-
-@logfn
-class GraphingAnalyzerError(Exception):
-    """Graphing Analyzer Error"""
-
-    def __init__(self, origin="Graphing Analyzer", msg="Error encountered"):
-        self.msg = f"{origin} error encountered: {msg}"
-        return self.msg
-
-    def __str__(self):
-        return self.msg
-
-
-
 def save_fig():
-    # TODO: random hashes affects .pdf order generation
-    random_string = secrets.token_hex(16)  # Generate 32 random hexadecimal characters (16 bytes)
-    hashed_value = hashlib.sha256(random_string.encode()).hexdigest()  # Hash the random string using SHA-256
-    hash_p = hashed_value[:5]  # Extract the first 5 characters of the hash to get a 5-digit hash
-    plt.savefig(f"{os.getcwd()}/tmp/{hash_p}.png")
+    # TODO: still figure out how to make order consistent (not random generation)
+    # Increment the counter for each saved figure
+    random_string = secrets.token_hex(2)
+    file_name = f"{random_string}.png"
+    save_path = os.path.join(os.getcwd(), "tmp", file_name)
+    plt.savefig(save_path)
+    print(f"Saved figure as: {save_path}")
 
 
 def show_plots():
@@ -48,56 +37,21 @@ def show_plots():
 
 @logfn
 def create_pie_chart(values, labels, explode=0.1, title="Pie Chart"):
+    plt.rcdefaults() # sets rc defaults
+    plt.clf() # clears the entire current figure with all its axes
+
     logger.debug("Running graphing_analyzer: create_pie_chart")
     fig = plt.figure(1)
     grah.get_pie_plot(values, labels, explode, title)
     return fig
 
 
-# create_top_pie_chart: return a pyplot figure of a summation of all top level categories
-@logfn
-def create_top_pie_chart(transactions, categories, printmode=None):
-    logger.debug("Running graphing_analyzer: create_top_pie_chart")
-
-    # initialize array
-    categories, amounts = analyzer_helper.create_top_category_amounts_array(
-        transactions, categories
-    )
-
-    # strip data and format
-    categories, amounts = graphing_helper.strip_non_graphical_transactions(
-        categories, amounts
-    )
-    categories, amounts = graphing_helper.strip_non_expense_categories(
-        categories, amounts
-    )
-    amounts = graphing_helper.format_expenses(amounts)
-
-    # error handle generated categories and amounts array
-    if len(categories) != len(amounts):
-        logger.info("Categories is not the same length as amounts")
-        gui_helper.alert_user(
-            "Error generating graph.",
-            "Generated categories is not the same length as generated amounts",
-            "error",
-        )
-
-    # print categories and amounts in console
-    if printmode is not None:
-        for i in range(0, len(amounts) - 1):
-            graphing_helper.print_category_amount(categories[i], amounts[i])
-
-    #  create and return figure
-    fig = plt.figure(1)
-    patches, texts = graphing_helper.get_pie_plot(  # TODO: return values not being used
-        amounts, categories, explode=0.1, title="Top Level Data"
-    )
-    return fig
-
-
 # create_bar_chart:
 @logfn
 def create_bar_chart(labels, values, xlabel=None, title=None):
+    plt.rcdefaults() # sets rc defaults
+    plt.clf() # clears the entire current figure with all its axes
+
     logger.debug("Running graphing_analyzer: create_pie_chart")
     plt.rcdefaults()
     fig, ax = plt.subplots()
@@ -109,11 +63,14 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     save_fig()
 
 
-# TODO: add support for labels
 # create_stacked_balances: creates a 'stacked' balances graph showing different asset types
 #     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
 @logfn
 def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None):
+    plt.rcdefaults() # sets rc defaults
+    plt.clf() # clears the entire current figure with all its axes
+
+
     plt.stackplot(x_axis, y_axis, labels=label)
     plt.title(title)
     plt.axis("tight")
@@ -123,11 +80,13 @@ def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
     plt.legend(loc="upper left")
-    plt.show(block=True)
+
+    save_fig()
 
 
 def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
-    plt.clf()
+    plt.rcdefaults() # sets rc defaults
+    plt.clf() # clears the entire current figure with all its axes
 
     grah.get_line_chart(x_axis,
                         y_axis,
@@ -137,20 +96,19 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     if y_format == 'currency':
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
-    # add legend and title
-    if legend:
-        plt.legend(loc="best")
-
     # add grid lines
     plt.grid(True, linestyle='--', alpha=0.7)
 
+    # add legend and title
+    if legend:
+        plt.legend(loc="best")
     plt.title(title)
-    plt.show(block=False)
+
+    save_fig()
 
 
 # create_mul_line_chart: creates multiple
-# THIS FUNCTION WORKS IN CLI VERSIoN
-def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=[], legend=False, y_format=None):
+def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, rotate_labels=False, legend=False, y_format=None):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
 
@@ -166,6 +124,10 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=[], legend=Fals
     if y_format == 'currency':
         plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
+    # rotate labels
+    if rotate_labels:
+        plt.xticks(rotation=90)
+
     # add legend and title
     if legend:
         plt.legend(loc="best")
@@ -174,46 +136,5 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=[], legend=Fals
     plt.grid(True, linestyle='--', alpha=0.7)
 
     plt.title(title)
-    # plt.show(block=False)
     save_fig()
-
-# create_asset_alloc_chart: creates a pie chart representing asset allocation
-@logfn
-def create_asset_alloc_chart():
-    # get list of investment dict objects
-    inv_dict = invh.create_investment_dicts()
-
-    # set up investment types to track totals
-    t_1 = 0
-    t_2 = 0
-    t_3 = 0
-    t_4 = 0
-    t_5 = 0
-
-    # iterate through list and add to totals
-    for investment in inv_dict:
-        if investment["type"] == 1:
-            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
-            t_1 += value
-        elif investment["type"] == 2:
-            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
-            t_2 += value
-        elif investment["type"] == 3:
-            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
-            t_3 += value
-        elif investment["type"] == 4:
-            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
-            t_4 += value
-        elif investment["type"] == 5:
-            value = investment["shares"] * invh.get_ticker_price(investment["ticker"])
-            t_5 += value
-
-    amounts = [t_1, t_2, t_3, t_4, t_5]
-    labels = ["Type 1", "Type 2", "Type 3", "Type 4", "Type 5"]
-
-    #  create and return figure
-    fig = plt.figure(1)
-    grah.get_pie_plot(amounts, labels, explode=0.1, title="Asset Allocation")
-    return fig
-
 

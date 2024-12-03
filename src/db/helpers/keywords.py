@@ -44,3 +44,11 @@ def get_keyword_ledger_data():
         cur.execute("SELECT * FROM keywords")
     return cur.fetchall()
 
+
+def delete_keyword(sql_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+
+        cur.execute("DELETE FROM keywords WHERE id=?", (sql_id,))
+        print(cur.fetchall())
+    return True

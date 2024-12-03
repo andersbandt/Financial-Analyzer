@@ -20,6 +20,7 @@ import analysis.balance_helper as balh
 import analysis.investment_helper as invh
 import analysis.graphing_analyzer as grapa
 import tools.date_helper as dateh
+from utils import log_helper as logh
 
 # import logger
 from loguru import logger
@@ -85,14 +86,14 @@ class TabBalances(SubMenu):
         return status
 
     # a03_graph_account_balance: produces some graphs of account balances across time
-    # TODO: for all of these graphs i need a way to have them appear the SAME value when there is no data available. Instead of 0
-    #    just run the damn thing and it will make sense
     def a03_graph_account_balance(self):
-        print("... showing all liquid and investment assets ...")
-
         # set parameters
+        # tag:HARDCODE
         days_previous = 560
         N = 5
+
+        # clear tmp folder
+        logh.clear_tmp_folder()
 
         # generate matrix of Bx values
         spl_Bx, edge_code_date = anah.gen_Bx_matrix(
@@ -121,40 +122,58 @@ class TabBalances(SubMenu):
         balances = [balance for date, balance in balance_history]
         balh.graph_balance_3(dates, balances)
 
-    # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
+        # generate pdf file AND open
+        print("\nGenerating .pdf ...")
+        image_folder = "tmp"
+        output_pdf = "tmp/balances_summary.pdf"
+        logh.generate_summary_pdf(image_folder, output_pdf)
+
+    # ao4_retirement_modeling: performs some statistical analysis on likely-hood of retirement goals
     def a04_retirement_modeling(self):
-        acc_id_arr, acc_balances = balh.get_retirement_balances()
+        # SET UP estimates about timeline
+        retirement_age = 59.5
+        current_age = 25 # TODO: need to calculate current age based on input birthday here
+        death_age = 95
+        working_years_left = retirement_age - current_age
+        years_retired = death_age - retirement_age
 
-        # use cli_printer to print a table of balances
-        clip.print_balances(
-            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
-            acc_balances,
-            "RETIREMENT ACCOUNT BALANCE SUMMARY"
-        )
-
-        # CALCULATE the current sum of retirement specific accounts
-        retirement_sum = 0
-        for balance in acc_balances:
-            retirement_sum += balance
-
-        print(f"\n\nYou have this much saved in retirement specific accounts: {retirement_sum}")
-
-        # CALCULATE my account balance starting at age 59.5
-        num_years = 59.5 - 24
+        # SET UP estimates about the economy
         annual_return = .06
         inflation_rate = 0.03
         real_annual_return = (1 + annual_return) / (1 + inflation_rate) - 1
 
-        retirement_age_balance = retirement_sum * (1 + real_annual_return) ** num_years
-        print(
-            f"\n\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {num_years} years, you are estimated to have: {retirement_age_balance}")
+        # RETRIEVE the CURRENT balance
+        acc_id_arr, acc_balances = balh.get_retirement_balances()
+        retirement_sum = 0
+        for balance in acc_balances:
+            retirement_sum += balance
 
-        # CALCULATE monthly withdrawal in retirement
-        years_retired = 95 - 63
+        # CALCULATE the FUTURE balance
+        # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
+        retirement_age_balance = retirement_sum * (1 + real_annual_return) ** working_years_left
+
+        # CALCULATE how much you could take off principal monthly
         r = real_annual_return / 12  # monthly interest rate (adjusted for inflation)
         monthly_withdrawal = (retirement_age_balance * r) / (1 - pow((1 + r), -1 * 12 * years_retired))
-        print(
-            f"\n\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
+
+        # PRINT out info for the user
+        clip.print_variable_table(
+            [dbh.account.get_account_name_from_id(x) for x in acc_id_arr],
+            [["${:,.2f}".format(acc_bal) for acc_bal in acc_balances]],
+            min_width=15,
+            max_width=40,
+            format_finance_col=None,
+            add_row_numbers=False
+        )
+        logger.info("\nYou have this much saved in retirement specific accounts: " + "${:,.2f}".format(retirement_sum))
+        logger.info(f"\nOk, so theoretically you only have {working_years_left} working years left.")
+        logger.info(
+            f"\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {working_years_left} years, you are estimated to have: {"${:,.2f}".format(retirement_age_balance)}"
+        )
+        logger.info(f"\nThis is based on a retirement age of {retirement_age}")
+        logger.info(f"\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
+        logger.info(f"\nThis is also based on a death age of {death_age}")
+        logger.info(f"\nor retired for {years_retired}")
 
     def a05_delete_balance(self):
         self.a06_print_balance_table()

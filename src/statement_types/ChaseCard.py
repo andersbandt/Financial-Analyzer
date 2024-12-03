@@ -1,6 +1,7 @@
 
 # import needed modules
 import csv
+from loguru import logger
 
 import statement_types.Statement as Statement
 import statement_types.Transaction as Transaction
@@ -29,6 +30,7 @@ class ChaseCard(Statement.Statement):
                 for line in csv_reader:
                     if i > 0:
                         raw_date = line[0]
+                        logger.debug(raw_date)
                         date = (raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5])  # year-month-date
                         transactions.append(Transaction.Transaction(date,
                                                                     self.account_id,

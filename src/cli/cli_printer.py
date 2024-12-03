@@ -31,9 +31,10 @@ my_custom_theme = Theme(default_color="91", # bright red
 
 #   @param  variable_names          strings for the top headers
 #   @param  values                  a 2D array of the data to print
-#   @param  format_finance_col      index of column number to format as financial data
+#   @param  format_finance_col      index of column number to format as financial data (starts at 0)
 #   @param  max_width_column        the max width of ANY column in the table
-@logfn
+# TODO: add a title to this
+# @logfn
 def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None,
                          max_width_column=None, add_row_numbers=True):
     # table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
@@ -63,6 +64,8 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
         # variable_names = ["Row"] + variable_names
 
     # populate data
+    logger.debug(f"Final modified NAMES are looking like: {variable_names}")
+    logger.debug(f"Final modified VALUES are looking like: {values}")
     table.field_names = variable_names
     table.add_rows(values)
     # set alignment and formatting

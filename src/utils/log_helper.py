@@ -6,22 +6,34 @@
 """
 
 # import needed modules
-import logging
-import csv
 import os
 from fpdf import FPDF
 import subprocess
-from matplotlib import pyplot as plt
-from datetime import datetime
-
 
 # import user created modules
 import utils
 
 
+# import logger
+from loguru import logger
+
 #################################
 #### pdf  #######################
 #################################
+
+def clear_tmp_folder():
+    logger.info("Clearing tmp folder")
+    del_folder = utils.BASEFILEPATH + "/tmp"
+    for filename in os.listdir(del_folder):
+        file_path = os.path.join(del_folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
 
 def generate_summary_pdf(image_folder, output_pdf):
     # Create a PDF document

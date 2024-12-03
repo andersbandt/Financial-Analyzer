@@ -26,6 +26,9 @@ from tools import load_helper as loadh
 import db.helpers as dbh
 from tools import date_helper as dateh
 
+# import logger
+from loguru import logger
+
 
 class TabLoadData(SubMenu):
     def __init__(self, title, basefilepath):
@@ -85,7 +88,7 @@ class TabLoadData(SubMenu):
 
         for year in year_range:
             for month in range(1, 12 + 1):
-                tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month)
+                tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=True)
                 statement_list.extend(tmp_list)
 
         print("\t... finished creating all Statement objects in range")
@@ -102,14 +105,13 @@ class TabLoadData(SubMenu):
 
         # Open a file dialog and prompt the user to select a file
         file_path = filedialog.askopenfilename(title="Select a file")
+        if not file_path:
+            return False
 
-        # Return the selected file path
-        if file_path:
-            print(f"Selected file: {file_path}")
-            return file_path
-        else:
-            print("No file selected.")
-            return None
+        self.statement = loadh.create_statement("dummy-year", "dummy-month", file_path, account_id_prompt=True)
+        self.statement.print_statement()
+        logger.info("Single statement file loaded successfully, can continue with load process")
+        self.update_listing()
 
     def a04_add_manual_transaction(self):
         print("... attempting to manually load in a transaction. Kinda scary. Don't mess up.")
@@ -149,38 +151,24 @@ class TabLoadData(SubMenu):
         success = dbh.ledger.insert_transaction(transaction)
         return success
 
-    # TODO: don't have this function parse investment accounts. Lots of bloat in the final table
-    # TODO: add other checking mechanism for checking loaded files against actual data in .db
     def a05_check_status(self):
         print("... checking data status ...")
 
         # set up information on which account(s) we are interested in
-        # account_id = clih.get_account_id_manual() # METHOD 1: individual account
-        acc_id_arr = acch.get_all_acc_id()
+        acc_id_arr = []
+        acc_types = [acch.types.SAVING.value,
+                     acch.types.CHECKING.value,
+                     acch.types.CREDIT_CARD.value]
+        for at in acc_types:
+            acc_id_arr.extend(acch.get_account_id_by_type(at))
 
-        # loop through month/year combos
-        acc_data_status = []
-        for year in dateh.get_valid_years():
-            for month in range(1, 12 + 1):
-                statement_arr = loadh.get_month_year_statement_list(
-                    self.basefilepath,
-                    year,
-                    month,
-                    printmode=False)
-                if len(statement_arr) > 0:
-                    for statement in statement_arr:
-                        tmp_month_status = [f"{year}-{month}"]
-                        for acc_id in acc_id_arr:
-                            if statement.account_id == acc_id:
-                                tmp_month_status.append("1")
-                            else:
-                                tmp_month_status.append("0")
-                        acc_data_status.append(tmp_month_status)
+        # METHOD 1:
+        # NOTE: problems with this include 1-file name changes, 2-no actual detection of what is in database
+        self.check_data_integrity_01(acc_id_arr)
 
-        field_names = ["Month"]
-        for acc_id in acc_id_arr:
-            field_names.append(dbh.account.get_account_name_from_id(acc_id))
-        clip.print_variable_table(field_names, acc_data_status, min_width=5, max_width=5, max_width_column=5)
+        # METHOD 2:
+        self.check_data_integrity_02(acc_id_arr)
+
 
     ########              ##########################              ########
     #######  BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN ######
@@ -268,6 +256,53 @@ class TabLoadData(SubMenu):
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
+
+    # TODO: have this function basically highlight if there is a sequence of 1's followed by a 0 (no file)
+    def check_data_integrity_01(self, acc_id_arr):
+        # loop through month/year combos
+        acc_data_status = []
+        for year in dateh.get_valid_years():
+            for month in range(1, 12 + 1):
+                # get list of files in that directory
+                month_year_dir = loadh.get_year_month_files(self.basefilepath, year, month)
+                tmp_month_status = [f"{year}-{month}"]  # populate first column with year-month
+                for acc_id in acc_id_arr:
+                    def find_account_match(aid):
+                        for file in month_year_dir:
+                            tmp_account_id = loadh.match_file_to_account(file)
+                            if tmp_account_id == aid:
+                                return True
+                        return False
+
+                    # append if match was found or not
+                    if find_account_match(acc_id):
+                        tmp_month_status.append("1")
+                    else:
+                        tmp_month_status.append("0")
+                acc_data_status.append(tmp_month_status)
+
+        field_names = ["Month"]
+        for acc_id in acc_id_arr:
+            field_names.append(dbh.account.get_account_name_from_id(acc_id))
+        logger.debug(field_names)
+        logger.debug(acc_data_status)
+        clip.print_variable_table(field_names, acc_data_status, min_width=5, max_width=5, max_width_column=5)
+        logger.info("CHECK PREVIOUS TABLE")
+        logger.info("showcasing if file match exists in valid folders")
+
+    # TODO: finish fleshing out method 2
+    #   Ideally would try to load in each file
+    #   then would view total count of transactions
+    #   then pull database month/year/account_id combo and compare to that total count of transactions
+    def check_data_integrity_02(self, acc_id_arr):
+        # loop through month/year combos
+        acc_data_status = []
+        for year in dateh.get_valid_years():
+            for month in range(1, 12 + 1):
+                tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
+                for statement in tmp_list:
+                    print(f"Statement {statement.title} has this many transactions --> {len(statement.transactions)}")
+
 
     def update_listing(self):
         if self.updated == False:

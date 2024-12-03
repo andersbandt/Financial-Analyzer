@@ -1,5 +1,8 @@
+
+# import needed modules
 import sqlite3
 
+# import database directory
 from db import DATABASE_DIRECTORY
 
 
@@ -18,46 +21,53 @@ def check_account_table_empty():
         return False
 
 
-def insert_account(account_name, type_int):
+def insert_account(account_name, type_int, retirement=False):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
 
+        # TODO: is there a more graceful way to handle the first account_id ?
         if check_account_table_empty():
             first_account_id = 2000000001
             # insert new account value
             cur.execute(
-                """INSERT INTO account (account_id, name, type, balance) \
+                """INSERT INTO account (account_id, name, type, balance, retirement) \
                 VALUES(?, ?, ?, ?)""",
-                (first_account_id, account_name, type_int, 0.00), # tag:HARDCODE --> hardcoding the starting account identifier
+                (first_account_id, account_name, type_int, 0.00, retirement),
             )
             return first_account_id
         else:
             # insert new account value
             cur.execute(
-                """INSERT INTO account (name, type, balance) \
+                """INSERT INTO account (name, type, balance, retirement) \
                 VALUES(?, ?, ?)""",
-                (account_name, type_int, 0.00),
+                (account_name, type_int, 0.00, retirement),
             )
             # get account ID that we just inserted
             cur.execute("SELECT account_id FROM account")
             new_account_id = (cur.fetchall()[-1][0])
             return new_account_id
 
+##############################################################################
+####      SETTER FUNCTIONS           #########################################
+##############################################################################
+
+
+def change_account_name(account_id, new_name):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+
+        # Update the account name to the new name
+        try:
+            cur.execute("UPDATE account SET name=? WHERE account_id=?", [new_name, account_id])
+            conn.commit()  # Commit the changes
+        except sqlite3.Error:
+            print(f"Failed to update account name from to '{new_name}'.")
+            return False
+    return True
 
 ##############################################################################
 ####      GETTER FUNCTIONS           #########################################
 ##############################################################################
-
-# def get_account_retirement(account_id):
-#     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
-#         cur = conn.cursor()
-#         cur.execute("SELECT retirement FROM account WHERE account_id=?", [account_id])
-#         try:
-#             retirement = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
-#         except IndexError as e:
-#             print("ERROR (probably no results found for SQL query): ", e)
-#     return retirement
-
 
 def get_account_type(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
