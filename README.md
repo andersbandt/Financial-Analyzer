@@ -50,7 +50,7 @@ The second is in the monthly statements base filepath
     ```
     
 ### Financial Data File Structure
-
+#### Local data option
 On my computer I have a folder where I store all the statements for each account. Each month
 I go to the accounts and download a file representing all the account information for each
 month. Typically, this is .csv format. The file structure for the data looks like:
@@ -69,6 +69,8 @@ For example - all under "C:\Users\anders\Documents\Financials\"
 
 And so on for as many years as you want to create.
 
+#### Cloud based
+In the future some integration with an API such as Plaid would ease user access
 
 ## How to load in data in application
 
