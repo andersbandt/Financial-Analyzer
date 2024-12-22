@@ -8,6 +8,7 @@
 import matplotlib.pyplot as plt
 import os
 import secrets
+import numpy as np
 
 # import user created modules
 import analysis.graphing_helper as grah
@@ -63,13 +64,63 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
     save_fig()
 
 
+def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=None, y_format=None, colors=None):
+    """
+    Create a stacked bar chart.
+
+    Parameters:
+        x_axis (list): Labels for the x-axis.
+        y_axis_arr (list of lists): Data for each stack.
+        title (str): Title of the chart.
+        labels (list): Labels for each stack (used for legend).
+        y_label (str): Label for the y-axis.
+        y_format (func): Format function for y-axis tick labels.
+        colors (list): Colors for each stack.
+    """
+    ind = np.arange(len(x_axis))  # x positions
+    width = 0.5
+
+    # # Default colors if not provided
+    # if colors is None:
+    #     colors = plt.cm.tab10.colors  # Default to matplotlib's tab10 colormap
+
+    # Plot each stack
+    cumulative = np.zeros(len(x_axis))
+    for i, y_ax in enumerate(y_axis_arr):
+        label = labels[i] if labels else None
+        plt.bar(ind, y_ax, width, bottom=cumulative, label=label)
+        cumulative += y_ax  # Update cumulative height for stacking
+
+    # Customize chart
+    plt.ylabel(y_label if y_label else 'Value')
+    plt.title(title if title else 'Stacked Bar Chart')
+    plt.xticks(ind, x_axis)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tick_params(top=False, bottom=True, left=True, right=False)
+
+    # Add legend
+    if labels:
+        plt.legend()
+
+    # Apply y-axis format if specified
+    if y_format:
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(y_format))
+
+    plt.tight_layout()
+    plt.show()
+
+
 # create_stacked_balances: creates a 'stacked' balances graph showing different asset types
+# NOTE: I believe this is a bar graph
+#   @param      x_axis      this is a matrix of dimension N
+#   @param      y_axis      this is a matrix of dimension [M, N]
 #     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
 @logfn
-def create_stackline_chart(x_axis, y_axis, title=None, label=None, y_format=None):
+def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=None):
+    # TODO: just add some built-in sorting to this function. I know I implemented it somewhere else too
+
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
-
 
     plt.stackplot(x_axis, y_axis, labels=label)
     plt.title(title)

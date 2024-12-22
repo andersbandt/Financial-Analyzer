@@ -73,7 +73,7 @@ def month_bin_transaction_total(transactions, months_prev):
     year = cur_year
     month = cur_month
     for _ in range(months_prev):
-        ym_arr.append([month, year])
+        ym_arr.append([year, month])
         month -= 1
         if month == 0:  # Roll back to December of the previous year
             month = 12
@@ -82,7 +82,7 @@ def month_bin_transaction_total(transactions, months_prev):
     # Calculate month totals
     month_totals = []
     for ym in ym_arr:
-        date_range = dateh.month_year_date_range(ym[0], ym[1]) # year, month
+        date_range = dateh.month_year_to_date_range(ym[0], ym[1]) # year, month
 
         # filter transactions by range and sum and add to running array total
         month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])
