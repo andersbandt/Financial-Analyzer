@@ -63,26 +63,30 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
 
     save_fig()
 
-
-def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=None, y_format=None, colors=None):
-    """
-    Create a stacked bar chart.
-
-    Parameters:
-        x_axis (list): Labels for the x-axis.
-        y_axis_arr (list of lists): Data for each stack.
-        title (str): Title of the chart.
-        labels (list): Labels for each stack (used for legend).
-        y_label (str): Label for the y-axis.
-        y_format (func): Format function for y-axis tick labels.
-        colors (list): Colors for each stack.
-    """
+# create_stack_bar_chart: creates a bar chart that is "stacked"
+# NOTE: I believe this is a bar graph
+#   @param      x_axis      this is a matrix of dimension N
+#   @param      y_axis      this is a matrix of dimension [M, N]
+#     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
+def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=None, y_format=None, sort_by_column="first"):
     ind = np.arange(len(x_axis))  # x positions
     width = 0.5
 
-    # # Default colors if not provided
-    # if colors is None:
-    #     colors = plt.cm.tab10.colors  # Default to matplotlib's tab10 colormap
+    # Determine the sorting column
+    if sort_by_column == "first":
+        column_index = 0
+    elif sort_by_column == "last":
+        column_index = -1
+    else:
+        raise ValueError("Invalid value for sort_by_column. Use 'first' or 'last'.")
+
+    # Sort y_axis_arr and labels based on the specified column
+    if labels:
+        sorted_data = sorted(zip(y_axis_arr, labels), key=lambda x: x[0][column_index], reverse=False)
+        y_axis_arr, labels = zip(*sorted_data)
+    else:
+        y_axis_arr = sorted(y_axis_arr, key=lambda x: x[column_index], reverse=False)
+
 
     # Plot each stack
     cumulative = np.zeros(len(x_axis))
@@ -102,19 +106,15 @@ def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=
     if labels:
         plt.legend()
 
-    # Apply y-axis format if specified
-    if y_format:
-        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(y_format))
+    # format y-axis as currency
+    if y_format == 'currency':
+        plt.gca().yaxis.set_major_formatter('${x:,.0f}')
 
     plt.tight_layout()
     plt.show()
 
 
-# create_stacked_balances: creates a 'stacked' balances graph showing different asset types
-# NOTE: I believe this is a bar graph
-#   @param      x_axis      this is a matrix of dimension N
-#   @param      y_axis      this is a matrix of dimension [M, N]
-#     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
+# create_stack_line_chart: creates a line chart that is "stacked"
 @logfn
 def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=None):
     # TODO: just add some built-in sorting to this function. I know I implemented it somewhere else too
@@ -153,7 +153,8 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     # add legend and title
     if legend:
         plt.legend(loc="best")
-    plt.title(title)
+
+    plt.title(title if title else 'Stacked Line Chart')
 
     save_fig()
 

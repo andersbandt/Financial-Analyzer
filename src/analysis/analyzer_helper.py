@@ -81,15 +81,15 @@ def month_bin_transaction_total(transactions, months_prev):
 
     # Calculate month totals
     month_totals = []
+    labels = []
     for ym in ym_arr:
         date_range = dateh.month_year_to_date_range(ym[0], ym[1]) # year, month
 
         # filter transactions by range and sum and add to running array total
         month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])
-        month_totals.append(
-            transh.sum_transaction_total(month_transactions)
-        )
-    return month_totals
+        month_totals.append(transh.sum_transaction_total(month_transactions))
+        labels.append(f"{ym[0]}-{ym[1]}")
+    return [labels, month_totals]
 
 
 # sum_individual_category: returns the dollar ($) total of a certain category in an array of transactions

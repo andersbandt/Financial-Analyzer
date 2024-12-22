@@ -93,6 +93,7 @@ class TabBalances(SubMenu):
         N = 5
 
         # clear tmp folder
+        # TODO: how do I make this happen for all functions in a cli tab class?
         logh.clear_tmp_folder()
 
         # generate matrix of Bx values
@@ -123,6 +124,7 @@ class TabBalances(SubMenu):
         balh.graph_balance_3(dates, balances)
 
         # generate pdf file AND open
+        # TODO: standardize this below process of generation and opening
         print("\nGenerating .pdf ...")
         image_folder = "tmp"
         output_pdf = "tmp/balances_summary.pdf"

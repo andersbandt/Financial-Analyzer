@@ -373,36 +373,22 @@ class TabSpendingHistory(SubMenu):
 
     # a04_graph_category: walks user through producing a graph of a certain category
     def a04_graph_category(self):
-        # clear tmp folder
-        # TODO: how do I make this happen for all functions in the class?
-        logh.clear_tmp_folder()
-
         # get category ID
         category_id = clih.category_prompt_all("What is the category to graph?", False)
 
         # set up month parameters
-        # TODO: an annoying part of this function is the y-axis is literally just months previous
-        months_prev = 12
-        months = [i for i in range(0, months_prev)]
-        months.reverse()
-
-        ### METHOD 1: only the specific category_id mentioned
-        # transactions = transr.recall_transaction_category(category_id)
-        # month_totals = anah.month_bin_transaction_total(transactions, months_prev)
-        # grapa.create_bar_chart(months,
-        #                        month_totals,
-        #                        xlabel="Months previous",
-        #                        title=f"Graph of category {cath.category_id_to_name(category_id)}")
+        months_prev = 12 # tag:HARDCODE
+        months = []
 
         ### METHOD 2: all sub-children categories as well
-        sub_categories = cath.get_category_children(category_id)
+        sub_categories = cath.get_category_children(category_id) # TODO: add a function to get ALL subcategory children (this is just one level below right now)
         sub_categories.append(category_id)
         month_totals = [] # now this should be a matrix of size MxN where N is the number of bar graph slices (number of months in this case)
         labels = []
         for sc_id in sub_categories:
             labels.append(cath.category_id_to_name(sc_id))
             transactions = transr.recall_transaction_category(sc_id)
-            mts = anah.month_bin_transaction_total(transactions, months_prev)
+            [months, mts] = anah.month_bin_transaction_total(transactions, months_prev)
             month_totals.append(mts)
 
         grapa.create_stack_bar_chart(
@@ -410,14 +396,9 @@ class TabSpendingHistory(SubMenu):
             month_totals,
             title=f"Graph of category {cath.category_id_to_name(category_id)} and subchildren",
                                    labels=labels,
-                                   y_format=None)
+                                   y_format="currency",
+                                   sort_by_column="last")
         grapa.show_plots()
-
-        # TODO: standardize this pdf process
-        # print("\nGenerating .pdf ...")
-        # image_folder = "tmp"
-        # output_pdf = "tmp/category_spending_summary.pdf"
-        # logh.generate_summary_pdf(image_folder, output_pdf)
 
 
     # TODO (big): Work on generating sankey diagram
