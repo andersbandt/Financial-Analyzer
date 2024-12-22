@@ -63,32 +63,26 @@ def return_ledger_exec_dict(transactions):
 
 
 # month_bin_transaction_total: takes in a list of transactions and counts total for each month
-# TODO: analyze usage and function of this function more deeply
 @logfn
 def month_bin_transaction_total(transactions, months_prev):
-    # get current month
-    [cur_year, cur_month, cur_day] = dateh.get_date_int_array()
+    # get current date
+    [cur_year, cur_month, _] = dateh.get_date_int_array()  # Assuming this returns [year, month, day]
 
-    # iterate through previous months
-    if cur_month - months_prev < 1:
-        start_year = cur_year - int(months_prev/12)
-        if months_prev % 12 > 0:
-            start_year = cur_year - (months_prev % 12)
-        start_month = cur_month - months_prev + 12
-    else:
-        start_year = cur_year
+    # Generate the 2D array of [month, year] combos
+    ym_arr = []
+    year = cur_year
+    month = cur_month
+    for _ in range(months_prev):
+        ym_arr.append([month, year])
+        month -= 1
+        if month == 0:  # Roll back to December of the previous year
+            month = 12
+            year -= 1
 
-    end_month = cur_month + 12*int(months_prev / 12)
-    logger.debug(f"\nStarting month bin of transaction from {start_month} to {end_month}")
-    logger.debug(f"\tyear to begin at is {start_year}")
+    # Calculate month totals
     month_totals = []
-    for month in range(start_month, end_month + 1):
-        if month > 12:
-            date_range = dateh.month_year_to_date_range(start_year + int((months_prev+month)/12) - 1,
-                                                        month % 12)
-        else:
-            date_range = dateh.month_year_to_date_range(start_year,
-                                                        month)
+    for ym in ym_arr:
+        date_range = dateh.month_year_date_range(ym[0], ym[1]) # year, month
 
         # filter transactions by range and sum and add to running array total
         month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])

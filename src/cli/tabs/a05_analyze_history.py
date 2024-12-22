@@ -373,17 +373,9 @@ class TabSpendingHistory(SubMenu):
 
     # a04_graph_category: walks user through producing a graph of a certain category
     def a04_graph_category(self):
-        # determine user choice of type of category graph
-        cat_graph_type = clih.prompt_num_options("What type of category graph?: ",
-                                                 ["recursive (children)", "individual"])
-
-        if cat_graph_type == 1:
-            pass
-        elif cat_graph_type == 2:
-            category_id = clih.category_prompt_all("What is the category to graph?", False)
-            transactions = transr.recall_transaction_category(category_id)
-        else:
-            return False
+        # get category ID
+        category_id = clih.category_prompt_all("What is the category to graph?", False)
+        transactions = transr.recall_transaction_category(category_id)
 
         months_prev = 12
         month_totals = anah.month_bin_transaction_total(transactions, months_prev)

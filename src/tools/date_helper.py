@@ -107,7 +107,7 @@ def conv_two_digit_date(date_str):
 def month_year_to_date_range(year, month):
     # Check if the month is valid
     if not (1 <= month <= 12):
-        raise ValueError("Invalid month")
+        raise ValueError(f"Invalid month: {month}")
 
     # Calculate the last day of the month
     last_day_of_month = (datetime(year, month % 12 + 1, 1) - timedelta(days=1)).day
