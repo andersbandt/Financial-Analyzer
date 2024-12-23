@@ -18,7 +18,7 @@ class Category:
         # populate children category_id
         self.children_id = cath.get_category_children(category_id, printmode=None)
 
-        # what is this description used for?
+        # TODO: what is this description used for?
         self.description = None
 
         # populate keywords

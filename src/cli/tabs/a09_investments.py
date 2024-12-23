@@ -18,7 +18,7 @@ from statement_types.Ledger import Ledger
 from analysis import investment_helper as invh
 from analysis.data_recall import transaction_recall as transr
 from analysis import transaction_helper as transh
-import analysis.graphing_analyzer as grapa
+import analysis.graphing.graphing_analyzer as grapa
 from tools import date_helper as dateh
 import db.helpers as dbh
 

@@ -3,13 +3,14 @@
 # import needed modules
 from datetime import datetime
 from pprint import pprint
+from collections import defaultdict
 
 # import user defined modules
 import db.helpers as dbh
 from categories import categories_helper as cath
 import analysis.transaction_helper as transh
 import analysis.data_recall.transaction_recall as transaction_recall
-import analysis.graphing_helper as grah
+import analysis.graphing.graphing_helper as grah
 import tools.date_helper as dateh
 
 # import logger
@@ -115,7 +116,7 @@ def create_category_amounts_array(transactions, categories):
     category_amounts = []  # form 1D array of amounts to return
     for category in categories:
         category_amounts.append(sum_individual_category(transactions, category.id))
-    return categories, category_amounts
+    return category_amounts
 
 
 # creates a summation of the top level categories (top root categories)
@@ -150,6 +151,98 @@ def create_top_category_amounts_array(transactions, categories, count_NA=True):
         )
 
     return top_cat_str, category_amounts
+
+
+def generate_sankey_data(transactions, categories):
+    """
+    Processes transactions and categories into spending_data format for Sankey.
+    """
+    # Map categories by ID for quick access
+    category_map = {cat.id: cat for cat in categories}
+
+    # Prepare data structure to aggregate amounts
+    spending_dict = defaultdict(float)
+
+    for transaction in transactions:
+        # Get the category ID and corresponding Category object
+        cat_id = transaction.category_id
+        category = category_map.get(cat_id)
+
+        if not category:
+            # Skip if category is not found
+            continue
+
+        # Define category and subcategory names
+        parent_name = category_map.get(category.parent, category).name  # Parent or self if no parent
+        child_name = category.name
+
+        # Aggregate transaction amount
+        spending_dict[(parent_name, child_name)] += transaction.amount
+
+    # Convert aggregated data to spending_data format
+    spending_data = [
+        {"category": parent, "subcategory": child, "amount": amount}
+        for (parent, child), amount in spending_dict.items()
+    ]
+
+    return spending_data
+
+
+def process_sankey_data(data):
+    """
+    Processes input data into labels and links for a Sankey diagram.
+    """
+
+    # Helper function to flatten nested subcategories
+    def extract_subcategories(data):
+        subcategories = set()
+        for item in data:
+            if isinstance(item, dict) and "subcategory" in item:
+                subcat = item["subcategory"]
+                if isinstance(subcat, list):
+                    # Recursively extract subcategories from the list
+                    subcategories.update(extract_subcategories(subcat))
+                else:
+                    subcategories.add(subcat)
+        return subcategories
+
+    # Extract unique subcategories
+    subcategories = extract_subcategories(data)
+
+    # Extract unique categories
+    categories = {item["category"] for item in data}
+
+    # Combine categories and subcategories, ensuring no duplicates
+    labels = list(categories | subcategories)  # Set union to ensure uniqueness
+
+    sources = []
+    targets = []
+    values = []
+
+    def process_item(item):
+        """
+        Recursively process each item, adding links and labels.
+        """
+        if item["amount"] < 0:
+            if item["category"] == item["subcategory"]: # handle top-level categories
+                source_idx = labels.index("PAYCHECK")
+            else:
+                source_idx = labels.index(item["category"])
+        else:
+            source_idx = labels.index(item["category"])
+
+
+        sources.append(source_idx)
+
+        # Determine the target based on subcategories (assuming a structure with 'subcategory')
+        target_idx = labels.index(item["subcategory"])
+        targets.append(target_idx)
+        values.append(abs(item["amount"])) # NOTE: unsure if this is required or not, but couldn't get anything to show up when they are negative
+
+    for item in data:
+        process_item(item)
+
+    return labels, sources, targets, values
 
 
 ##############################################################################

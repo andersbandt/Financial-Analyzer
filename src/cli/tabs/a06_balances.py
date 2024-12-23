@@ -18,7 +18,7 @@ import db.helpers as dbh
 import analysis.analyzer_helper as anah
 import analysis.balance_helper as balh
 import analysis.investment_helper as invh
-import analysis.graphing_analyzer as grapa
+import analysis.graphing.graphing_analyzer as grapa
 import tools.date_helper as dateh
 from utils import log_helper as logh
 

@@ -21,8 +21,8 @@ from cli.cli_class import Action
 import db.helpers as dbh
 import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
-from analysis import graphing_analyzer as grapa
-from analysis import graphing_helper as grah
+from analysis.graphing import graphing_analyzer as grapa
+from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 from utils import log_helper as logh
@@ -246,6 +246,7 @@ def search_02():
     else:
         print(f"Uh oh, bad category search type of: {cat_search_type}")
         return False
+    return transactions
 
 
 def search_03():
@@ -302,12 +303,9 @@ class TabSpendingHistory(SubMenu):
         exec_summary_02(months_prev)
 
         # EXEC 3: get gross stats
-        # TODO: utilize a date helper function for this?
-        today = datetime.today()
-        days_ago = today - timedelta(days=365 * 12 / months_prev)
-        transactions = transr.recall_transaction_data(
-            days_ago.strftime('%Y-%m-%d'),
-            today.strftime('%Y-%m-%d'))
+        today = dateh.get_cur_str_date()
+        days_ago = dateh.get_date_previous(months_prev * 30)
+        transactions = transr.recall_transaction_data(days_ago, today)
         ledger_stats = anah.return_ledger_exec_dict(transactions)
         print(
             f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
@@ -333,7 +331,7 @@ class TabSpendingHistory(SubMenu):
         return True
 
 
-    # TODO: add filtering of multiple options at once (description and amount amount < M, etc)
+    # TODO: add filtering of multiple options at once (description and amount amount < M, date would be super nice, etc)
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
@@ -371,10 +369,14 @@ class TabSpendingHistory(SubMenu):
         pprint(ledger_exec)
         return True
 
+
     # a04_graph_category: walks user through producing a graph of a certain category
     def a04_graph_category(self):
         # get category ID
         category_id = clih.category_prompt_all("What is the category to graph?", False)
+        if category_id is None or 0:
+            print("Ok, quitting graph category")
+            return False
 
         # set up month parameters
         months_prev = 12 # tag:HARDCODE
@@ -399,11 +401,28 @@ class TabSpendingHistory(SubMenu):
                                    y_format="currency",
                                    sort_by_column="last")
         grapa.show_plots()
+        return True
 
-
-    # TODO (big): Work on generating sankey diagram
+    # TODO: really to handle my incomes everything actually needs to feed into an income group, and all the expenses out of that
+    # TODO: clean up the "non-graphical" transactions
+    # TODO: it sucks because I put in a whole day to get this working with everything but ..... it might look better with only the top level categories
     def a05_make_sankey(self):
-        pass
+        # set up date information
+        days_ago = dateh.get_date_previous(365) # tag:HARDCODE
+
+        # get raw transactions and categories to use from time period
+        transactions = transr.recall_transaction_data(date_start=days_ago)
+        categories = cath.load_categories()
+
+        spending_data = anah.generate_sankey_data(transactions, categories)
+
+
+        # Create source and target indices
+        labels, sources, targets, values = anah.process_sankey_data(spending_data)
+
+        # Generate the Sankey diagram
+        grapa.generate_sankey(labels, sources, targets, values)
+        return True
 
     def a06_review_month(self):
         # get month of interest

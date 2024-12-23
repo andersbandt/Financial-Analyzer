@@ -7,7 +7,7 @@ from datetime import timedelta
 import db.helpers as dbh
 from account import account_helper as acch
 import analysis.investment_helper as invh
-from analysis import graphing_analyzer as grapa
+from analysis.graphing import graphing_analyzer as grapa
 from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
