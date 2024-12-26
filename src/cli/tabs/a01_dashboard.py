@@ -51,7 +51,6 @@ class TabMainDashboard(SubMenu):
         account_names = dbh.account.get_account_names()
         print(account_names)
 
-# TODO: finish this function to reboot the program (for instance if code source changed)
     # MAIN ISSUE RIGHT NOW. It reboots and prints out but still thinks I've exited and am in the bash shell.
     # .... honestly I have some doubts this is even possible .....
     def a05_reboot(self):

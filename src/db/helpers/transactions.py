@@ -162,6 +162,32 @@ def get_account_transactions_between_date(account_id, date_start, date_end):
     return ledger_data
 
 
+def get_transaction_count(account_id, year, month):
+    """
+    Retrieves the count of transactions for a specific account ID, year, and month.
+
+    Args:
+        account_id (int): The ID of the account to query.
+        year (int): The year for the transaction count.
+        month (int): The month for the transaction count.
+
+    Returns:
+        int: The number of transactions for the specified account, year, and month.
+    """
+    # Determine the start and end dates for the month
+    date_start = f"{year}-{month:02d}-01"
+    if month == 12:
+        date_end = f"{year + 1}-01-01"
+    else:
+        date_end = f"{year}-{month + 1:02d}-01"
+
+    # Fetch transactions using the helper function
+    transactions = get_account_transactions_between_date(account_id, date_start, date_end)
+
+    # Return the count of transactions
+    return len(transactions)
+
+
 def get_transactions_ledge_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()

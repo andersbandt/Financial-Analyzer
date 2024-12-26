@@ -71,15 +71,18 @@ class TabLoadData(SubMenu):
         # auto-add certain paycheck related deduction expenses
         if clih.promptYesNo("Do you want to add preset monthly expenses?"):
             # retrieve Transaction object based on preset sql
-            date = dateh.month_year_date_range(year, month)[1]
-            transaction = Transaction(date, )
-            transaction.date = f"{year}-{month}-01"
-            transaction.category_id = cath.category_name_to_id("HEALTH")
-            transaction.amount = 22.00 #tag:HARDCODE
-            transaction.description = "Texins gym"
-            transaction.note = "Auto-loaded by month"
-            self.statement.add_transaction(transaction)
-            # TODO: add a complementary income transaction here
+            date = dateh.month_year_to_date_range(year, month)[1]
+            amount = 22
+            transaction1 = Transaction(date, 2000000019, cath.category_name_to_id("HEALTH"), -1*amount, "Texins Gym", note="auto-loaded by month")
+            transaction1c = Transaction(date,
+                                        2000000019,
+                                        cath.category_name_to_id("INCOME"),
+                                        amount,
+                                        "INCOME (Texins Gym)",
+                                        note="auto-loaded by month (complementary income)"
+                                        )
+            self.statement.add_transaction(transaction1)
+            self.statement.add_transaction(transaction1c)
 
         self.statement.print_statement()
         self.update_listing()
@@ -158,6 +161,9 @@ class TabLoadData(SubMenu):
     def a05_check_status(self):
         print("... checking data status ...")
 
+        # get user input on which method to use
+        method_num = clih.spinput("What type of data integrity method to use?", inp_type="int")
+
         # set up information on which account(s) we are interested in
         acc_id_arr = []
         acc_types = [acch.types.SAVING.value,
@@ -166,12 +172,13 @@ class TabLoadData(SubMenu):
         for at in acc_types:
             acc_id_arr.extend(acch.get_account_id_by_type(at))
 
-        # METHOD 1:
-        # NOTE: problems with this include 1-file name changes, 2-no actual detection of what is in database
-        self.check_data_integrity_01(acc_id_arr)
-
-        # METHOD 2:
-        self.check_data_integrity_02(acc_id_arr)
+        if method_num == 1:
+            # METHOD 1:
+            # NOTE: problems with this include 1-file name changes, 2-no actual detection of what is in database
+            self.check_data_integrity_01(acc_id_arr)
+        elif method_num == 2:
+            # METHOD 2:
+            self.check_data_integrity_02(acc_id_arr)
 
 
     ########              ##########################              ########
@@ -319,15 +326,50 @@ class TabLoadData(SubMenu):
     #   then would view total count of transactions
     #   then pull database month/year/account_id combo and compare to that total count of transactions
     def check_data_integrity_02(self, acc_id_arr):
-        pass
-        # # loop through month/year combos
-        # acc_data_status = []
-        # for year in dateh.get_valid_years():
-        #     for month in range(1, 12 + 1):
-        #         tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
-        #         for statement in tmp_list:
-        #             print(f"Statement {statement.title} has this many transactions --> {len(statement.transactions)}")
+        """
+        Checks data integrity by comparing the total count of transactions in files
+        with the total count of transactions in the database for each month/year/account_id combo.
+        """
+        # Initialize results dictionary
+        integrity_results = {}
 
+        # Loop through valid years
+        for year in dateh.get_valid_years():
+            # Loop through months in the year
+            for month in range(1, 13):
+                # Get list of statement objects for the month/year
+                statements = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
+
+                # loop through statements and compare to database
+                for statement in statements:
+                    # get amount of transactions in relevant, just-loaded statement
+                    statement_transaction_count = len(statement.transactions)
+
+                    # Fetch transaction count from the database
+                    db_transaction_count = dbh.transactions.get_transaction_count(statement.account_id, year, month)
+
+                    # Store results for comparison
+                    integrity_results[(year, month, statement.account_id)] = {
+                        "file_transactions": statement_transaction_count,
+                        "db_transactions": db_transaction_count,
+                        "matches": statement_transaction_count == db_transaction_count,
+                    }
+
+                    # Log comparison results
+                    if statement_transaction_count != db_transaction_count:
+                        logger.warning(
+                            f"Mismatch for {year}-{month}, Account ID {statement.account_id}: "
+                            f"File = {statement_transaction_count}, DB = {db_transaction_count}"
+                        )
+                    else:
+                        logger.info(
+                            f"Match for {year}-{month}, Account ID {statement.account_id}: "
+                            f"File = {statement_transaction_count}, DB = {db_transaction_count}"
+                        )
+
+
+        # Return results for further processing or debugging
+        return True
 
     def update_listing(self):
         if self.updated == False:

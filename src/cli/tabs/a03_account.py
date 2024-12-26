@@ -43,7 +43,6 @@ class TabAccount(SubMenu):
 
         # print out raw SQl table
         accounts = dbh.account.get_account_ledger_data()
-        # TODO: can I get the following header names automatically from either my db __init__.py file or reading from the db?
         clip.print_variable_table(["Account ID",
                                    "Name",
                                    "Institution name",
@@ -63,8 +62,9 @@ class TabAccount(SubMenu):
         name = clih.spinput("What is the name of this account?: ", inp_type="text")
 
         # print out account type classification breakdown
+        print("Account types below")
         for j in range(1, acch.get_num_acc_type() + 1):
-            print("\t" + str(j) + "= " + acch.get_acc_type_mapping(j))
+            print(f"\t{j}= {acch.get_acc_type_mapping(j)}")
 
         type_int = clih.spinput("What is the type of this account ?? (please enter INTEGER): ", inp_type="int")
         if type_int == -1:
@@ -80,7 +80,7 @@ class TabAccount(SubMenu):
             retirement = False
 
         # insert the investment into the database
-        account_id = dbh.account.insert_account(name, type_int, retirement)
+        account_id = acch.insert_account(name, type_int, retirement)
 
         print("Inserted account - " + name + " with account_id of (" + str(account_id) + ")")
 

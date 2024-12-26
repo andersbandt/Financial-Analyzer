@@ -79,6 +79,7 @@ class TableStatements:
                     amount                  NUMERIC(10,2),
                     date                    DATE)"""
 
+
 """
 Create all the tables. It uses a list instead
 of importing the TableStatements class for
@@ -87,14 +88,12 @@ dependency injection reasons.
 def all_tables_init(statements: list, database_directory: str) -> bool:
     try:
         with sqlite3.connect(database_directory) as conn:
-            # conn.set_trace_callback(print) # TODO: somehow add this back in when I set the log debug level
             cursor = conn.cursor()
             for statement in statements:
                 try:
                     cursor.execute(statement)
                 except sqlite3.OperationalError as e:
                     pass
-                    # print(e)
             conn.set_trace_callback(None)
     except sqlite3.OperationalError as e:
         print(f"\n{e}")

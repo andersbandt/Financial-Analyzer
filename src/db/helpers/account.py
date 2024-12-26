@@ -21,7 +21,7 @@ def check_account_table_empty():
         return False
 
 
-def insert_account(account_name, type_int, retirement=False):
+def insert_account(account_name, type_int, retirement):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
 
@@ -31,7 +31,7 @@ def insert_account(account_name, type_int, retirement=False):
             # insert new account value
             cur.execute(
                 """INSERT INTO account (account_id, name, type, balance, retirement) \
-                VALUES(?, ?, ?, ?)""",
+                VALUES(?, ?, ?, ?, ?)""",
                 (first_account_id, account_name, type_int, 0.00, retirement),
             )
             return first_account_id
@@ -39,7 +39,7 @@ def insert_account(account_name, type_int, retirement=False):
             # insert new account value
             cur.execute(
                 """INSERT INTO account (name, type, balance, retirement) \
-                VALUES(?, ?, ?)""",
+                VALUES(?, ?, ?, ?)""",
                 (account_name, type_int, 0.00, retirement),
             )
             # get account ID that we just inserted

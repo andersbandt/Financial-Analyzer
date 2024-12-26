@@ -21,24 +21,14 @@ def insert_account_search_str(account_id, search_str):
         return data_id
 
 
-# TODO: this function does not work
 def get_account_id_from_string(search_str):
-    print(f"... dbh.file_mapping: trying to find match with {search_str}")
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        # cur.execute(
-        #     f"SELECT account_id FROM {TABLE_NAME} WHERE file_search_str LIKE ?",
-        #     ('%'+search_str+'%', ),
-        #             )
-        # cur.execute(f"SELECT * FROM {TABLE_NAME} WHERE file_search_str LIKE?", ["%" + search_str + "%"])
         cur.execute(f"SELECT account_id FROM {TABLE_NAME} WHERE ? LIKE '%' || file_search_str || '%'", (search_str,))
         res = cur.fetchall()
         try:
             account_id = res[0][0]
-        except IndexError as e:
-            print("ERROR (probably no results found for SQL query): ", e)
-            print("Can't produce account_id match from string")
-            print(f"Got this for results: {res}")
+        except IndexError:
             return False
     return account_id
 

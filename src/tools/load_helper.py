@@ -126,15 +126,10 @@ def get_year_month_files(base_filepath, year, month):
 
 # match_file_to_account: takes in a filepath and returns account_id
 def match_file_to_account(filepath):
-    print("\t\t... Attempting to match file to account ...")
-
-    # METHOD 1: simple
     account_id = dbh.file_mapping.get_account_id_from_string(filepath)
 
     # return None if we didn't match anything
     if account_id is False:
-        print(f"\t\t... account not found!!!")
-        print(f"\t\t\tfilepath-->{filepath}")
         return None
     else:
         return account_id
@@ -182,12 +177,9 @@ def create_statement(year, month, filepath, account_id_prompt=False):
 
     if account_id is None:
         if account_id_prompt:
-            logger.debug("\tCouldn't automatically match account_id, manually loading in")
             account_id = clih.get_account_id_manual()
         else:
             return None
-    else:
-        logger.debug("\tFound account ID: ", account_id)
 
     # TODO (big): really need to get rid of this hardcode to Statement if I want to make this app mainstream
     # TODO (big): somehow basically save the preset columns for everything as XML or something

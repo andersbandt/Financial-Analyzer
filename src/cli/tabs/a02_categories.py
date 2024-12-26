@@ -74,7 +74,6 @@ class TabCategory(SubMenu):
         #   - no double names
         #   - no disconnected categories (all in tree structure)
 
-
     def a03_manage_keywords(self):
         print("... managing keywords ...")
         category_id = clih.category_prompt_all("Please enter the associated category of this keyword", True)
@@ -98,7 +97,6 @@ class TabCategory(SubMenu):
 
         print("Ok, added keyword: ", keyword_string)
         print("\tfor category", cath.category_id_to_name(category_id))
-
 
     def a04_print_keywords(self):
         print("... printing keywords ...")
@@ -139,7 +137,6 @@ class TabCategory(SubMenu):
             dbh.category.delete_category(category_id)
             print("Ok deleted category with ID: " + str(category_id))
 
-
     def a06_move_parent(self):
         print("... moving parent category for ID ...")
         category_id = clih.category_prompt_all("What category do you want to change the parent for?",
@@ -164,7 +161,6 @@ class TabCategory(SubMenu):
 
         print(
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
-
 
     # a07_delete_keyword: prompts user to delete keywords. Modeleed after a05_delete_category
     def a07_delete_keyword(self):

@@ -29,7 +29,10 @@ def get_all_acc_id():
 
 # indexing starts at (1)
 def get_acc_type_mapping(account_int):
-    return types[account_int - 1]
+    for acc_type in types:
+        if acc_type.value == account_int:
+            return acc_type
+    raise ValueError(f"No matching account type found for integer: {account_int}")
 
 
 def get_acc_type_arr():
@@ -85,3 +88,8 @@ def print_account_status(acc_id_compare):
     concat_table_arr = np.vstack((all_account_id, all_account_name, status_arr)).T
     clip.print_variable_table(["Account ID", "Account Name", "Status"], concat_table_arr)
     return True
+
+
+def insert_account(name, type_int, retirement):
+    account_id = dbh.account.insert_account(name, type_int, retirement)
+    return account_id
