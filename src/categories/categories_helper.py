@@ -63,7 +63,6 @@ def print_categories(categories_array):
 ####      CATEGORY FUNCTIONS     #############################################
 ##############################################################################
 
-
 def get_category_children(category_id, printmode=None):
     # debug print statements
     if printmode == "debug":

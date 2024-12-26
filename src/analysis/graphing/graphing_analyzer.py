@@ -218,4 +218,4 @@ def generate_sankey(labels, sources, targets, values):
 
     # Display the chart
     # fig.show() # NOTE: this was working super well and then all of a sudden started freezing
-    fig.write_html('plot.html', auto_open=True)
+    fig.write_html("tmp/plot.html", auto_open=True)

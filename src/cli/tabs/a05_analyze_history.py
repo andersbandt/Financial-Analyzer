@@ -259,9 +259,13 @@ def search_03():
     return transactions
 
 
-# TODO: finish this search by ACCOUNT
 def search_04():
-    return None
+    account_id = clih.account_prompt_all("What is the account you want to search?")
+    if account_id is False:
+        print("Ok, quitting transaction search.\n")
+        return False
+    transactions = transr.recall_transaction_account(account_id)
+    return transactions
 
 
 class TabSpendingHistory(SubMenu):

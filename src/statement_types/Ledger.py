@@ -30,20 +30,8 @@ class Ledger:
     def set_statement_data(self, transactions):
         self.transactions = transactions
 
-    ##############################################################################
-    ####      DATA LOADING FUNCTIONS    ##########################################
-    ##############################################################################
-
-    # del_sel_trans: deletes selected transactions DIRECTLY from the SQL database
-    def del_sel_trans(self):
-        # print out what transactions we are deleting
-        print("Deleting the transactions with the following sql keys: ")
-        print(self.sel_trans)
-
-        # go through selected Transactions and delete
-        for sql_key in self.sel_trans:
-            dbh.ledger.delete_transaction(sql_key)
-        return
+    def add_transaction(self, transaction):
+        self.transactions.append(transaction)
 
     ##############################################################################
     ####      CATEGORIZATION FUNCTIONS    ########################################
@@ -212,8 +200,6 @@ class Ledger:
     # delete_statement: deletes statement from master frame
     def delete_statement(self):
         print("Deleting ledger", self.title)
-        self.frame.grid_forget()
-        self.frame.destroy()
 
     def update_statement(self):
         print("Attempting to update Ledger...")

@@ -136,6 +136,11 @@ def recall_transaction_category(category_id):
     return transactions
 
 
+def recall_transaction_account(account_id):
+    ledger_data = dbh.transactions.get_transactions_by_account_id(account_id)
+    transactions = convert_ledge_to_transactions(ledger_data)
+    return transactions
+
 def recall_investment_transaction():
     ledger_data = dbh.investments.get_investment_ledge_data()
     investment_transactions = convert_ledge_to_investment_transactions(ledger_data)

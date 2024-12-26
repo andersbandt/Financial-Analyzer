@@ -20,7 +20,7 @@ from tkinter import filedialog
 
 # import user defined helper modules
 from statement_types.Transaction import Transaction
-from categories import categories_helper
+from categories import categories_helper as cath
 from account import account_helper as acch
 from tools import load_helper as loadh
 import db.helpers as dbh
@@ -65,19 +65,23 @@ class TabLoadData(SubMenu):
             month,
             printmode=False)
 
-        print(f"\nCreating master Statement object for all files in date bin {year}-{month}")
+        # join statement list into one "master" statement
         self.statement = loadh.join_statement(statement_list)
+
+        # auto-add certain paycheck related deduction expenses
+        if clih.promptYesNo("Do you want to add preset monthly expenses?"):
+            # retrieve Transaction object based on preset sql
+            date = dateh.month_year_date_range(year, month)[1]
+            transaction = Transaction(date, )
+            transaction.date = f"{year}-{month}-01"
+            transaction.category_id = cath.category_name_to_id("HEALTH")
+            transaction.amount = 22.00 #tag:HARDCODE
+            transaction.description = "Texins gym"
+            transaction.note = "Auto-loaded by month"
+            self.statement.add_transaction(transaction)
+            # TODO: add a complementary income transaction here
+
         self.statement.print_statement()
-
-        # TODO: finish fleshing out implementatino for auto-loading some preset monthly expense (like gym from income paycheck)
-        # retrieve Transaction object based on preset sql
-        # transaction = None
-        # transaction.date = f"{year}-{month}-01"
-        # create complementary income expense
-        # income_trans = transaction
-        # income_trans.category_id = None
-
-        print("Statement loaded successfully, can continue with load process")
         self.update_listing()
         return True
 
