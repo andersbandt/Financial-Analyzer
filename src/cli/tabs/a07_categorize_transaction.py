@@ -48,9 +48,6 @@ class TabTransCategorize(SubMenu):
         uncategorized_statement.print_statement()
 
 
-# TODO: this whole function could use some tweaking
-#   better workflow, pass in multiple SQL keys, printout of transaction before confirmation
-
     def a02_categorize_NA(self):
         print("... categorizing uncategorized transaction ...")
         ledger_data = dbh.transactions.get_uncategorized_transactions()

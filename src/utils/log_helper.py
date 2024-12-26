@@ -13,9 +13,12 @@ import subprocess
 # import user created modules
 import utils
 
-
 # import logger
 from loguru import logger
+
+IMAGE_FOLDER = "tmp"
+OUTPUT_PDF = "tmp/balances_summary.pdf"
+
 
 #################################
 #### pdf  #######################
@@ -35,13 +38,13 @@ def clear_tmp_folder():
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def generate_summary_pdf(image_folder, output_pdf):
+def generate_summary_pdf():
     # Create a PDF document
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
 
     # Get the list of PNG files in the folder
-    image_files = [f for f in os.listdir(image_folder) if f.endswith('.png')]
+    image_files = [f for f in os.listdir(IMAGE_FOLDER) if f.endswith('.png')]
 
     # Add each PNG file as a page to the PDF document
     for image_file in image_files:
@@ -50,12 +53,12 @@ def generate_summary_pdf(image_folder, output_pdf):
         pdf.cell(200, 10, txt=image_file, ln=True)
 
         # Add the PNG image to the PDF page
-        pdf.image(os.path.join(image_folder, image_file), x=10, y=20, w=180)
+        pdf.image(os.path.join(IMAGE_FOLDER, image_file), x=10, y=20, w=180)
 
     # Save the PDF document
-    pdf.output(output_pdf)
+    pdf.output(OUTPUT_PDF)
 
     # start the PDF document
-    pdf_filepath = f"{utils.BASEFILEPATH}/{output_pdf}"
+    pdf_filepath = f"{utils.BASEFILEPATH}/{OUTPUT_PDF}"
     print(f"Starting .PDF at filepath: {pdf_filepath}")
     subprocess.Popen(pdf_filepath, shell=True)

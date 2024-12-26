@@ -93,7 +93,6 @@ class TabBalances(SubMenu):
         N = 5
 
         # clear tmp folder
-        # TODO: how do I make this happen for all functions in a cli tab class?
         logh.clear_tmp_folder()
 
         # generate matrix of Bx values
@@ -124,39 +123,62 @@ class TabBalances(SubMenu):
         balh.graph_balance_3(dates, balances)
 
         # generate pdf file AND open
-        # TODO: standardize this below process of generation and opening
         print("\nGenerating .pdf ...")
-        image_folder = "tmp"
-        output_pdf = "tmp/balances_summary.pdf"
-        logh.generate_summary_pdf(image_folder, output_pdf)
+        logh.generate_summary_pdf()
 
-    # ao4_retirement_modeling: performs some statistical analysis on likely-hood of retirement goals
-    def a04_retirement_modeling(self):
+    # a04_retirement_modeling: performs some statistical analysis on likely-hood of retirement goals
+    def a04_retirement_modeling(self, num_simulations=10000):
         # SET UP estimates about timeline
         retirement_age = 59.5
-        current_age = 25 # TODO: need to calculate current age based on input birthday here
+        current_age = 25
         death_age = 95
         working_years_left = retirement_age - current_age
         years_retired = death_age - retirement_age
 
         # SET UP estimates about the economy
-        annual_return = .06
-        inflation_rate = 0.03
-        real_annual_return = (1 + annual_return) / (1 + inflation_rate) - 1
+        annual_return_mean = 0.06
+        annual_return_stddev = 0.02  # standard deviation of annual returns
+        inflation_mean = 0.03
+        inflation_stddev = 0.01  # standard deviation of inflation rates
 
         # RETRIEVE the CURRENT balance
         acc_id_arr, acc_balances = balh.get_retirement_balances()
-        retirement_sum = 0
-        for balance in acc_balances:
-            retirement_sum += balance
+        retirement_sum = sum(acc_balances)
 
-        # CALCULATE the FUTURE balance
-        # TODO: add some monte carlo modeling to determine different outcomes based on certain probabilities
-        retirement_age_balance = retirement_sum * (1 + real_annual_return) ** working_years_left
+        # MONTE CARLO SIMULATION
+        retirement_balances = []
+        monthly_withdrawals = []
 
-        # CALCULATE how much you could take off principal monthly
-        r = real_annual_return / 12  # monthly interest rate (adjusted for inflation)
-        monthly_withdrawal = (retirement_age_balance * r) / (1 - pow((1 + r), -1 * 12 * years_retired))
+        for _ in range(num_simulations):
+            # Simulate annual returns and inflation rates for working years
+            simulated_returns = np.random.normal(annual_return_mean, annual_return_stddev, int(working_years_left))
+            simulated_inflation = np.random.normal(inflation_mean, inflation_stddev, int(working_years_left))
+            simulated_real_returns = [(1 + r) / (1 + i) - 1 for r, i in zip(simulated_returns, simulated_inflation)]
+
+            # Calculate balance at retirement
+            future_balance = retirement_sum
+            for real_return in simulated_real_returns:
+                future_balance *= (1 + real_return)
+            retirement_balances.append(future_balance)
+
+            # Simulate annual returns and inflation rates for retirement years
+            simulated_returns_retired = np.random.normal(annual_return_mean, annual_return_stddev, int(years_retired))
+            simulated_inflation_retired = np.random.normal(inflation_mean, inflation_stddev, int(years_retired))
+            simulated_real_returns_retired = [(1 + r) / (1 + i) - 1 for r, i in
+                                              zip(simulated_returns_retired, simulated_inflation_retired)]
+
+            # Calculate monthly withdrawal using annuity formula
+            avg_real_return_retired = np.mean(simulated_real_returns_retired)
+            r = avg_real_return_retired / 12
+            if r != 0:
+                monthly_withdrawal = (future_balance * r) / (1 - pow(1 + r, -1 * 12 * years_retired))
+            else:
+                monthly_withdrawal = future_balance / (12 * years_retired)  # fallback for zero return
+            monthly_withdrawals.append(monthly_withdrawal)
+
+        # ANALYZE RESULTS
+        balance_percentiles = np.percentile(retirement_balances, [10, 50, 90])  # 10th, 50th, 90th percentiles
+        withdrawal_percentiles = np.percentile(monthly_withdrawals, [10, 50, 90])
 
         # PRINT out info for the user
         clip.print_variable_table(
@@ -169,13 +191,14 @@ class TabBalances(SubMenu):
         )
         logger.info("\nYou have this much saved in retirement specific accounts: " + "${:,.2f}".format(retirement_sum))
         logger.info(f"\nOk, so theoretically you only have {working_years_left} working years left.")
-        logger.info(
-            f"\nAt an annual return of {annual_return} (adjusted for {inflation_rate} inflation) for {working_years_left} years, you are estimated to have: {"${:,.2f}".format(retirement_age_balance)}"
-        )
-        logger.info(f"\nThis is based on a retirement age of {retirement_age}")
-        logger.info(f"\nThis allows a dynamic monthly withdrawal strategy for {years_retired} years based on real return: {monthly_withdrawal}")
-        logger.info(f"\nThis is also based on a death age of {death_age}")
-        logger.info(f"\nor retired for {years_retired}")
+        logger.info(f"\nMonte Carlo Results for Retirement Balance:")
+        logger.info(f"  - 10th Percentile (Worst Case): ${balance_percentiles[0]:,.2f}")
+        logger.info(f"  - 50th Percentile (Median Case): ${balance_percentiles[1]:,.2f}")
+        logger.info(f"  - 90th Percentile (Best Case): ${balance_percentiles[2]:,.2f}")
+        logger.info(f"\nMonte Carlo Results for Monthly Withdrawal:")
+        logger.info(f"  - 10th Percentile (Worst Case): ${withdrawal_percentiles[0]:,.2f}")
+        logger.info(f"  - 50th Percentile (Median Case): ${withdrawal_percentiles[1]:,.2f}")
+        logger.info(f"  - 90th Percentile (Best Case): ${withdrawal_percentiles[2]:,.2f}")
 
     def a05_delete_balance(self):
         self.a06_print_balance_table()
