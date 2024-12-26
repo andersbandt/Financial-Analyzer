@@ -261,15 +261,17 @@ class TabLoadData(SubMenu):
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
-    # TODO: have this function basically highlight if there is a sequence of 1's followed by a 0 (no file)
     def check_data_integrity_01(self, acc_id_arr):
-        # loop through month/year combos
         acc_data_status = []
+        bad_months = {acc_id: [] for acc_id in acc_id_arr}  # To track BAD months per account
+
+        # Loop through month/year combos
         for year in dateh.get_valid_years():
             for month in range(1, 12 + 1):
-                # get list of files in that directory
+                # Get list of files in that directory
                 month_year_dir = loadh.get_year_month_files(self.basefilepath, year, month)
-                tmp_month_status = [f"{year}-{month}"]  # populate first column with year-month
+                tmp_month_status = [f"{year}-{month}"]  # Populate first column with year-month
+
                 for acc_id in acc_id_arr:
                     def find_account_match(aid):
                         for file in month_year_dir:
@@ -278,34 +280,53 @@ class TabLoadData(SubMenu):
                                 return True
                         return False
 
-                    # append if match was found or not
+                    # Append if match was found or not
                     if find_account_match(acc_id):
                         tmp_month_status.append("1")
                     else:
                         tmp_month_status.append("0")
+
                 acc_data_status.append(tmp_month_status)
 
-        field_names = ["Month"]
-        for acc_id in acc_id_arr:
-            field_names.append(dbh.account.get_account_name_from_id(acc_id))
+        # Process the data to find "BAD" patterns
+        for acc_idx, acc_id in enumerate(acc_id_arr, start=1):
+            account_status = [row[acc_idx] for row in acc_data_status]  # Extract data for the account
+            for i in range(1, len(account_status)):
+                # Check for a 1 followed by a 0
+                if account_status[i - 1] == "1" and account_status[i] == "0":
+                    bad_months[acc_id].append(acc_data_status[i][0])  # Log the bad month (year-month)
+
+        # Logging and displaying results
+        field_names = ["Month"] + [dbh.account.get_account_name_from_id(acc_id) for acc_id in acc_id_arr]
         logger.debug(field_names)
         logger.debug(acc_data_status)
         clip.print_variable_table(field_names, acc_data_status, min_width=5, max_width=5, max_width_column=5)
+
+        # Log BAD months
+        for acc_id, months in bad_months.items():
+            if months:
+                logger.warning(f"Account ID {acch.account_id_to_name(acc_id)} has BAD months: {', '.join(months)}")
+            else:
+                logger.info(f"Account ID {acch.account_id_to_name(acc_id)} has no BAD months.")
+
         logger.info("CHECK PREVIOUS TABLE")
-        logger.info("showcasing if file match exists in valid folders")
+        logger.info("Showcasing if file match exists in valid folders")
+
+        return True
 
     # TODO: finish fleshing out method 2
     #   Ideally would try to load in each file
     #   then would view total count of transactions
     #   then pull database month/year/account_id combo and compare to that total count of transactions
     def check_data_integrity_02(self, acc_id_arr):
-        # loop through month/year combos
-        acc_data_status = []
-        for year in dateh.get_valid_years():
-            for month in range(1, 12 + 1):
-                tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
-                for statement in tmp_list:
-                    print(f"Statement {statement.title} has this many transactions --> {len(statement.transactions)}")
+        pass
+        # # loop through month/year combos
+        # acc_data_status = []
+        # for year in dateh.get_valid_years():
+        #     for month in range(1, 12 + 1):
+        #         tmp_list = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
+        #         for statement in tmp_list:
+        #             print(f"Statement {statement.title} has this many transactions --> {len(statement.transactions)}")
 
 
     def update_listing(self):
