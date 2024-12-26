@@ -162,6 +162,9 @@ class TabLoadData(SubMenu):
         print("... checking data status ...")
 
         # get user input on which method to use
+        print("Two method for data integrity checking")
+        print("METHOD 1: checks for presence of files on the system matching to certain accounts")
+        print("METHOD 2: actually pulls data from files and sees if it exists in the database")
         method_num = clih.spinput("What type of data integrity method to use?", inp_type="int")
 
         # set up information on which account(s) we are interested in
@@ -173,11 +176,8 @@ class TabLoadData(SubMenu):
             acc_id_arr.extend(acch.get_account_id_by_type(at))
 
         if method_num == 1:
-            # METHOD 1:
-            # NOTE: problems with this include 1-file name changes, 2-no actual detection of what is in database
             self.check_data_integrity_01(acc_id_arr)
         elif method_num == 2:
-            # METHOD 2:
             self.check_data_integrity_02(acc_id_arr)
 
 
@@ -188,7 +188,7 @@ class TabLoadData(SubMenu):
     # a03_categorize_statement: helps user categorize currently loaded statement data
     def a06_categorize_statement(self):
         print("\n\na03: Automatically categorizing Statement")
-        categories = categories_helper.load_categories()
+        categories = cath.load_categories()
 
         self.statement.categorizeLedgerAutomatic(categories)
         self.statement.print_statement()
@@ -268,6 +268,8 @@ class TabLoadData(SubMenu):
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
+    # TODO: problems with this include 1-file name changes, 2-no actual detection of what is in database
+    #   for example CreditCard3.csv became CreditCard4.csv halfway through my years
     def check_data_integrity_01(self, acc_id_arr):
         acc_data_status = []
         bad_months = {acc_id: [] for acc_id in acc_id_arr}  # To track BAD months per account
@@ -321,10 +323,7 @@ class TabLoadData(SubMenu):
 
         return True
 
-    # TODO: finish fleshing out method 2
-    #   Ideally would try to load in each file
-    #   then would view total count of transactions
-    #   then pull database month/year/account_id combo and compare to that total count of transactions
+    # TODO: lots of mismatches being flagged. Believe current issue is mismatch between month start/end search ranges
     def check_data_integrity_02(self, acc_id_arr):
         """
         Checks data integrity by comparing the total count of transactions in files

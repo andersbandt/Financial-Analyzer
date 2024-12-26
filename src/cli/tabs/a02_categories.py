@@ -20,6 +20,7 @@ class TabCategory(SubMenu):
         # initialize information about sub menu options
         action_arr = [Action("Add category", self.a01_add_category),
                       Action("Print categories", self.a02_print_category),
+                      Action("Check categories", self.a03a_check_categories),
                       Action("Add keyword", self.a03_manage_keywords),
                       Action("Print keywords", self.a04_print_keywords),
                       Action("Delete category", self.a05_delete_category),
@@ -69,10 +70,29 @@ class TabCategory(SubMenu):
                                   categories)
         return True
 
-    # TODO (low-priority): some category check improvements
-        # perform some verification on database integrity
-        #   - no double names
-        #   - no disconnected categories (all in tree structure)
+
+    def a03a_check_categories(self):
+        # CHECK 1: check for double names
+        categories = cath.load_categories
+        arr = cath.get_category_strings(categories)
+
+        res = []
+        for i in range(len(arr) - 1):
+            for j in range(i + 1, len(arr)):
+                if arr[i] == arr[j]:
+
+                    # Check if the duplicate element is already in res
+                    if arr[i] not in res:
+                        res.append(arr[i])
+                    break
+        for item in res:
+            print(f"ALERT: this is a duplicate category name: {item}")
+
+        # CHECK 2: check validity of parent_id
+        # TODO: finish implementing this check on parent_id
+
+        return True
+
 
     def a03_manage_keywords(self):
         print("... managing keywords ...")
