@@ -1,7 +1,7 @@
 """
-Class: Transaction
+Class: Ledger
 
-Transaction represents a single transaction on any statement
+Ledger is a basic class simply for holding transactions together in a ledger
 
 """
 
@@ -19,8 +19,7 @@ class Ledger:
         self.title = title
 
         # init ledger data variables
-        self.transactions = transactions
-        self.clicked_category = []  # holds all the user set categories
+        self.transactions = []
 
     ##############################################################################
     ####      DATA LOADING FUNCTIONS    ##########################################

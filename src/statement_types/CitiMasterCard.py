@@ -91,8 +91,6 @@ class CitiMastercard(csvStatement.csvStatement):
             print("Missing data! You might be missing your .csv file")
             return False
 
-        # print out some info about transactions
-        print("Loaded in " + str(len(transactions)) + " transactions")
 
         # set and return transactions
         self.transactions = transactions

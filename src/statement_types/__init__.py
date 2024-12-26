@@ -1,12 +1,10 @@
+
+# import statement types
 from statement_types import Ledger
 from statement_types import Statement
 from statement_types import csvStatement
 
 from statement_types import CitiMasterCard
-# from statement_types import WellsChecking
-# from statement_types import WellsCredit
-# from statement_types import WellsSaving
-
 from statement_types import AppleCard
 from statement_types import ChaseCard
 
@@ -17,6 +15,8 @@ from statement_types import Robinhood
 from statement_types import VanguardBrokerage
 from statement_types import VanguardRoth
 
+
+# TODO: I should really refactor all the classes to not even use specific ones and only use the csv Statement one
 
 
 # below code is from `nathan-hello` on Github from a branch I deleted. Preserving it here in case it becomes useful later

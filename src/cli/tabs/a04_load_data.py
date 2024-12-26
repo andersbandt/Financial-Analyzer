@@ -340,6 +340,7 @@ class TabLoadData(SubMenu):
                 # Get list of statement objects for the month/year
                 statements = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
 
+
                 # loop through statements and compare to database
                 for statement in statements:
                     # get amount of transactions in relevant, just-loaded statement
@@ -358,12 +359,12 @@ class TabLoadData(SubMenu):
                     # Log comparison results
                     if statement_transaction_count != db_transaction_count:
                         logger.warning(
-                            f"Mismatch for {year}-{month}, Account ID {statement.account_id}: "
+                            f"Mismatch for {year}-{month}, Account ID {acch.account_id_to_name(statement.account_id)}: "
                             f"File = {statement_transaction_count}, DB = {db_transaction_count}"
                         )
                     else:
                         logger.info(
-                            f"Match for {year}-{month}, Account ID {statement.account_id}: "
+                            f"Match for {year}-{month}, Account ID {acch.account_id_to_name(statement.account_id)}: "
                             f"File = {statement_transaction_count}, DB = {db_transaction_count}"
                         )
 

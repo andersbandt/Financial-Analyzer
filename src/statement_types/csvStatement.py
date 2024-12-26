@@ -59,8 +59,7 @@ class csvStatement(Statement.Statement):
         # verify statement file integrity
         if self.filepath_val is False:
             logger.debug("Can't load in. Bad filepath for .csv statement: ", self.filepath)
-            print("ANDERS YOUR SHIT IS WORKING")
-            self.transactions = [] # TODO: learn how to handle this more elegantly
+            self.transactions = []
             return
 
         # loop through .csv file and extract transactions based on supplied parameters
@@ -100,9 +99,6 @@ class csvStatement(Statement.Statement):
             print("Uh oh, error in data loading")
             print("Missing data! You might be missing your .csv file")
             return False
-
-        # print out some info about transactions
-        print("Loaded in " + str(len(transactions)) + " transactions")
 
         # set and return transactions
         self.transactions = transactions

@@ -36,9 +36,7 @@ from utils import logfn
 def check_account_load_status(account_id, month, year, printmode=None):
     # first check if any transaction data exists at all
     if not date_helper.month_year_to_date_range(month, year):
-        raise Exception(
-            "Uh oh, something went wrong getting date range for status indicators"
-        )
+        raise Exception("Uh oh, something went wrong getting date range for status indicators")
     else:
         date_start, date_end = date_helper.month_year_to_date_range(month, year)
 
@@ -70,7 +68,6 @@ def check_account_load_status(account_id, month, year, printmode=None):
 
 
 # get_statement_folder: returns formatted folder of where the statement is. year and month are ints
-@logfn
 def get_statement_folder(base_filepath, year, month):
     if month == 1:
         month_string = "01-January/"
@@ -182,7 +179,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
             return None
 
     # TODO (big): really need to get rid of this hardcode to Statement if I want to make this app mainstream
-    # TODO (big): somehow basically save the preset columns for everything as XML or something
+    #   somehow basically save the preset columns for everything as XML or something
     # tag:HARDCODE
     if account_id == 2000000001:  # Marcus
         stat = st.Marcus.Marcus(account_id, year, month, filepath)

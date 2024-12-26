@@ -30,7 +30,6 @@ class ChaseCard(Statement.Statement):
                 for line in csv_reader:
                     if i > 0:
                         raw_date = line[0]
-                        logger.debug(raw_date)
                         date = (raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5])  # year-month-date
                         transactions.append(Transaction.Transaction(date,
                                                                     self.account_id,
@@ -39,8 +38,7 @@ class ChaseCard(Statement.Statement):
                                                                     line[2],))  # order: date, account_id, category_id, amount, description
                     i += 1
         except FileNotFoundError:
-            print("Uh oh")
-            print("\tMissing data!: You might be missing your Chase Card .csv file")
+            logger.error("\tMissing data!: You might be missing your Chase Card .csv file")
             return False
 
         # set and return transactions
