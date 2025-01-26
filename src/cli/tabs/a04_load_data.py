@@ -52,11 +52,12 @@ class TabLoadData(SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
+    # TODO: this thing doesn't do the file summary printout anymore :(
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
         # get month / year combination to examine in
-        [year, month] = clih.prompt_year_month()
+        [year, month] = clih.prompt_year_month() # TODO: there is no check for valid year in this function
 
         # create list of Statement objects for each file for the particular month/year combination
         statement_list = loadh.get_month_year_statement_list(
@@ -64,9 +65,13 @@ class TabLoadData(SubMenu):
             year,
             month,
             printmode=False)
+        logger.debug(f"Statement list --> {statement_list}")
+        logger.debug(f"Statement list has length {len(statement_list)}")
 
         # join statement list into one "master" statement
         self.statement = loadh.join_statement(statement_list)
+
+        logger.debug(f"Final monthly statement has {len(self.statement.transactions)} transactions")
 
         # auto-add certain paycheck related deduction expenses
         if clih.promptYesNo("Do you want to add preset monthly expenses?"):

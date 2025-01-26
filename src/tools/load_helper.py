@@ -152,8 +152,7 @@ def join_statement(statement_list):
     cum_trans_list = []
     for statement in statement_list:
         if (statement is not None) and (statement is not False):
-            if statement.transactions is not None:
-                cum_trans_list.extend(statement.transactions)
+            cum_trans_list.extend(statement.transactions)
 
     # create "dummy" statement with manually added transaction list
     statement = Statement.Statement("dummy account_id",

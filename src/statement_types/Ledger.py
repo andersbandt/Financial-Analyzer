@@ -19,7 +19,10 @@ class Ledger:
         self.title = title
 
         # init ledger data variables
-        self.transactions = []
+        if transactions is None:
+            self.transactions = []
+        else:
+            self.transactions = transactions
 
     ##############################################################################
     ####      DATA LOADING FUNCTIONS    ##########################################

@@ -146,7 +146,7 @@ def graph_balance_1(edge_code_date, values_array, account_names_array):
     sorted_values_array = [item[1] for item in combined]
     sorted_account_names_array = [item[2] for item in combined]
 
-    grapa.create_stackline_chart(edge_code_date[1:],
+    grapa.create_stack_line_chart(edge_code_date[1:],
                                  sorted_values_array,
                                  title=f"bG 01: Balances per account since {edge_code_date[0]}",
                                  label=sorted_account_names_array,
@@ -166,7 +166,7 @@ def graph_balance_2(edge_code_date, values_array, account_id_array):
         for i in range(0, len(values_array[0])):
             type_values_array[acc_type - 1][i] += values_array[j][i]
 
-    grapa.create_stackline_chart(edge_code_date[1:],
+    grapa.create_stack_line_chart(edge_code_date[1:],
                                  type_values_array,
                                  title=f"bG 02: Balances by account type",
                                  label=acch.get_acc_type_arr(),

@@ -264,6 +264,8 @@ class TabBalances(SubMenu):
             # Add ticker value, initialize with 0 if the key does not exist
             asset_total[ticker.type] = asset_total.get(ticker.type, 0) + ticker.value
 
+        # TODO: add print outs of amounts and where they are coming from. Mainly want to see like where my cash is stored for example
+
         # make pie plot
         grapa.create_pie_chart(
             asset_total.values(),

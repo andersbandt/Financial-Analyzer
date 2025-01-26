@@ -469,7 +469,7 @@ class TabSpendingHistory(SubMenu):
             dbh.transactions.update_transaction_note_k(sql_key, note_str)
             return True
 
-    # TODO: I have my doubts this function works
+    # TODO: this thing really needs to print out what transactions you are updating the category for
     def a08_update_transaction_category(self):
         print(" ... updating transaction categories ...")
 
@@ -483,6 +483,7 @@ class TabSpendingHistory(SubMenu):
 
         found_sql_key = []
         if search_type == 1:
+            # TODO: need to test this method (only done manual before)
             found_transactions = self.a03_search_trans()
             if found_transactions is False:
                 print("... and quitting update transactions category too !")
