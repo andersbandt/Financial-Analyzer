@@ -23,9 +23,6 @@ from tools import date_helper as dateh
 import db.helpers as dbh
 
 
-# TODO: let's create a function to calculate the "health" of my investment.ledger calculated account balances vs my manual entry ones
-#   have a limit on like the past 3 days the actual balance one has to be entered
-
 
 class TabInvestment(SubMenu):
     def __init__(self, title, basefilepath):
@@ -78,6 +75,8 @@ class TabInvestment(SubMenu):
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement(include_sql_key=True)
 
+
+
     def a03_add_investment(self):
         print("... adding investment transaction ...")
 
@@ -100,24 +99,20 @@ class TabInvestment(SubMenu):
             if not res:
                 print("Ok. Cancelling adding investment")
                 return False
-            # TODO: could possibly add check here to detect if it's a money market fund
 
         # check if InvestmentTransaction is a buy or sell
         buy_sell_int = clih.spinput("\nIs this a buy or sell? \t(1 for buy, 2 for sell): ", inp_type="int")
-        if buy_sell_int is False:
-            print("... exiting add investment")
-            return False
 
         if buy_sell_int == 1:
             inv_type = "BUY"
-            # TODO: possibly add another check here for a transfer from money market fund?
         elif buy_sell_int == 2:
             inv_type = "SELL"
-            # TODO: add some prompt here to see if user wants to make a money market BUY after a SELL event
         else:
-            print("Fuck man you entered something other than 1 or 2. I gotta quit now.")
+            print("FUCK you entered something other than 1 or 2. I gotta quit now.")
             return False
 
+        # check if user wants to add an opposite buy/sell from settlement / money market fund
+        mm_trans = clih.promptYesNo("Do you want to add an equal and opposite money market SELL/BUY event?")
 
         # get the number of shares
         shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
@@ -151,6 +146,19 @@ class TabInvestment(SubMenu):
                                           inv_type,
                                           value,
                                           note=note)
+
+        # insert money market transfer
+        # TODO: need method to get ticker for the specified account_id for the money market transactions. XML file?
+        if mm_trans:
+            print("... want to add MM transaction but code is not complete yet ...")
+        #     dbh.investments.insert_investment(date,
+        #                                       account_id,
+        #                                       None,
+        #                                       shares,
+        #                                       inv_type,
+        #                                       value,
+        #                                       note="automatically added money market transaction")
+
         return True
 
     def a04_cur_value_history(self):
@@ -250,7 +258,6 @@ class TabInvestment(SubMenu):
             return
 
         # get ticker information
-        # TODO: I could possibly make a sub-function for ticker CLI collection .... reused in a03_add_investment
         ticker = clih.spinput("\nWhat is the ticker of this investment dividend?: ", inp_type="text")
         if ticker is False:
             print("... exiting add dividend.")
@@ -304,7 +311,7 @@ class TabInvestment(SubMenu):
     def a07_delete_investment(self):
         self.a02_print_db_inv()
         clih.action_on_int_array("Please enter SQL key of investments you want to delete",
-                                 None, # TODO: need to ELEGANTLY define a printing function for investments. Will take some thought
+                                 None,
                                  invh.delete_investment_list)
         return True
 
@@ -313,4 +320,5 @@ class TabInvestment(SubMenu):
         invh.ticker_info_dump(ticker)
         price = invh.get_ticker_price(ticker)
         print(f"Price: {price}")
+
 

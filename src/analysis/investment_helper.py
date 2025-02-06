@@ -181,6 +181,11 @@ def get_account_ticker_shares(account_id, ticker):
 
 # summarize_account: this function is for showcasing account view and holdings
 def summarize_account(account_id, printmode=True):
+    # check for internet connection
+    if not internet_helper.is_connected():
+        print('Not connected to Internet!')
+        return 0
+
     transactions = dbh.investments.get_active_ticker(account_id)
     account_value = 0
     ticker_table = []

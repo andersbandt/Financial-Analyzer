@@ -138,7 +138,7 @@ class Transaction:
         return spaces
 
     # printTransaction: pretty prints a single transaction
-    def printTransaction(self, print_mode=True, include_sql_key=False):
+    def print_trans(self, print_mode=True, include_sql_key=False):
         if include_sql_key:
             stringToPrint = "KEY: " + "".join(str(self.sql_key)) + "    "
         else:
@@ -193,3 +193,7 @@ class InvestmentTransaction(Transaction):
         self.shares = shares
         self.trans_type = trans_type
         self.value = value
+
+
+    def printTransaction(self, print_mode=True, include_sql_key=False):
+        stringToPrint = super().printTransaction(print_mode=print_mode, include_sql_key=include_sql_key)
