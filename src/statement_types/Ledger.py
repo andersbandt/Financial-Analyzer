@@ -134,7 +134,7 @@ class Ledger:
 
         # OLD METHOD: using print_transaction
         # for transaction in self.transactions:
-        #     transaction.printTransaction(include_sql_key=include_sql_key)
+        #     transaction.print_trans(include_sql_key=include_sql_key)
 
         # NEW METHOD: using prettytable
         if include_sql_key:
@@ -189,7 +189,7 @@ class Ledger:
                     error_status = 1
                 else:
                     pass
-                    # print("Added transaction --> " + transaction.printTransaction(False))
+                    # print("Added transaction --> " + transaction.print_trans(False))
 
         # ERROR HANDLE
         if error_status == 1:
