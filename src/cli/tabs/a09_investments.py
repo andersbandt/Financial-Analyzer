@@ -113,11 +113,11 @@ class TabInvestment(SubMenu):
             # TODO: possibly add another check here for a transfer from money market fund?
         elif buy_sell_int == 2:
             inv_type = "SELL"
+            # TODO: add some prompt here to see if user wants to make a money market BUY after a SELL event
         else:
             print("Fuck man you entered something other than 1 or 2. I gotta quit now.")
             return False
 
-        # TODO: add some prompt here to see if user wants to make a money market BUY after a SELL event
 
         # get the number of shares
         shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
