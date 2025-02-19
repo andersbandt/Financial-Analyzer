@@ -3,8 +3,8 @@
 import sqlite3
 
 # setup database master file
-# DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
-DATABASE_DIRECTORY = "db/financials.db"
+DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
+# DATABASE_DIRECTORY = "db/financials.db"
 
 
 """
