@@ -139,13 +139,17 @@ class Transaction:
 
     # print_trans: pretty prints a single transaction
     def print_trans(self, print_mode=True, include_sql_key=False):
+        # TODO: eliminate this check for description type
+        if self.description is None:
+            self.description = ''
+
         if include_sql_key:
-            stringToPrint = "KEY: " + "".join(str(self.sql_key)) + "    "
+            prnt_str = "KEY: " + "".join(str(self.sql_key)) + "    "
         else:
-            stringToPrint = ""
+            prnt_str = ""
 
         # add remaining columns
-        stringToPrint += (
+        prnt_str += (
                 "DATE: "
                 + "".join(self.date)
                 + " || AMOUNT: "
@@ -155,20 +159,21 @@ class Transaction:
                 + "".join(self.description[0:80])
                 + self.getSpaces(len(self.description), 80)
         )
+
         if self.category_id is not None:
             category_name = dbh.category.get_category_name_from_id(self.category_id)
-            stringToPrint = stringToPrint + " || CATEGORY: " + str(category_name) + self.getSpaces(
+            prnt_str = prnt_str + " || CATEGORY: " + str(category_name) + self.getSpaces(
                 len(str(category_name)), 15)
 
-        stringToPrint = stringToPrint + " || ACCOUNT: " + "".join(
+        prnt_str = prnt_str + " || ACCOUNT: " + "".join(
             dbh.account.get_account_name_from_id(self.account_id)) + self.getSpaces(len(str(self.account_id)), 18)
 
         if self.note is not None:
-            stringToPrint = stringToPrint + " || NOTE: " + self.note
+            prnt_str = prnt_str + " || NOTE: " + self.note
 
         if print_mode:
-            print(stringToPrint)
-        return stringToPrint
+            print(prnt_str)
+        return prnt_str
 
     # getStringDict: returns a string of transaction content contained in a dictionary
     def getStringDict(self):
@@ -196,4 +201,13 @@ class InvestmentTransaction(Transaction):
 
 
     def print_trans(self, print_mode=True, include_sql_key=False):
-        stringToPrint = super().print_trans(print_mode=print_mode, include_sql_key=include_sql_key)
+        prnt_str = super().print_trans(print_mode=False, include_sql_key=include_sql_key)
+
+        # add some InvestmentTransaction specific information
+        prnt_str = prnt_str + " || TICKER: " + "".join(
+            self.ticker + self.getSpaces(len(str(self.account_id)), 10))
+
+        if print_mode:
+            print(prnt_str)
+        return prnt_str
+

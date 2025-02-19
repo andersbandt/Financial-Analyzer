@@ -126,45 +126,49 @@ class Ledger:
     ##############################################################################
 
     # printStatement: pretty prints a statement
-    def print_statement(self, include_sql_key=False):
+    def print_statement(self, include_sql_key=False, method=1):
         if self.transactions is None:
             print("ERROR: can't print empty ledger!")
             return
         print("Ledger: ", self.title)
 
         # OLD METHOD: using print_transaction
-        # for transaction in self.transactions:
-        #     transaction.print_trans(include_sql_key=include_sql_key)
+        if method == 0:
+            for transaction in self.transactions:
+                transaction.print_trans(include_sql_key=include_sql_key)
 
         # NEW METHOD: using prettytable
-        if include_sql_key:
-            headers = ["KEY", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
-        else:
-            headers = ["DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
-
-        values = []
-        for transaction in self.transactions:
+        elif method == 1:
             if include_sql_key:
-                cur_values = [
-                    transaction.sql_key,
-                    transaction.date,
-                    transaction.amount,
-                    transaction.description,
-                    cath.category_id_to_name(transaction.category_id),
-                    dbh.account.get_account_name_from_id(transaction.account_id),
-                    transaction.note
-                ]
+                headers = ["KEY", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
             else:
-                cur_values = [
-                    transaction.date,
-                    transaction.amount,
-                    transaction.description,
-                    cath.category_id_to_name(transaction.category_id),
-                    dbh.account.get_account_name_from_id(transaction.account_id),
-                    transaction.note
-                ]
-            values.append(cur_values)
-        clip.print_variable_table(headers, values, min_width=15, max_width=80, max_width_column="DESC")
+                headers = ["DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
+
+            values = []
+            for transaction in self.transactions:
+                if include_sql_key:
+                    cur_values = [
+                        transaction.sql_key,
+                        transaction.date,
+                        transaction.amount,
+                        transaction.description,
+                        cath.category_id_to_name(transaction.category_id),
+                        dbh.account.get_account_name_from_id(transaction.account_id),
+                        transaction.note
+                    ]
+                else:
+                    cur_values = [
+                        transaction.date,
+                        transaction.amount,
+                        transaction.description,
+                        cath.category_id_to_name(transaction.category_id),
+                        dbh.account.get_account_name_from_id(transaction.account_id),
+                        transaction.note
+                    ]
+                values.append(cur_values)
+            clip.print_variable_table(headers, values, min_width=15, max_width=80, max_width_column="DESC")
+
+        return True
 
     ##############################################################################
     ####      DATA SAVING FUNCTIONS    ###########################################
