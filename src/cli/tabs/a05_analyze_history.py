@@ -3,6 +3,7 @@
 @brief sub menu for performing ANALYSIS on financial data
 
 """
+# TODO: make every function quittable on at least the first item with the regular escape characters (q, quit, exit)
 
 # import needed packages
 from datetime import datetime, timedelta
