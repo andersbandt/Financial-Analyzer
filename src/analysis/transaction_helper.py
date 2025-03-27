@@ -28,7 +28,7 @@ def sum_transaction_total(transactions):
 def get_trans_category_cli(transaction, mode=2):
     # print transaction and prompt
     print("\n\n")
-    trans_prompt = transaction.printTransaction(print_mode=False)
+    trans_prompt = transaction.print_trans(print_mode=False)
 
     # MODE1: descend into tree
     if mode == 1:
@@ -50,7 +50,7 @@ def get_trans_category_cli(transaction, mode=2):
     print(f"Setting category {cath.category_id_to_name(cat_id)} for transaction.")
     transaction.setCategory(cat_id)
     print("\nNewly categorized transaction below")
-    transaction.printTransaction()
+    transaction.print_trans()
 
     # return newly associated Category ID so upper layer can properly change Transaction data
     return cat_id

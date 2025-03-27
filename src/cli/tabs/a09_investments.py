@@ -23,7 +23,6 @@ from tools import date_helper as dateh
 import db.helpers as dbh
 
 
-
 class TabInvestment(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
@@ -36,7 +35,8 @@ class TabInvestment(SubMenu):
                       Action("Add snapshot of live investment balances to database", self.a05_add_inv_balances),
                       Action("Add dividend", self.a06_add_dividend),
                       Action("Delete investment", self.a07_delete_investment),
-                      Action("Ticker investigation", self.a08_check_ticker)
+                      Action("Ticker investigation", self.a08_check_ticker),
+                      Action("DEBUG", self.a99_debug)
                       ]
 
         # call parent class __init__ method
@@ -98,6 +98,14 @@ class TabInvestment(SubMenu):
                 print("Ok. Cancelling adding investment")
                 return False
 
+        # if ticker is not a Money Market ticker, check if they want to add opposite buy/sell event
+        if not ticker == invh.get_account_mm_ticker(account_id):
+            is_mm_trnas = False
+            mm_trans = clih.promptYesNo("Do you want to add an equal and opposite money market SELL/BUY event?")
+        else:
+            is_mm_trans = True
+            mm_trans = False
+
         # check if InvestmentTransaction is a buy or sell
         buy_sell_int = clih.spinput("\nIs this a buy or sell? \t(1 for buy, 2 for sell): ", inp_type="int")
 
@@ -109,8 +117,7 @@ class TabInvestment(SubMenu):
             print("FUCK you entered something other than 1 or 2. I gotta quit now.")
             return False
 
-        # check if user wants to add an opposite buy/sell from settlement / money market fund
-        mm_trans = clih.promptYesNo("Do you want to add an equal and opposite money market SELL/BUY event?")
+        # TODO: add some logic that if we are a money market transaction (is_mm_trans) we only ask for value in dollars
 
         # get the number of shares
         shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
@@ -146,16 +153,20 @@ class TabInvestment(SubMenu):
                                           note=note)
 
         # insert money market transfer
-        # TODO: need method to get ticker for the specified account_id for the money market transactions. XML file?
         if mm_trans:
-            print("... want to add MM transaction but code is not complete yet ...")
-        #     dbh.investments.insert_investment(date,
-        #                                       account_id,
-        #                                       None,
-        #                                       shares,
-        #                                       inv_type,
-        #                                       value,
-        #                                       note="automatically added money market transaction")
+            mm_ticker = invh.get_account_mm_ticker(account_id)
+            if inv_type == "BUY":
+                mm_type = "SELL"
+            elif inv_type == "SELL":
+                mm_type = "BUY"
+
+            dbh.investments.insert_investment(date,
+                                              account_id,
+                                              mm_ticker,
+                                              value,
+                                              mm_type,
+                                              value,
+                                              note="automatically added money market transaction")
 
         return True
 
@@ -319,4 +330,7 @@ class TabInvestment(SubMenu):
         price = invh.get_ticker_price(ticker)
         print(f"Price: {price}")
 
-
+    def a99_debug(self):
+        account_id = "2000000005"
+        ticker = invh.get_account_mm_ticker(account_id)
+        print(f"Money Market Fund Ticker: {ticker}" if ticker else "Ticker not found.")

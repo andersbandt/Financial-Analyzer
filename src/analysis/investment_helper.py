@@ -6,6 +6,7 @@ import datetime
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import warnings
+import xml.etree.ElementTree as ET
 import requests
 
 # import user created modules
@@ -17,6 +18,9 @@ from utils import internet_helper
 
 # import logger
 from utils import logfn
+
+# XML filepath for saving money market tickers
+MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmticks.xml" # tag:hardcode
 
 
 class InvestmentHelperError(Exception):
@@ -85,24 +89,34 @@ def get_ticker_price(ticker):
     # set warnings to "ignore"
     warnings.filterwarnings("ignore", category=FutureWarning)
 
-    # download data from yf module
-    data = yf.download(ticker,
+    # METHOD 1: download data from yf module
+    try:
+        data = yf.download(ticker,
                        dateh.get_date_previous(1),
                        datetime.datetime.now())
-    if not data.empty:
-        price = data['Close'].iloc[-1]
-    else:
+    except requests.exceptions.JSONDecodeError:
+        data = None
+
+    if not data.empty or data is not None:
         try:
-            # attempt to get live price using yahoo_fin
-            price = si.get_live_price(ticker)
-            if np.isnan(price):
-                price = 0
-        except AssertionError:
+            price = float(data['Close'].iloc[0])  # Ensures it's a float
+            warnings.filterwarnings("default")
+            return price
+        except IndexError:
             pass
 
-    warnings.filterwarnings("default")
-    return price
+    # METHOD 2: attempt to get live price using yahoo_fin
+    try:
+        price = si.get_live_price(ticker)
+        if np.isnan(price):
+            price = 0
+        warnings.filterwarnings("default")
+        print(f"method 2: {price}")
+        return price
+    except (AssertionError, requests.exceptions.JSONDecodeError):
+        pass
 
+    return 0
 
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
@@ -161,6 +175,37 @@ def get_ticker_asset_type(ticker):
 ######      ACCOUNT FUNCTIONS               ##################################
 ##############################################################################
 
+# retrives the ticker for an accounts money market (mm) account
+def get_account_mm_ticker(account_id):
+    """
+    Retrieves the ticker symbol of a money market fund based on the given account_id from an XML file.
+
+    Parameters:
+        account_id (str or int): The account identifier.
+        file_path (str): Path to the XML file containing account-to-ticker mappings.
+
+    Returns:
+        str: The ticker symbol of the money market fund, or None if not found.
+    """
+    try:
+        # Parse the XML file
+        tree = ET.parse(MM_ACCOUNT_PATH)
+        root = tree.getroot()
+
+        # Search for the account ID in the XML
+        for account in root.findall("account"):
+            if account.get("id") == str(account_id):
+                return account.text  # Return the ticker symbol
+
+        print(f"No money market fund found for account: {account_id}")
+        return None
+
+    except FileNotFoundError:
+        print(f"Error: File '{MM_ACCOUNT_PATH}' not found.")
+        return None
+    except ET.ParseError:
+        print(f"Error: Failed to parse XML file '{MM_ACCOUNT_PATH}'.")
+        return None
 
 
 ##############################################################################
