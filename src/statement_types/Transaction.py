@@ -10,6 +10,7 @@ from dateutil.parser import parse
 
 # import user created modules
 import db.helpers as dbh
+from analysis import investment_helper as invh
 from categories import categories_helper as cath
 
 
@@ -138,7 +139,8 @@ class Transaction:
         return spaces
 
     # print_trans: pretty prints a single transaction
-    def print_trans(self, print_mode=True, include_sql_key=False):
+    # TODO: make this `trim` variable better (apply to generic columns)
+    def print_trans(self, print_mode=True, include_sql_key=False, trim=80):
         # TODO: eliminate this check for description type
         if self.description is None:
             self.description = ''
@@ -157,7 +159,7 @@ class Transaction:
                 + self.getSpaces(len(str(self.amount)), 8)
                 + " || DESC: "
                 + "".join(self.description[0:80])
-                + self.getSpaces(len(self.description), 80)
+                + self.getSpaces(len(self.description), trim)
         )
 
         if self.category_id is not None:
@@ -198,16 +200,47 @@ class InvestmentTransaction(Transaction):
         self.shares = shares
         self.trans_type = trans_type
         self.value = value
+        self.strike_price = self.value/self.shares
+        self.price = 0
+        self.gain = 0
 
+        self.update_price()
 
+    def update_price(self):
+        self.price = invh.get_ticker_price(self.ticker)
+
+    def get_price(self):
+        return round(self.price, 2)
+
+    def get_gain(self):
+        try:
+            self.gain = self.price/self.strike_price
+            self.gain = (self.gain - 1)*100  # express gain in percent
+        except ZeroDivisionError:
+            self.gain = 0
+
+        return round(self.gain, 3)
+
+# TODO: somehow capture in Obsidian or something that this thing exists and like class structure and shit
     def print_trans(self, print_mode=True, include_sql_key=False):
-        prnt_str = super().print_trans(print_mode=False, include_sql_key=include_sql_key)
-
         # add some InvestmentTransaction specific information
-        prnt_str = prnt_str + " || TICKER: " + "".join(
-            self.ticker + self.getSpaces(len(str(self.account_id)), 10))
+        prnt_str = " || TICKER: " + "".join(
+            self.ticker + self.getSpaces(len(str(self.account_id)), 14))
+
+        prnt_str = prnt_str + " || PRICE: " + "".join(
+            "$ " + str(self.get_price()) + self.getSpaces(len(str(self.account_id)), 14))
+
+        prnt_str = prnt_str + " || GAIN: " + "".join(
+            str(self.get_gain()) + "%" + self.getSpaces(len(str(self.account_id)), 13))
+
+        # add main Transaction stuff
+        tmp_note = self.note
+        self.note = None
+        prnt_str = prnt_str + super().print_trans(print_mode=False, include_sql_key=include_sql_key, trim=35)
+        self.note = tmp_note  # so hack lmao
 
         if print_mode:
             print(prnt_str)
         return prnt_str
+
 

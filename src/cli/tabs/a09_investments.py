@@ -73,7 +73,7 @@ class TabInvestment(SubMenu):
         transactions = transr.recall_investment_transaction()
         tmp_ledger = Ledger("All Investment Data")
         tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement(include_sql_key=True, method=0)
+        tmp_ledger.print_statement(include_sql_key=False, method=0)
 
     def a03_add_investment(self):
         print("... adding investment transaction ...")
