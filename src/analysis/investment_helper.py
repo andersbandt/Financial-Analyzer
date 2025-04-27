@@ -13,6 +13,7 @@ import requests
 import db.helpers as dbh
 from tools import date_helper as dateh
 from account import account_helper as acch
+from analysis.data_recall import transaction_recall as transr
 from cli import cli_printer as clip
 from utils import internet_helper
 
@@ -32,20 +33,20 @@ class InvestmentHelperError(Exception):
         return self.msg
 
 
-class Ticker:
-    def __init__(self, ticker, shares):
-        self.ticker = ticker
-        self.shares = shares
-        self.price = get_ticker_price(ticker)
-        self.value = self.shares * self.price
-        self.type = get_ticker_asset_type(ticker)
+# TODO: combine this with InvestmentTransaction? (delete Ticker?)
+# class Ticker:
+#     def __init__(self, ticker, shares):
+#         self.ticker = ticker
+#         self.shares = shares
+#         self.price = get_ticker_price(ticker)
+#         self.value = self.shares * self.price
 
 
-def create_ticker_from_transaction(transaction):
-    ticker = transaction[0]
-    shares = transaction[2]
-    ticker_class = Ticker(ticker, shares)
-    return ticker_class
+# def create_ticker_from_transaction(transaction):
+#     ticker = transaction[0]
+#     shares = transaction[2]
+#     ticker_class = Ticker(ticker, shares)
+#     return ticker_class
 
 
 ##############################################################################
@@ -212,14 +213,13 @@ def get_account_mm_ticker(account_id):
 ######      OVERALL ANALYSIS FUNCTIONS      ##################################
 ##############################################################################
 
+# get_all_active_ticker: returns "active" tickers
 def get_all_active_ticker():
     ticker_list = []
-    for acc_id in dbh.account.get_all_account_ids():
-        transactions = dbh.investments.get_active_ticker(acc_id)
-        for transaction in transactions:
-            ticker = create_ticker_from_transaction(transaction)
-            if ticker.shares != 0:
-                ticker_list.append(ticker)
+    transactions = transr.recall_investment_transaction()
+    for transaction in transactions:
+        if transaction.shares != 0:
+            ticker_list.append(transaction)
     return ticker_list
 
 

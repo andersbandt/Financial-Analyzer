@@ -204,6 +204,8 @@ class InvestmentTransaction(Transaction):
         self.price = 0
         self.gain = 0
 
+        self.type = invh.get_ticker_asset_type(ticker)
+
         self.update_price()
 
     def update_price(self):
