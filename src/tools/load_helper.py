@@ -222,12 +222,20 @@ def create_statement(year, month, filepath, account_id_prompt=False):
                                             -1,
                                                 exclude_header=True)  # date_col, amount_col, description_col, category_col
         return stat
+    elif account_id == 2000000020: # Amex Delta Gold Card
+        stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
+                                            0,
+                                            2,
+                                            1,
+                                            -1)  # date_col, amount_col, description_col, category_col
+        return stat
     # if no valid account_id was found
     else:
         print("\n\n#################### CRITICAL PROGRAM SOURCE ERROR   ###################################")
         print("No valid account selected in tools-load_helper-create_statement()")
         print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
         print("You likely need to edit the create_statement() function hardcode !!!")
+        print("psssst -- this function is located in src/tools/load_helper.py")
         raise Exception()
 
 
