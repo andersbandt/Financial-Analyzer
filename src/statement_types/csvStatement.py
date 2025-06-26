@@ -73,6 +73,10 @@ class csvStatement(Statement.Statement):
                     next(csv_reader, None)
 
                 for line in csv_reader:
+                    # FIX: added check for empty .csv files
+                    if len(line) == 0:
+                        break
+
                     # DATE
                     raw_date = line[self.date_col]
                     date = (raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5])  # year-month-date

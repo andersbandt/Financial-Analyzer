@@ -9,6 +9,9 @@ import statement_types.csvStatement as csvStatement
 import statement_types.Transaction as Transaction
 
 
+# TODO: can i figure out how to eliminate this and convert it to a csv statement? Might be a good use case of improving csvStatement class to have more options like the debit and crdit col and shit
+
+
 # below are the indexes (column numbers) of the source data from the CSV file
 # date
 # amount
@@ -58,6 +61,10 @@ class CitiMastercard(csvStatement.csvStatement):
                     next(csv_reader, None)
 
                 for line in csv_reader:
+                    # FIX: added check for empty .csv files
+                    if len(line) == 0:
+                        break
+
                     # DATE
                     raw_date = line[self.date_col]
                     date = (raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5])  # year-month-date
@@ -72,7 +79,10 @@ class CitiMastercard(csvStatement.csvStatement):
                     try:
                         amount = -1 * float(line[self.debit_col])
                     except ValueError:
-                        amount = -1 * float(line[self.credit_col])
+                        try:
+                            amount = -1 * float(line[self.credit_col])
+                        except ValueError:
+                            break
 
                     try:
                         transactions.append(Transaction.Transaction(date,

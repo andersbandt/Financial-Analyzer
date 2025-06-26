@@ -243,7 +243,7 @@ class TabBalances(SubMenu):
         # use clip to print table
         clip.print_variable_table(
             ["SQL key", "Balance", "Account", "Date"],
-            balance_arr,
+            balance_arr.tolist(),
             format_finance_col=2
         )
         return True
