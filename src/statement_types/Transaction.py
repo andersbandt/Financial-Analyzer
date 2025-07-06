@@ -10,21 +10,20 @@ from dateutil.parser import parse
 
 # import user created modules
 import db.helpers as dbh
-from analysis import investment_helper as invh
 from categories import categories_helper as cath
 
 
 class Transaction:
-    def __init__(self, date, account_id, category_id, amount, description, note=None, sql_key=None):
+    def __init__(self, date, account_id, category_id, value, description, note=None, sql_key=None):
         self.account_id = account_id
         self.category_id = category_id
         self.date = date
-        self.amount = amount
+        self.value = value
         self.note = note
         self.description = description
 
         try:
-            self.amount = float(self.amount)
+            self.value = float(self.value)
         except ValueError as e:
             print("ERROR: couldn't create transaction: ", description)
             print("Something went wrong creation transaction: ", e)
@@ -50,11 +49,11 @@ class Transaction:
 
     # check_amount: checks if a Transaction amount variable is valid
     def check_amount(self):
-        if type(self.amount) is float:
+        if type(self.value) is float:
             return True
 
-        if type(self.amount) is str:
-            result = self.amount.find(",")
+        if type(self.value) is str:
+            result = self.value.find(",")
 
             if result != -1:
                 print(
@@ -72,7 +71,7 @@ class Transaction:
 
     # getAmount: returns transaction amount
     def getAmount(self):
-        return self.amount
+        return self.value
 
     # get_category_string: returns transaction's category as a string
     def get_category_string(self):
@@ -155,8 +154,8 @@ class Transaction:
                 "DATE: "
                 + "".join(self.date)
                 + " || AMOUNT: "
-                + "".join(str(self.amount))
-                + self.getSpaces(len(str(self.amount)), 8)
+                + "".join(str(self.value))
+                + self.getSpaces(len(str(self.value)), 8)
                 + " || DESC: "
                 + "".join(self.description[0:80])
                 + self.getSpaces(len(self.description), trim)
@@ -182,7 +181,7 @@ class Transaction:
         string_dict = {
             "sql_key": self.sql_key,
             "date": self.date,
-            "amount": str(self.amount),
+            "amount": str(self.value),
             "description": str(self.description),
             "category": self.category_id,
             "source": self.account_id,
@@ -191,58 +190,6 @@ class Transaction:
         return string_dict
 
 
-class InvestmentTransaction(Transaction):
-    def __init__(self, date, account_id, category_id, ticker, shares, trans_type, value, description, note=None,
-                 sql_key=None):
-        super().__init__(date, account_id, category_id, value, description, note, sql_key)
 
-        self.ticker = ticker
-        self.shares = shares
-        self.trans_type = trans_type
-        self.value = value
-        self.strike_price = self.value/self.shares
-        self.price = 0
-        self.gain = 0
-
-        self.type = invh.get_ticker_asset_type(ticker)
-
-        self.update_price()
-
-    def update_price(self):
-        self.price = invh.get_ticker_price(self.ticker)
-
-    def get_price(self):
-        return round(self.price, 2)
-
-    def get_gain(self):
-        try:
-            self.gain = self.price/self.strike_price
-            self.gain = (self.gain - 1)*100  # express gain in percent
-        except ZeroDivisionError:
-            self.gain = 0
-
-        return round(self.gain, 3)
-
-# TODO: somehow capture in Obsidian or something that this thing exists and like class structure and shit
-    def print_trans(self, print_mode=True, include_sql_key=False):
-        # add some InvestmentTransaction specific information
-        prnt_str = " || TICKER: " + "".join(
-            self.ticker + self.getSpaces(len(str(self.account_id)), 14))
-
-        prnt_str = prnt_str + " || PRICE: " + "".join(
-            "$ " + str(self.get_price()) + self.getSpaces(len(str(self.account_id)), 14))
-
-        prnt_str = prnt_str + " || GAIN: " + "".join(
-            str(self.get_gain()) + "%" + self.getSpaces(len(str(self.account_id)), 13))
-
-        # add main Transaction stuff
-        tmp_note = self.note
-        self.note = None
-        prnt_str = prnt_str + super().print_trans(print_mode=False, include_sql_key=include_sql_key, trim=35)
-        self.note = tmp_note  # so hack lmao
-
-        if print_mode:
-            print(prnt_str)
-        return prnt_str
 
 

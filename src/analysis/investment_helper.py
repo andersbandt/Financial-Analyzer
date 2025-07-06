@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import datetime
+from datetime import timedelta
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import warnings
@@ -16,6 +17,7 @@ from account import account_helper as acch
 from analysis.data_recall import transaction_recall as transr
 from cli import cli_printer as clip
 from utils import internet_helper
+from statement_types.Transaction import Transaction
 
 # import logger
 from utils import logfn
@@ -31,6 +33,66 @@ class InvestmentHelperError(Exception):
 
     def __str__(self):
         return self.msg
+
+
+
+class InvestmentTransaction(Transaction):
+    def __init__(self, date, account_id, category_id, ticker, shares, value, trans_type, description, note=None,
+                 sql_key=None):
+        super().__init__(date, account_id, category_id, value, description, note, sql_key)
+
+
+        self.ticker = ticker
+        self.shares = shares
+        self.trans_type = trans_type
+        try:
+            self.strike_price = self.value/self.shares
+        except ZeroDivisionError:
+            self.strike_price = -1
+        self.price = 0
+        self.gain = 0
+
+        self.type = get_ticker_asset_type(ticker)
+
+        self.update_price()
+        self.value = self.price * self.shares
+
+    def update_price(self):
+        self.price = get_ticker_price(self.ticker)
+
+    def get_price(self):
+        return round(self.price, 2)
+
+    def get_gain(self):
+        try:
+            self.gain = self.price/self.strike_price
+            self.gain = (self.gain - 1)*100  # express gain in percent
+        except ZeroDivisionError:
+            self.gain = 0
+
+        return round(self.gain, 3)
+
+# TODO: somehow capture in Obsidian or something that this thing exists and like class structure and shit
+    def print_trans(self, print_mode=True, include_sql_key=False):
+        # add some InvestmentTransaction specific information
+        prnt_str = " || TICKER: " + "".join(
+            self.ticker + self.getSpaces(len(str(self.account_id)), 14))
+
+        prnt_str = prnt_str + " || PRICE: " + "".join(
+            "$ " + str(self.get_price()) + self.getSpaces(len(str(self.account_id)), 14))
+
+        prnt_str = prnt_str + " || GAIN: " + "".join(
+            str(self.get_gain()) + "%" + self.getSpaces(len(str(self.account_id)), 13))
+
+        # add main Transaction stuff
+        tmp_note = self.note
+        self.note = None
+        prnt_str = prnt_str + super().print_trans(print_mode=False, include_sql_key=include_sql_key, trim=35)
+        self.note = tmp_note  # so hack lmao
+
+        if print_mode:
+            print(prnt_str)
+        return prnt_str
 
 
 # TODO: combine this with InvestmentTransaction? (delete Ticker?)
@@ -80,42 +142,40 @@ def print_ticker_info(ticker):
 
 # get_ticker_price: returns the current live price for a certain ticker
 def get_ticker_price(ticker):
-    price = 0
-
     # check for internet connection
     if not internet_helper.is_connected():
         print('Not connected to Internet!')
         return False
 
-    # set warnings to "ignore"
-    warnings.filterwarnings("ignore", category=FutureWarning)
 
     # METHOD 1: download data from yf module
+    warnings.filterwarnings("ignore", category=FutureWarning)
     try:
         data = yf.download(ticker,
-                       dateh.get_date_previous(1),
-                       datetime.datetime.now())
+                       start=datetime.datetime.now(datetime.UTC) - timedelta(days=2),
+                       end=datetime.datetime.now(datetime.UTC))
     except requests.exceptions.JSONDecodeError:
         data = None
+    warnings.filterwarnings("default")
 
     if not data.empty or data is not None:
         try:
             price = float(data['Close'].iloc[0])  # Ensures it's a float
-            warnings.filterwarnings("default")
+            print(f"method 1: {price}")
             return price
         except IndexError:
             pass
 
-    # METHOD 2: attempt to get live price using yahoo_fin
-    try:
-        price = si.get_live_price(ticker)
-        if np.isnan(price):
-            price = 0
-        warnings.filterwarnings("default")
-        print(f"method 2: {price}")
-        return price
-    except (AssertionError, requests.exceptions.JSONDecodeError):
-        pass
+    # METHOD 2: attempt to get live price using yahoo_fin. This method seems to always fail
+    # try:
+    #     price = si.get_live_price(ticker)
+    #     if np.isnan(price):
+    #         price = 0
+    #     warnings.filterwarnings("default")
+    #     print(f"method 2: {price}")
+    #     return price
+    # except (AssertionError, requests.exceptions.JSONDecodeError):
+    #     pass
 
     return 0
 
@@ -142,19 +202,23 @@ def get_ticker_price_data(ticker, start_date, end_date, interval, filter_weekday
 
 def ticker_info_dump(ticker):
     ticker = yf.Ticker(ticker)
-    info = ticker.info
-    import pprint
-    pprint.pprint(info)
-    asset_type = info.get("quoteType")
-    industry = info.get("industry")
-    sector = info.get("sector")
-    exchange = info.get("exchange")
-    print(f"\nLooking at {ticker.ticker}")
-    print(f"asset_type: {asset_type}")
-    print(f"sector: {sector}")
-    print(f"industry: {industry}")
-    print(f"exchange: {exchange}")
-    return None
+    try:
+        info = ticker.info  # NOTE: too many request rate limited error when trying to call this
+        import pprint
+        pprint.pprint(info)
+        asset_type = info.get("quoteType")
+        industry = info.get("industry")
+        sector = info.get("sector")
+        exchange = info.get("exchange")
+        print(f"\nLooking at {ticker.ticker}")
+        print(f"asset_type: {asset_type}")
+        print(f"sector: {sector}")
+        print(f"industry: {industry}")
+        print(f"exchange: {exchange}")
+    except Exception as e:
+        print("ERROR: can't print ticker info")
+        print(e)
+        return None
 
 
 def get_ticker_asset_type(ticker):
@@ -237,11 +301,15 @@ def summarize_account(account_id, printmode=True):
         print('Not connected to Internet!')
         return 0
 
-    transactions = dbh.investments.get_active_ticker(account_id)
+    tickers = dbh.investments.get_account_ticker(account_id)
     account_value = 0
     ticker_table = []
-    for transaction in transactions:
-        ticker = create_ticker_from_transaction(transaction)
+    for ticker in tickers:
+        transaction = dbh.investments.get_ticker_shares(account_id, ticker[0])
+        #def __init__(self, date, account_id, category_id, ticker, shares, value, trans_type, description, note=None,sql_key=None):
+        ticker = InvestmentTransaction("2000/1/1", account_id, -1, transaction[0], transaction[2], -1, -1, "description")
+
+
         if ticker.shares != 0:
             account_value += ticker.value
             ticker_table.append([
