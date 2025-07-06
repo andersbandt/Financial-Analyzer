@@ -6,6 +6,7 @@
 
 # import user defined modules
 import db.helpers as dbh
+from analysis import investment_helper as invh
 from statement_types import Transaction
 from tools import date_helper as dateh
 
@@ -61,14 +62,14 @@ def convert_ledge_to_investment_transactions(ledger_data):
     transactions = []  # clear transactions
     for item in ledger_data:
         transactions.append(
-            Transaction.InvestmentTransaction(
+            invh.InvestmentTransaction(
                 item[1],  # date
                 item[2],  # account ID
                 item[3],  # category ID
                 item[4],  # ticker
                 item[5],  # shares,
+                item[7], # value
                 item[6],  # trans_type
-                item[7],  # value
                 item[8],  # description
                 note=item[9],  # note
                 sql_key=item[0]  # SQL key

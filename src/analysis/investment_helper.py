@@ -140,6 +140,17 @@ def print_ticker_info(ticker):
     return
 
 
+def get_last_trading_day():
+    today = datetime.datetime.utcnow().date()
+    weekday = today.weekday()
+
+    if weekday == 5:  # Saturday
+        return today - timedelta(days=1)
+    elif weekday == 6:  # Sunday
+        return today - timedelta(days=2)
+    else:
+        return today
+
 # get_ticker_price: returns the current live price for a certain ticker
 def get_ticker_price(ticker):
     # check for internet connection
@@ -147,13 +158,12 @@ def get_ticker_price(ticker):
         print('Not connected to Internet!')
         return False
 
-
     # METHOD 1: download data from yf module
     warnings.filterwarnings("ignore", category=FutureWarning)
     try:
         data = yf.download(ticker,
-                       start=datetime.datetime.now(datetime.UTC) - timedelta(days=2),
-                       end=datetime.datetime.now(datetime.UTC))
+                       start=get_last_trading_day(),
+                       end=get_last_trading_day() + timedelta(1))
     except requests.exceptions.JSONDecodeError:
         data = None
     warnings.filterwarnings("default")
