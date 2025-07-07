@@ -140,8 +140,9 @@ def print_ticker_info(ticker):
     return
 
 
+# TODO (LOW PRIORITY): this thing doesn't account for holidays that occur on a Friday. Kind of fixed it with always going 1 BEFORE last trading day
 def get_last_trading_day():
-    today = datetime.datetime.utcnow().date()
+    today = datetime.datetime.now()
     weekday = today.weekday()
 
     if weekday == 5:  # Saturday
@@ -162,8 +163,8 @@ def get_ticker_price(ticker):
     warnings.filterwarnings("ignore", category=FutureWarning)
     try:
         data = yf.download(ticker,
-                       start=get_last_trading_day(),
-                       end=get_last_trading_day() + timedelta(1))
+                       start=get_last_trading_day() - timedelta(1),
+                       end=get_last_trading_day())
     except requests.exceptions.JSONDecodeError:
         data = None
     warnings.filterwarnings("default")
@@ -171,21 +172,26 @@ def get_ticker_price(ticker):
     if not data.empty or data is not None:
         try:
             price = float(data['Close'].iloc[0])  # Ensures it's a float
-            print(f"method 1: {price}")
             return price
         except IndexError:
             pass
 
-    # METHOD 2: attempt to get live price using yahoo_fin. This method seems to always fail
-    # try:
-    #     price = si.get_live_price(ticker)
-    #     if np.isnan(price):
-    #         price = 0
-    #     warnings.filterwarnings("default")
-    #     print(f"method 2: {price}")
-    #     return price
-    # except (AssertionError, requests.exceptions.JSONDecodeError):
-    #     pass
+    # METHOD 2: Ticker class I guess?
+    mf = yf.Ticker(ticker)
+    hist = mf.history(period="1d")
+    if not hist.empty:
+        return hist['Close'].iloc[-1]
+
+    # METHOD 3: attempt to get live price using yahoo_fin. This method seems to always fail due to one of below errors
+    try:
+        price = si.get_live_price(ticker)
+        if np.isnan(price):
+            price = 0
+        warnings.filterwarnings("default")
+        print(f"method 2: {price}")
+        return price
+    except (AssertionError, requests.exceptions.JSONDecodeError):
+        pass
 
     return 0
 
