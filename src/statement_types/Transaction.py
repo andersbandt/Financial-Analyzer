@@ -69,7 +69,7 @@ class Transaction:
     ####      SETTER and GETTER FUNCTIONS    #####################################
     ##############################################################################
 
-    # getAmount: returns transaction amount
+    # getAmount: returns transaction.value
     def getAmount(self):
         return self.value
 

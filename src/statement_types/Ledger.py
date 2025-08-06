@@ -150,7 +150,7 @@ class Ledger:
                     cur_values = [
                         transaction.sql_key,
                         transaction.date,
-                        transaction.amount,
+                        transaction.value,
                         transaction.description,
                         cath.category_id_to_name(transaction.category_id),
                         dbh.account.get_account_name_from_id(transaction.account_id),
@@ -159,7 +159,7 @@ class Ledger:
                 else:
                     cur_values = [
                         transaction.date,
-                        transaction.amount,
+                        transaction.value,
                         transaction.description,
                         cath.category_id_to_name(transaction.category_id),
                         dbh.account.get_account_name_from_id(transaction.account_id),

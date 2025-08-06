@@ -110,7 +110,7 @@ class VanguardRoth(Statement.Statement):
         error_status = 0
         for transaction in transactions:
             try:
-                float(transaction.amount)
+                float(transaction.value)
             except ValueError as e:
                 print("Error: possibly have non float values as amounts:", e)
                 error_status = 1

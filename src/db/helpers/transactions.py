@@ -28,7 +28,7 @@ def insert_transaction(transaction: Transaction) -> bool:
                 transaction.date,
                 transaction.account_id,
                 transaction.category_id,
-                transaction.amount,
+                transaction.value,
                 transaction.description,
                 transaction.note,
                 datetime.datetime.now(),
@@ -87,7 +87,7 @@ def get_transaction(transaction: Transaction):
         cur = conn.cursor()
         cur.execute(
             "SELECT * FROM transactions WHERE date=? AND account_id=? AND amount=? AND description=?",
-            (transaction.date, transaction.account_id, transaction.amount, transaction.description),
+            (transaction.date, transaction.account_id, transaction.value, transaction.description),
         )
         results = cur.fetchall()
     if len(results) == 0:

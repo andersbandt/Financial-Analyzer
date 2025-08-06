@@ -97,19 +97,19 @@ class Statement(Ledger.Ledger):
             if not res:
                 return False
 
-        # INSERT TRANSACTION
-        error_flag = 0
-        for transaction in self.transactions:
-            success = dbh.ledger.insert_transaction(transaction)
-            if success == 0:
-                error_flag = 1
-
         # DO FINAL SANITY CHECK
         self.print_statement()
         res = clih.promptYesNo("You sure you want to save this statement? Last chance")
         if not res:
             print("Ok, aborting save statement!")
             return False
+
+        # INSERT TRANSACTION
+        error_flag = 0
+        for transaction in self.transactions:
+            success = dbh.ledger.insert_transaction(transaction)
+            if success == 0:
+                error_flag = 1
 
         # FINAL ERROR HANDLING
         if error_flag == 1:
