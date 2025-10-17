@@ -102,7 +102,7 @@ def sum_individual_category(transactions, category_id):
     for transaction in transactions:  # for every transaction in the statement
         if transaction.category_id == category_id:
             try:
-                total_amount += transaction.amount
+                total_amount += transaction.value
             except TypeError as e:
                 error = f"Uh oh, wrong type in transaction: {transaction.description}"
                 logger.exception(error)
@@ -165,8 +165,10 @@ def generate_sankey_data(transactions, categories):
 
     for transaction in transactions:
         # Get the category ID and corresponding Category object
-        cat_id = transaction.category_id
-        category = category_map.get(cat_id)
+        parent_id = cath.get_category_parent(
+            transaction.category_id,
+            printmode=True)
+        category = category_map.get(parent_id)
 
         if not category:
             # Skip if category is not found
@@ -177,7 +179,7 @@ def generate_sankey_data(transactions, categories):
         child_name = category.name
 
         # Aggregate transaction amount
-        spending_dict[(parent_name, child_name)] += transaction.amount
+        spending_dict[(parent_name, child_name)] += transaction.value
 
     # Convert aggregated data to spending_data format
     spending_data = [

@@ -98,6 +98,22 @@ def get_category_name_from_id(category_id):
             #         return None
 
 
+def get_category_parent_id(category_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT parent_id FROM category WHERE category_id=?", (category_id,))
+        try:
+            category_parent_id = cur.fetchall()[0][
+                0
+            ]  # have to get the first tuple element in array of results
+            return category_parent_id
+        except IndexError as e:
+            print("ERROR SQL:", e)
+            print("probably no results found for SQL query): ", e)
+            print("Can't get category parent_id for id: " + str(category_id))
+            #         return None
+
+
 def check_category_table_empty():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()

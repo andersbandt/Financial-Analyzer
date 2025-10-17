@@ -88,16 +88,22 @@ class csvStatement(Statement.Statement):
                         category = None
 
                     try:
+                        print(line)
                         transactions.append(Transaction.Transaction(date,
                                                                     self.account_id,  # account ID
                                                                     category,  # category
                                                                     float(line[self.amount_col]),  # amount
                                                                     line[self.description_col]  # description
                                                                     ))
+                    except ValueError as e:
+                        logger.debug("ERROR: problem some issue converting numerical values?")
+                        print("Can't load in file --> " + self.filepath)
+                        raise e
                     except Exception as e:
-                        print("Uh oh, couldn't load transactions based on supplied .csv column params")
+                        print("ERROR: Uh oh, couldn't load transactions based on supplied .csv column params")
                         print(e)
-                        # raise e
+                        print("Can't load in file --> " + self.filepath)
+                        raise e # NOTE: never uncomment this line ever. If something is messed up with loading this is the last line
 
         except FileNotFoundError:
             print("Uh oh, error in data loading")

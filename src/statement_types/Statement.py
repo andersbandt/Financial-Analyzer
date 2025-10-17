@@ -98,6 +98,7 @@ class Statement(Ledger.Ledger):
                 return False
 
         # DO FINAL SANITY CHECK
+        self.sort_date_desc()
         self.print_statement()
         res = clih.promptYesNo("You sure you want to save this statement? Last chance")
         if not res:

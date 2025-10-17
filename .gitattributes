@@ -1,0 +1,7 @@
+
+# don't change line endings for specific files
+*.sh	-text
+
+
+# but allow normaalization for everything else
+* text=auto

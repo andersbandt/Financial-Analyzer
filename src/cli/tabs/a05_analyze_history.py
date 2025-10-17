@@ -412,15 +412,17 @@ class TabSpendingHistory(SubMenu):
     # TODO: clean up the "non-graphical" transactions
     # TODO: it sucks because I put in a whole day to get this working with everything but ..... it might look better with only the top level categories
     def a05_make_sankey(self):
-        # set up date information
+        # set up date information\
+        # TODO: should I just have this actually enter calendar years? Or possible two options. 1- calendary year like 2024 or 2-date range
         days_ago = dateh.get_date_previous(365) # tag:HARDCODE
 
         # get raw transactions and categories to use from time period
         transactions = transr.recall_transaction_data(date_start=days_ago)
-        categories = cath.load_categories()
+
+        #categories = cath.load_categories()
+        categories = cath.get_top_level_categories()
 
         spending_data = anah.generate_sankey_data(transactions, categories)
-
 
         # Create source and target indices
         labels, sources, targets, values = anah.process_sankey_data(spending_data)
@@ -470,6 +472,9 @@ class TabSpendingHistory(SubMenu):
             dbh.transactions.update_transaction_note_k(sql_key, note_str)
             return True
 
+
+# TODO: these category things should move to section 7 on transaction categorization
+
     # TODO: this thing really needs to print out what transactions you are updating the category for
     def a08_update_transaction_category(self):
         print(" ... updating transaction categories ...")
@@ -484,16 +489,20 @@ class TabSpendingHistory(SubMenu):
 
         found_sql_key = []
         if search_type == 1:
-            # TODO: need to test this method (only done manual before)
             found_transactions = self.a03_search_trans()
             if found_transactions is False:
                 print("... and quitting update transactions category too !")
 
-            for transaction in found_transactions:
-                found_sql_key.append(transaction.sql_key)
+            # TODO: handle this case where only 1 transaction from the search is found more elegantly
+            if len(found_transactions) > 1:
+                for transaction in found_transactions:
+                    found_sql_key.append(transaction.sql_key)
+                else:
+                    found_sql_key[0] = transaction
         elif search_type == 2:
             found_sql_key.append(clih.spinput("Please enter sql key to update: ", inp_type="int"))
 
+        # TODO: structure of this function scares me, why am I doing all this stuff after the SQL keys are found?
         # prompt user to eliminate any transactions
         print(found_sql_key)
         status = True

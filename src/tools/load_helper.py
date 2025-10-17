@@ -227,7 +227,8 @@ def create_statement(year, month, filepath, account_id_prompt=False):
                                             0,
                                             2,
                                             1,
-                                            -1)  # date_col, amount_col, description_col, category_col
+                                            -1,
+                                            exclude_header=True)  # date_col, amount_col, description_col, category_col
         return stat
     # if no valid account_id was found
     else:

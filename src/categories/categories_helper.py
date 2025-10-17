@@ -63,6 +63,27 @@ def print_categories(categories_array):
 ####      CATEGORY FUNCTIONS     #############################################
 ##############################################################################
 
+# category_name_to_id: converts a category name to the ID
+def category_name_to_id(category_name):
+    try:
+        category_id = dbh.category.get_category_id_from_name(category_name)
+    except Exception as e:
+        print("Something went wrong getting category ID from name: " + str(category_name))
+        return -1
+    return category_id
+
+
+# category_id_to_name
+def category_id_to_name(category_id):
+    if category_id is None:
+        return "NA" #tag:hardcode?
+    return dbh.category.get_category_name_from_id(category_id)
+
+
+##############################################################################
+####      GETTER FUNCTIONS     ###############################################
+##############################################################################
+
 def get_category_children(category_id, printmode=None):
     # debug print statements
     if printmode == "debug":
@@ -86,26 +107,25 @@ def get_category_children(category_id, printmode=None):
     return category_children
 
 
-# category_name_to_id: converts a category name to the ID
-def category_name_to_id(category_name):
-    try:
-        category_id = dbh.category.get_category_id_from_name(category_name)
-    except Exception as e:
-        print("Something went wrong getting category ID from name: " + str(category_name))
-        return -1
-    return category_id
+def get_category_parent(category_id, printmode=None):
+    # debug print statement
+    if printmode:
+        print(f"... finding parent for category: {category_id}")
 
+    # find parent_id for category
+    old_parent_id = category_id
+    while True:
+        parent_id = dbh.category.get_category_parent_id(old_parent_id)
 
-# category_id_to_name
-def category_id_to_name(category_id):
-    if category_id is None:
-        return "NA" #tag:hardcode?
-    return dbh.category.get_category_name_from_id(category_id)
+        if parent_id is None or parent_id == 0:
+            return 0
+        if parent_id == 1:
+            return old_parent_id
 
+        old_parent_id = parent_id
 
-##############################################################################
-####      GETTER FUNCTIONS     ###############################################
-##############################################################################
+    return old_parent_id
+
 
 # get_category_strings: returns an array containing strings of all the category names
 def get_category_strings(categories_array):
