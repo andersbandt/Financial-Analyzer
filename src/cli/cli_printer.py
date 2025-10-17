@@ -64,8 +64,6 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
         # variable_names = ["Row"] + variable_names
 
     # populate data
-    logger.debug(f"Final modified NAMES are looking like: {variable_names}")
-    logger.debug(f"Final modified VALUES are looking like: {values}")
     table.field_names = variable_names
     table.add_rows(values)
     # set alignment and formatting

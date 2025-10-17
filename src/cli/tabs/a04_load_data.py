@@ -60,13 +60,15 @@ class TabLoadData(SubMenu):
         [year, month] = clih.prompt_year_month() # TODO: there is no check for valid year in this function
 
         # create list of Statement objects for each file for the particular month/year combination
+        printmode = False
         statement_list = loadh.get_month_year_statement_list(
             self.basefilepath,
             year,
             month,
-            printmode=False)
+            printmode=printmode)
         logger.debug(f"Statement list --> {statement_list}")
         logger.debug(f"Statement list has length {len(statement_list)}")
+        logger.debug(f"psst ... statement printmode is set to {printmode}")
 
         # join statement list into one "master" statement
         self.statement = loadh.join_statement(statement_list)
@@ -93,6 +95,7 @@ class TabLoadData(SubMenu):
         self.update_listing()
         return True
 
+    # TODO: why does this function exist again?
     def a02_load_all_data(self):
         print("... loading in ALL financial data")
         statement_list = []
@@ -121,9 +124,16 @@ class TabLoadData(SubMenu):
             return False
 
         self.statement = loadh.create_statement("dummy-year", "dummy-month", file_path, account_id_prompt=True)
+        # TODO: probably standardize the below code and make another function in load_helper.py?
+        try:
+            self.statement.load_statement_data()
+        except Exception as e:
+            print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
+            raise e
+
         self.statement.print_statement()
-        logger.info("Single statement file loaded successfully, can continue with load process")
         self.update_listing()
+        return True
 
     def a04_add_manual_transaction(self):
         print("... attempting to manually load in a transaction. Kinda scary. Don't mess up.")

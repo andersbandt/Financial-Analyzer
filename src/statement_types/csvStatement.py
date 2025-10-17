@@ -32,11 +32,13 @@ class csvStatement(Statement.Statement):
                  amount_col,
                  description_col,
                  category_col,
-                 exclude_header=False):
+                 exclude_header=False,
+                 inverse_amount=False):
         # call parent class __init__ method
         super().__init__(account_id, year, month, filepath)
 
         # set the .csv file search column numbering
+        self.inverse_amount = inverse_amount
         self.date_col = date_col
         self.amount_col = amount_col
         self.description_col = description_col
@@ -73,8 +75,7 @@ class csvStatement(Statement.Statement):
                     next(csv_reader, None)
 
                 for line in csv_reader:
-                    # FIX: added check for empty .csv files
-                    if len(line) == 0:
+                    if len(line) == 0:  # NOTE: added check for empty .csv files
                         break
 
                     # DATE
@@ -87,18 +88,23 @@ class csvStatement(Statement.Statement):
                     else:
                         category = None
 
+                    # AMOUNT
                     try:
-                        print(line)
-                        transactions.append(Transaction.Transaction(date,
-                                                                    self.account_id,  # account ID
-                                                                    category,  # category
-                                                                    float(line[self.amount_col]),  # amount
-                                                                    line[self.description_col]  # description
-                                                                    ))
+                        amount = float(line[self.amount_col])
                     except ValueError as e:
                         logger.debug("ERROR: problem some issue converting numerical values?")
                         print("Can't load in file --> " + self.filepath)
                         raise e
+                    if self.inverse_amount:
+                        amount = -1*amount
+
+                    try:
+                        transactions.append(Transaction.Transaction(date,
+                                                                    self.account_id,  # account ID
+                                                                    category,  # category
+                                                                    amount,  # amount
+                                                                    line[self.description_col]  # description
+                                                                    ))
                     except Exception as e:
                         print("ERROR: Uh oh, couldn't load transactions based on supplied .csv column params")
                         print(e)

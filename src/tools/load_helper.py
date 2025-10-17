@@ -222,13 +222,14 @@ def create_statement(year, month, filepath, account_id_prompt=False):
                                             -1,
                                                 exclude_header=True)  # date_col, amount_col, description_col, category_col
         return stat
-    elif account_id == 2000000020: # Amex Delta Gold Card
+    elif account_id == 2000000020:  # Amex Delta Gold Card
         stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
                                             0,
                                             2,
                                             1,
                                             -1,
-                                            exclude_header=True)  # date_col, amount_col, description_col, category_col
+                                            exclude_header=True,
+                                            inverse_amount=True)  # date_col, amount_col, description_col, category_col
         return stat
     # if no valid account_id was found
     else:
@@ -270,14 +271,11 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             status_list.append(False)
             account_list.append(None)
 
-    # print out what accounts got loaded in
-    if printmode:
-        acch.print_account_status(account_list)
-
     # print out final status list and return
-    if printmode:
-        concat_table_arr = np.vstack((status_list, account_list, file_list)).T
-        clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
+    concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+    clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
+
+    # TODO: I'm somehow missing that printout I used to have on which accounts actually had a file matched to them???
     return statement_list
 
 
