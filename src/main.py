@@ -1,3 +1,5 @@
+
+
 # import needed modules
 import sys
 from collections import defaultdict
@@ -5,7 +7,7 @@ from random import choice
 from loguru import logger
 
 # import user created modules
-import cli
+from cli import cli_main
 
 colors = ["blue", "cyan", "green", "magenta", "red", "yellow"]
 color_per_module = defaultdict(lambda: choice(colors))
@@ -25,7 +27,7 @@ def main():
     logger.add(sys.stdout, level=level[1])
 
     # run main CLI
-    cli.main()
+    cli_main.cli.main()
 
 
 def db_init():

@@ -16,3 +16,5 @@ requests
 legacy-cgi # if using Python 3.13 or greater
 loguru
 plotly
+scikit-learn
+

@@ -127,6 +127,20 @@ def get_category_parent(category_id, printmode=None):
     return old_parent_id
 
 
+
+def get_category_parent_path_upwards(category_id):
+    ancestors = []
+    current = category_id
+
+    while True:
+        parent = dbh.category.get_category_parent_id(current)
+        if parent == 1 or parent is 0:
+            break
+        ancestors.append(parent)
+        current = parent
+    return ancestors
+
+
 # get_category_strings: returns an array containing strings of all the category names
 def get_category_strings(categories_array):
     category_names = []
@@ -166,7 +180,7 @@ def get_category_children_obj(category):
 # create_Tree: creates a Tree object of the categories
 # @logfn
 def create_Tree(categories, cat_type="id"):
-    # logger.debug("category_helper.create_Tree: Generating Tree object of categories")
+    logger.debug("category_helper.create_Tree: Generating Tree object of categories")
     t = Tree()
     root = t.add_child(name="root")  # create root node
 
