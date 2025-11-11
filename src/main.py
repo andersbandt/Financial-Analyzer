@@ -27,7 +27,7 @@ def main():
     logger.add(sys.stdout, level=level[1])
 
     # run main CLI
-    cli_main.cli.main()
+    cli_main.main()
 
 
 def db_init():
