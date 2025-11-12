@@ -85,9 +85,7 @@ def get_account_id_from_name(account_name):
         cur = conn.cursor()
         cur.execute("SELECT account_id FROM account WHERE name=?", [account_name])
         try:
-            account_id = cur.fetchall()[0][
-                0
-            ]  # have to get the first tuple element in array of results
+            account_id = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
         except IndexError as e:
             print("ERROR (probably no results found for SQL query): ", e)
             print("Can't convert account ID to name")
@@ -142,6 +140,14 @@ def get_account_id_by_type(acc_type):
         cur.execute("SELECT account_id FROM account WHERE type=?", (acc_type,))
         account_names = [x[0] for x in cur.fetchall()]
     return account_names
+
+
+def get_account_type_by_id(account_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT type FROM account WHERE account_id=?", (account_id,))
+        acc_type = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
+    return acc_type
 
 
 def get_retirement_accounts(retirement_flag):

@@ -48,6 +48,11 @@ def get_account_id_by_type(acc_type):
     return acc_id
 
 
+def get_account_type_by_id(account_id):
+    acc_type = dbh.account.get_account_type_by_id(account_id)
+    return acc_type
+
+
 def get_retirement_account_id():
     retirement_acc_id_arr = dbh.account.get_retirement_accounts(1)
     return retirement_acc_id_arr

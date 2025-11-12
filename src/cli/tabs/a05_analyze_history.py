@@ -232,6 +232,8 @@ def search_02():
     # determine user choice of type of category search
     cat_search_type = clih.prompt_num_options("What type of category search?",
                                               ["recursive (children)", "individual"])
+    cat_search_type = 2 # tag:HARDCODE
+
     if cat_search_type == 1:
         search_str = clih.category_tree_prompt()
         children_id = cath.get_category_children(search_str)
