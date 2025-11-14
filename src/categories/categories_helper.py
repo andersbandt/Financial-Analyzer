@@ -74,10 +74,31 @@ def category_name_to_id(category_name):
 
 
 # category_id_to_name
+# def category_id_to_name(category_id):
+#     if category_id is None:
+#         return "NA" #tag:hardcode?
+#     return dbh.category.get_category_name_from_id(category_id)
+
+
+# NOTE: AI generated experimental version that can handle either single input or arrays
 def category_id_to_name(category_id):
-    if category_id is None:
-        return "NA" #tag:hardcode?
-    return dbh.category.get_category_name_from_id(category_id)
+    # Helper for a single value
+    def _single(v):
+        if v is None:
+            return "NA"
+        return dbh.category.get_category_name_from_id(int(v))
+
+    # Case 1 — single value (including int, str, None)
+    # Note: Strings are iterable, so we must check them explicitly.
+    if isinstance(category_id, (int, float, str)) or category_id is None:
+        return _single(category_id)
+
+    # Case 2 — array-like (list, tuple, numpy array, pandas Series)
+    try:
+        return [_single(v) for v in category_id]
+    except TypeError:
+        # If it fails iteration (unlikely), treat as single
+        return _single(category_id)
 
 
 ##############################################################################
@@ -127,14 +148,13 @@ def get_category_parent(category_id, printmode=None):
     return old_parent_id
 
 
-
 def get_category_parent_path_upwards(category_id):
     ancestors = []
     current = category_id
 
     while True:
         parent = dbh.category.get_category_parent_id(current)
-        if parent == 1 or parent is 0:
+        if parent == 1 or parent == 0:
             break
         ancestors.append(parent)
         current = parent

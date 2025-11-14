@@ -83,19 +83,18 @@ def get_category_id_from_name(category_name):
 
 
 def get_category_name_from_id(category_id):
+    # TODO: need to implement some type checking on here and MANY OTHER DATABASE FUNCTIONS.
+
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("SELECT name FROM category WHERE category_id=?", (category_id,))
         try:
-            category_name = cur.fetchall()[0][
-                0
-            ]  # have to get the first tuple element in array of results
+            category_name = cur.fetchall()[0][0]  # have to get the first tuple element in array of results
             return category_name
         except IndexError as e:
             print("ERROR SQL:", e)
-            print("probably no results found for SQL query): ", e)
-            print("Can't get category name for id: " + str(category_id))
-            #         return None
+            print(f"Can't get category name for id: {category_id}")
+            return None
 
 
 def get_category_parent_id(category_id):
