@@ -15,20 +15,22 @@ import matplotlib.pyplot as plt
 # import
 from scipy import sparse
 from scipy.sparse import hstack, csr_matrix
-
 from sklearn.base import BaseEstimator, TransformerMixin
-
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+from sklearn.preprocessing import StandardScaler, LabelEncoder, FunctionTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
+
 from sklearn.linear_model import LogisticRegression
+
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
 
 
 # TODO: some printout of all the categories (by name) and their scores would be nice. Bonus points to order them in score
@@ -98,13 +100,33 @@ class TextCleaner(BaseEstimator, TransformerMixin):
         return X_clean.values
 
 
+class FinancialTextCleaner:
+    def __call__(self, text):
+        if text is None:
+            return ""
+        text = text.lower()
+        text = re.sub(r"[^a-z0-9\s]", " ", text)  # keep numbers, drop punctuation
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+
 class TransactionClassifier:
     def __init__(self, max_iter=1000, class_weight='balanced'):
+        cleaner = FinancialTextCleaner()
+
         self.preprocess = ColumnTransformer(
+
             transformers=[
                 ("text", Pipeline([
-                    # ("clean", TextCleaner()),
-                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
+                    ("clean", FunctionTransformer(
+                        lambda x: [cleaner(t) for t in x], validate=False)),
+                    # ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
+                    ("hash", HashingVectorizer(
+                        ngram_range=(2, 5),  # char n-grams capture vendor patterns
+                        analyzer="char_wb",
+                        n_features=2 ** 15,
+                        alternate_sign=False  # helps logistic regression
+                    ))
                 ]), "description"),
                 # ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Year", "Month", "Day", "DayOfWeek", "IsMonthStart", "IsMonthEnd"])
                 ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Day", "DayOfWeek"])
@@ -116,7 +138,7 @@ class TransactionClassifier:
             ("clf", LogisticRegression(
                 multi_class="multinomial",
                 max_iter=max_iter,
-                class_weight=class_weight
+                class_weight=None
             ))
         ])
 
