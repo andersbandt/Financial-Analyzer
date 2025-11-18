@@ -10,6 +10,7 @@ from statement_types import Transaction
 # import
 import pandas as pd
 import re
+import numpy as np
 import matplotlib.pyplot as plt
 
 # import
@@ -33,19 +34,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
 
 
-# TODO: some printout of all the categories (by name) and their scores would be nice. Bonus points to order them in score
-
-# TODO: need to play with the text cleaning more, I don't think it's helping anything
-# TODO: also need to play with the text vectorizer more
-
-# TODO: do an audit of my training and test data collections
-
 # TODO: need to do some thinking on how I can train with categorical info but not need to include it in the final model ... like parent category or paths
 
 # TODO: refactor the `prepare_transactions` to not need to generate y ... don't need y when I'm using this thing normally
-
-# TODO:
-
 
 
 class TextCleaner(BaseEstimator, TransformerMixin):
@@ -105,7 +96,8 @@ class FinancialTextCleaner:
         if text is None:
             return ""
         text = text.lower()
-        text = re.sub(r"[^a-z0-9\s]", " ", text)  # keep numbers, drop punctuation
+        # text = re.sub(r"[^a-z0-9\s]", " ", text)  # keep numbers, drop punctuation
+        text = re.sub(r"[^\w\s]", "", text)
         text = re.sub(r"\s+", " ", text).strip()
         return text
 
@@ -120,13 +112,13 @@ class TransactionClassifier:
                 ("text", Pipeline([
                     ("clean", FunctionTransformer(
                         lambda x: [cleaner(t) for t in x], validate=False)),
-                    # ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
-                    ("hash", HashingVectorizer(
-                        ngram_range=(2, 5),  # char n-grams capture vendor patterns
-                        analyzer="char_wb",
-                        n_features=2 ** 15,
-                        alternate_sign=False  # helps logistic regression
-                    ))
+                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
+                    # ("hash", HashingVectorizer(
+                    #     ngram_range=(2, 5),  # char n-grams capture vendor patterns
+                    #     analyzer="char_wb",
+                    #     n_features=2**13,
+                    #     alternate_sign=False  # helps logistic regression
+                    # ))
                 ]), "description"),
                 # ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Year", "Month", "Day", "DayOfWeek", "IsMonthStart", "IsMonthEnd"])
                 ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Day", "DayOfWeek"])
@@ -249,29 +241,30 @@ print("TRAINING DATA INFO ABOVE !!!")
 
 
 ### STEP 3: CREATE TEST/TRAIN DATA
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # TODO: what influence do these parameters have?
 
 
 ### STEP 5: TRAIN CLASSIFIER
 print("... training model")
-tc = TransactionClassifier(max_iter=5000)
+tc = TransactionClassifier(max_iter=2000)
 tc.train(X_train, y_train)
-# tc.save("model.joblib")
 
 
 ### STEP 6: EVALUATE PERFORMANCE
 y_pred = tc.predict(X_test)
-print(classification_report(y_test, y_pred))
+
+
+unique_labels = np.unique(np.concatenate([y_test, y_pred]))
+category_names = [cath.category_id_to_name(lbl) for lbl in unique_labels]
+print(classification_report(y_test, y_pred, labels=unique_labels, target_names=category_names))
+
 
 # graph_accuracy([100, 500, 1000, 5000, 7500, 10000, 30000],
-#                X_train,
-#                X_test,
-#                y_train,
-#                y_test)
-
-
-
-
+# graph_accuracy([2**4, 2**8, 2**13, 2**15, 2**16, 2**17],
+               X_train,
+               X_test,
+               y_train,
+               y_test)
 
 
 ### actually unused code here
