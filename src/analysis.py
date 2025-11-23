@@ -1,161 +1,35 @@
 
 # import needed modules
-from data_recall import transaction_recall as transr
+from analysis.data_recall import transaction_recall as transr
 from categories import categories_helper as cath
 from account import account_helper as acch
 from tools import date_helper as dateh
 from statement_types import Transaction
+from analysis import transaction_classifier
 
 
 # import
 import pandas as pd
-import re
 import numpy as np
 import matplotlib.pyplot as plt
 
 # import
 from scipy import sparse
 from scipy.sparse import hstack, csr_matrix
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from sklearn.pipeline import Pipeline
-
-from sklearn.preprocessing import StandardScaler, LabelEncoder, FunctionTransformer
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.compose import ColumnTransformer
-
-from sklearn.linear_model import LogisticRegression
-
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
+
 
 
 # TODO: need to do some thinking on how I can train with categorical info but not need to include it in the final model ... like parent category or paths
 
 # TODO: refactor the `prepare_transactions` to not need to generate y ... don't need y when I'm using this thing normally
 
-
-class TextCleaner(BaseEstimator, TransformerMixin):
-    """
-    Cleans text data by converting to lowercase and removing punctuation.
-    Compatible with sklearn pipelines and ColumnTransformer.
-    """
-
-    def __init__(self):
-        pass
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        """
-        Transform input text data.
-
-        Parameters:
-        -----------
-        X : array-like, Series, or DataFrame
-            Input data to clean
-
-        Returns:
-        --------
-        numpy.ndarray : Cleaned text as 2D array (required for sklearn pipelines)
-        """
-
-        def preprocess_text(text):
-            if text is None or pd.isna(text):
-                return ""
-            text = str(text).lower()
-            text = re.sub(r"[^\w\s]", "", text)
-            text = re.sub(r"\s+", " ", text).strip()  # Normalize whitespace
-            return text
-
-        # Handle different input types
-        if isinstance(X, pd.DataFrame):
-            # If DataFrame with single column, extract it
-            if X.shape[1] == 1:
-                X_clean = X.iloc[:, 0].apply(preprocess_text)
-            else:
-                raise ValueError(f"Expected single column, got {X.shape[1]} columns")
-        elif isinstance(X, pd.Series):
-            X_clean = X.apply(preprocess_text)
-        else:
-            # Handle numpy array or list
-            X_clean = pd.Series(X).apply(preprocess_text)
-
-        # Return as 1D numpy array of strings
-        # TfidfVectorizer expects 1D array-like of strings
-        return X_clean.values
-
-
-class FinancialTextCleaner:
-    def __call__(self, text):
-        if text is None:
-            return ""
-        text = text.lower()
-        # text = re.sub(r"[^a-z0-9\s]", " ", text)  # keep numbers, drop punctuation
-        text = re.sub(r"[^\w\s]", "", text)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
-
-
-class TransactionClassifier:
-    def __init__(self, max_iter=1000, class_weight='balanced'):
-        cleaner = FinancialTextCleaner()
-
-        self.preprocess = ColumnTransformer(
-
-            transformers=[
-                ("text", Pipeline([
-                    ("clean", FunctionTransformer(
-                        lambda x: [cleaner(t) for t in x], validate=False)),
-                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
-                    # ("hash", HashingVectorizer(
-                    #     ngram_range=(2, 5),  # char n-grams capture vendor patterns
-                    #     analyzer="char_wb",
-                    #     n_features=2**13,
-                    #     alternate_sign=False  # helps logistic regression
-                    # ))
-                ]), "description"),
-                # ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Year", "Month", "Day", "DayOfWeek", "IsMonthStart", "IsMonthEnd"])
-                ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Day", "DayOfWeek"])
-            ]
-        )
-
-        self.model = Pipeline([
-            ("prep", self.preprocess),
-            ("clf", LogisticRegression(
-                multi_class="multinomial",
-                max_iter=max_iter,
-                class_weight=None
-            ))
-        ])
-
-        self.is_trained = False
-
-    def train(self, X, y):
-        self.model.fit(X, y)
-        self.is_trained = True
-
-    def predict(self, X):
-        if not self.is_trained:
-            raise RuntimeError("Model not trained.")
-        return self.model.predict(X)
-
-    def save(self, path="model.joblib"):
-        import joblib
-        joblib.dump(self.model, path)
-
-    @staticmethod
-    def load(path="model.joblib"):
-        import joblib
-        clf = TransactionClassifier()
-        clf.model = joblib.load(path)
-        clf.is_trained = True
-        return clf
 
 
 ### STEP 1: LOAD IN TRAINING DATA
@@ -246,7 +120,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 ### STEP 5: TRAIN CLASSIFIER
 print("... training model")
-tc = TransactionClassifier(max_iter=2000)
+tc = transaction_classifier.TransactionClassifier(max_iter=2000)
 tc.train(X_train, y_train)
 
 

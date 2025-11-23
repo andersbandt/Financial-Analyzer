@@ -98,7 +98,8 @@ class Ledger:
                 print("Transactions left:", num_to_categorize - i)
 
 
-    def
+    def categorize_ml(self):
+        pass
 
     ##############################################################################
     ####      ORDERING FUNCTIONS    ##############################################
