@@ -9,6 +9,7 @@ import yfinance as yf
 import warnings
 import xml.etree.ElementTree as ET
 import requests
+import yfinance.exceptions
 
 # import user created modules
 import db.helpers as dbh
@@ -41,7 +42,6 @@ class InvestmentTransaction(Transaction):
                  sql_key=None):
         super().__init__(date, account_id, category_id, value, description, note, sql_key)
 
-
         self.ticker = ticker
         self.shares = shares
         self.trans_type = trans_type
@@ -53,12 +53,15 @@ class InvestmentTransaction(Transaction):
         self.gain = 0
 
         self.type = get_ticker_asset_type(ticker)
-
         self.update_price()
         self.value = self.price * self.shares
 
     def update_price(self):
-        self.price = get_ticker_price(self.ticker)
+        try:
+            self.price = get_ticker_price(self.ticker)
+        except yfinance.exceptions.YFRateLimitError:
+            print("yfinance is currently rate limited. Can't update price")
+            return None
 
     def get_price(self):
         return round(self.price, 2)
@@ -239,8 +242,12 @@ def ticker_info_dump(ticker):
 
 def get_ticker_asset_type(ticker):
     ticker = yf.Ticker(ticker)
-    info = ticker.info
-    asset_type = info.get("quoteType")
+    try:
+        info = ticker.info
+        asset_type = info.get("quoteType")
+    except yfinance.exceptions.YFRateLimitError:
+        print("yfinance is currently rate limited. Can't get ticker asset type")
+        return None
     # industry = info.get("industry")
     # sector = info.get("sector")
     # exchange = info.get("exchange")

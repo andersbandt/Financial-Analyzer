@@ -1,6 +1,6 @@
 
 # import needed modules
-from analysis.data_recall import transaction_recall as transr
+from data_recall import transaction_recall as transr
 from categories import categories_helper as cath
 from account import account_helper as acch
 from tools import date_helper as dateh
@@ -261,10 +261,10 @@ print(classification_report(y_test, y_pred, labels=unique_labels, target_names=c
 
 # graph_accuracy([100, 500, 1000, 5000, 7500, 10000, 30000],
 # graph_accuracy([2**4, 2**8, 2**13, 2**15, 2**16, 2**17],
-               X_train,
-               X_test,
-               y_train,
-               y_test)
+#                X_train,
+#                X_test,
+#                y_train,
+#                y_test)
 
 
 ### actually unused code here
