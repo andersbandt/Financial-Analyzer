@@ -20,7 +20,6 @@ from cli import cli_helper as clih
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
 ##############################################################################
@@ -251,31 +250,37 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     account_list = []
     for file in file_list:
         statement = create_statement(year, month, file, account_id_prompt=False)
-        # NOTE: added this check to prevent returned statement list from having None in there
-        if statement is not None:
+        if statement is not None:  # NOTE: added this check to prevent returned statement list from having None in there
             statement_list.append(statement)
             status_list.append(True)
-            # account_name = dbh.account.get_account_name_from_id(statement_list[-1].account_id)
             account_list.append(statement_list[-1].account_id)
 
             try:
                 statement.load_statement_data()
+                if printmode:
+                    statement.print_statement()
             except Exception as e:
                 print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
                 raise e
 
-            if printmode:
-                statement.print_statement()
         else:
-            print("... seems like no statement could be created")
+            print(f"... seems like no statement could be created for {file}")
             status_list.append(False)
             account_list.append(None)
 
-    # print out final status list and return
+    # print out STATUS per FILE
     concat_table_arr = np.vstack((status_list, account_list, file_list)).T
     clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
 
-    # TODO: I'm somehow missing that printout I used to have on which accounts actually had a file matched to them???
-    return statement_list
+    # print out STATUS per ACCOUNT
+    account_id = acch.get_all_acc_id()
+    status_list = [acc_id in account_list for acc_id in account_id]
 
+    concat_table_arr = np.vstack(
+        ([acch.account_id_to_name(acc_id) for acc_id in account_id],
+         status_list)
+    ).T
+    clip.print_variable_table(["Account", "Status"], concat_table_arr)
+
+    return statement_list
 

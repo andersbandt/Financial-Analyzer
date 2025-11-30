@@ -52,7 +52,7 @@ class TabLoadData(SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
-    # TODO: this thing doesn't do the file summary printout anymore :(
+    # TODO: I think duplicate detection overwrites any previous note. Possibly standardize note additions within the Transaction class itself with a function
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
@@ -60,15 +60,13 @@ class TabLoadData(SubMenu):
         [year, month] = clih.prompt_year_month() # TODO: there is no check for valid year in this function
 
         # create list of Statement objects for each file for the particular month/year combination
-        printmode = False
         statement_list = loadh.get_month_year_statement_list(
             self.basefilepath,
             year,
             month,
-            printmode=printmode)
+            printmode=True) # NOTE: printmode controls the printing of each individual statement file
         logger.debug(f"Statement list --> {statement_list}")
         logger.debug(f"Statement list has length {len(statement_list)}")
-        logger.debug(f"psst ... statement printmode is set to {printmode}")
 
         # join statement list into one "master" statement
         self.statement = loadh.join_statement(statement_list)

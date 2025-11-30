@@ -99,6 +99,11 @@ class Ledger:
 
 
     def categorize_ml(self):
+        from analysis import transaction_classifier
+        tc = transaction_classifier.TransactionClassifier()
+        tc.load()
+
+
         pass
 
     ##############################################################################

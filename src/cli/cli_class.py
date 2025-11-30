@@ -48,7 +48,10 @@ class SubMenu:
     def run_sub_action(self, num):
         ind = num - 1  # take away 1 since menu starts at 1 but array starts at 0
         print("\n\nRUNNING: " + self.action_arr[ind].title)
-        status = self.action_arr[ind].action()
+        try:
+            status = self.action_arr[ind].action()
+        except KeyboardInterrupt:
+            status = False
         print(f"\nCompleted executing ACTION:'{self.action_arr[ind].title}' with exit code: {status}\n")
         return status
 
