@@ -70,7 +70,6 @@ class TabCategory(SubMenu):
                                   categories)
         return True
 
-
     def a03a_check_categories(self):
         # CHECK 1: check for double names
         categories = cath.load_categories
@@ -92,7 +91,6 @@ class TabCategory(SubMenu):
         # TODO: finish implementing this check on parent_id
 
         return True
-
 
     def a03_manage_keywords(self):
         print("... managing keywords ...")
@@ -135,12 +133,13 @@ class TabCategory(SubMenu):
             print("INVALID KEYWORD PRINTING!!!")
             return False
 
+        # print out final values now that we have `keyword_lg` defined properly
         table_values = []
         for keyword in keyword_lg:
             cat_name = cath.category_id_to_name(keyword[1])
-            table_values.append([cat_name, keyword[2]])
+            table_values.append([cat_name, keyword[0], keyword[2]])
         clip.print_variable_table(
-            ["Category", "Keyword String"],
+            ["Category", "ID", "Keyword String"],
             table_values
         )
 
@@ -182,7 +181,8 @@ class TabCategory(SubMenu):
         print(
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
 
-    # a07_delete_keyword: prompts user to delete keywords. Modeleed after a05_delete_category
+    # a07_delete_keyword: prompts user to delete keywords. Modeled after a05_delete_category
+    # TODO: add some final printout to summarize what is getting deleted
     def a07_delete_keyword(self):
         # print out keywords
         self.a04_print_keywords()

@@ -374,7 +374,8 @@ class TabSpendingHistory(SubMenu):
         ledger_exec = anah.return_ledger_exec_dict(transactions)
         print("\n")
         pprint(ledger_exec)
-        return True
+        # TODO: DEVIATION from returning boolean. How to handle? Sub helper function for the actual search probably?
+        return transactions
 
 
     # a04_graph_category: walks user through producing a graph of a certain category
@@ -499,8 +500,6 @@ class TabSpendingHistory(SubMenu):
             if len(found_transactions) > 1:
                 for transaction in found_transactions:
                     found_sql_key.append(transaction.sql_key)
-                else:
-                    found_sql_key[0] = transaction
         elif search_type == 2:
             found_sql_key.append(clih.spinput("Please enter sql key to update: ", inp_type="int"))
 
@@ -510,8 +509,9 @@ class TabSpendingHistory(SubMenu):
         status = True
         if search_type == 1:
             while status:
+                # TODO: ensure this spinput handles "no input" as quit? Think about it.
                 sql_to_remove = clih.spinput(
-                    "\nPlease enter sql key of transaction to remove from update list: ",
+                    "\nNow can pick to remove transactions. Quit if not needed.\nPlease enter sql key of transaction to remove from update list: ",
                     "int")
                 if sql_to_remove is False:
                     status = False
