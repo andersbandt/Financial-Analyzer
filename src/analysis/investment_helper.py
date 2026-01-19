@@ -21,7 +21,6 @@ from utils import internet_helper
 from statement_types.Transaction import Transaction
 
 # import logger
-from utils import logfn
 
 # XML filepath for saving money market tickers
 MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmticks.xml" # tag:hardcode
@@ -356,7 +355,6 @@ def summarize_account(account_id, printmode=True):
 ######      DATABASE FUNCTIONS      ##########################################
 ##############################################################################
 
-@logfn
 def create_active_investment_dict():
     inv_acc_id = acch.get_account_id_by_type(4)
     inv_ledge = []

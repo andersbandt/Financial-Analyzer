@@ -7,26 +7,34 @@
 # import needed modules
 import matplotlib.pyplot as plt
 import os
-import secrets
 import numpy as np
 import plotly.graph_objects as go
 
 # import user created modules
 import analysis.graphing.graphing_helper as grah
+from utils import BASEFILEPATH, IMAGE_FOLDER
 
 # import logger
-from utils import logfn
 from loguru import logger
+
+# Global counter for figure numbering
+_figure_counter = 0
 
 
 def save_fig():
-    # TODO: still figure out how to make order consistent (not random generation)
-    # Increment the counter for each saved figure
-    random_string = secrets.token_hex(2)
-    file_name = f"{random_string}.png"
-    save_path = os.path.join(os.getcwd(), "tmp", file_name)
+    """Save the current matplotlib figure with an auto-incrementing number."""
+    global _figure_counter
+    _figure_counter += 1
+    file_name = f"{_figure_counter:03d}.png"  # Zero-padded to 3 digits (001, 002, etc.)
+    save_path = os.path.join(BASEFILEPATH, IMAGE_FOLDER, file_name)
     plt.savefig(save_path)
     print(f"Saved figure as: {save_path}")
+
+
+def reset_figure_counter():
+    """Reset the figure counter back to 0. Useful when starting a new analysis session."""
+    global _figure_counter
+    _figure_counter = 0
 
 
 def show_plots():
@@ -37,7 +45,6 @@ def show_plots():
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
 
-@logfn
 def create_pie_chart(values, labels, explode=0.1, title="Pie Chart"):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
@@ -49,7 +56,6 @@ def create_pie_chart(values, labels, explode=0.1, title="Pie Chart"):
 
 
 # create_bar_chart:
-@logfn
 def create_bar_chart(labels, values, xlabel=None, title=None):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
@@ -116,7 +122,6 @@ def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=
 
 
 # create_stack_line_chart: creates a line chart that is "stacked"
-@logfn
 def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=None):
     # TODO: just add some built-in sorting to this function. I know I implemented it somewhere else too
 

@@ -9,15 +9,13 @@
 import os
 from fpdf import FPDF
 import subprocess
+import shutil
 
-# import user created modules
+# # import user created modules
 import utils
 
 # import logger
 from loguru import logger
-
-IMAGE_FOLDER = "tmp"
-OUTPUT_PDF = "tmp/balances_summary.pdf"
 
 
 #################################
@@ -38,13 +36,16 @@ def clear_tmp_folder():
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def generate_summary_pdf():
-    # Create a PDF document
+def generate_summary_pdf(doc_name):
+    ### START OF PDF CREATION
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
 
+    # Build full path to image folder
+    image_folder_path = os.path.join(utils.BASEFILEPATH, utils.IMAGE_FOLDER)
+
     # Get the list of PNG files in the folder
-    image_files = [f for f in os.listdir(IMAGE_FOLDER) if f.endswith('.png')]
+    image_files = [f for f in os.listdir(image_folder_path) if f.endswith('.png')]
 
     # Add each PNG file as a page to the PDF document
     for image_file in image_files:
@@ -53,12 +54,18 @@ def generate_summary_pdf():
         pdf.cell(200, 10, txt=image_file, ln=True)
 
         # Add the PNG image to the PDF page
-        pdf.image(os.path.join(IMAGE_FOLDER, image_file), x=10, y=20, w=180)
+        pdf.image(os.path.join(image_folder_path, image_file), x=10, y=20, w=180)
+
+    # Build full path for PDF output
+    pdf_filepath = os.path.join(utils.BASEFILEPATH, doc_name)
 
     # Save the PDF document
-    pdf.output(OUTPUT_PDF)
+    try:
+        pdf.output(pdf_filepath)
+    except PermissionError:
+        raise BaseException("Can't generate PDF! (Do you have it open?)")
+    ### END OF PDF CREATION
 
     # start the PDF document
-    pdf_filepath = f"{utils.BASEFILEPATH}/{OUTPUT_PDF}"
     print(f"Starting .PDF at filepath: {pdf_filepath}")
     subprocess.Popen(pdf_filepath, shell=True)

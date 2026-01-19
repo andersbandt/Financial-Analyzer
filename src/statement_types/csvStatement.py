@@ -16,7 +16,6 @@ import statement_types.Transaction as Transaction
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 # below are the indexes (column numbers) of the source data from the CSV file
 # date

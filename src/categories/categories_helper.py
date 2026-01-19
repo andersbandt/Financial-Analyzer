@@ -12,7 +12,6 @@ from categories import Category
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
 ##############################################################################
@@ -198,7 +197,6 @@ def get_category_children_obj(category):
 
 
 # create_Tree: creates a Tree object of the categories
-# @logfn
 def create_Tree(categories, cat_type="id"):
     logger.debug("category_helper.create_Tree: Generating Tree object of categories")
     t = Tree()

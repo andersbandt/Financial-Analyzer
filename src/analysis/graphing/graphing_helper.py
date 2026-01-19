@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # import logger
-from utils import logfn
 
 ##############################################################################
 ####      PLOTTING FUNCTIONS    ##############################################
@@ -137,7 +136,6 @@ def strip_non_expense_categories(cat_str_arr, amounts):
 
 
 # strip_zero_categories: strips any Category with 0$ of transaction data loaded
-@logfn
 def strip_zero_categories(categories, amounts):
     new_categories = []
     new_amounts = []
@@ -151,7 +149,6 @@ def strip_zero_categories(categories, amounts):
 
 
 # graph_format_expenses: absolutes all expenses and rounds to 2 decimal points
-@logfn
 def format_expenses(amounts):
     # iterate through expense amounts
     for i in range(0, len(amounts)):

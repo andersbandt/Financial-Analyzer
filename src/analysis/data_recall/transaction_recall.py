@@ -12,10 +12,8 @@ from tools import date_helper as dateh
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
-@logfn
 class TransactionRecallError(Exception):
     """Transaction Recall Error"""
 
@@ -27,7 +25,6 @@ class TransactionRecallError(Exception):
         return self.msg
 
 
-# @logfn
 def get_transaction(sql_key):
     ledge_transaction = dbh.transactions.get_transaction_by_sql_key(sql_key)
     transaction = convert_ledge_to_transactions(ledge_transaction)
@@ -40,7 +37,6 @@ def get_transaction(sql_key):
 
 
 # convert_ledge_to_transactions: converts raw SQL ledger data into Transaction objects
-# @logfn
 def convert_ledge_to_transactions(ledger_data):
     transactions = []  # clear transactions
     for item in ledger_data:

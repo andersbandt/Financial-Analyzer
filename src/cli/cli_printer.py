@@ -12,7 +12,6 @@ from prettytable.colortable import ColorTable, Theme
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
 my_custom_theme = Theme(default_color="91", # bright red
@@ -34,13 +33,11 @@ my_custom_theme = Theme(default_color="91", # bright red
 #   @param  format_finance_col      index of column number to format as financial data (starts at 0)
 #   @param  max_width_column        the max width of ANY column in the table
 #   @param  title                   optional title to display above the table
-# @logfn
 def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None,
                          max_width_column=None, add_row_numbers=True, title=None):
     # DEBUG PRINTOUT BELOW
-    # import pprint
-    # pprint.pprint(variable_names)
-    # pprint.pprint(values)
+    logger.debug(variable_names)
+    logger.debug(values)
     # END OF DEBUG PRINTOUT
 
     # table = ColorTable(theme=Themes.OCEAN) # green text with blue outline

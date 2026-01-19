@@ -94,11 +94,42 @@ class MainApplication:
 ###########################################################
 
 # main function
-def main():
+def main(tab_num=None, action_num=None):
+    """
+    Main function of CLI interface.
+
+    Args:
+        tab_num: Optional tab number (1-9) to run directly
+        action_num: Optional action number within the tab to run directly
+    """
     print("Executing main function of CLI interface")
 
-    # place main app
+    # create main app
     app = MainApplication()
 
-    # run application
-    app.mainloop()
+    # If tab and action specified, run directly
+    if tab_num is not None and action_num is not None:
+        # Validate tab number
+        if tab_num < 1 or tab_num > len(app.tabs):
+            print(f"Error: Tab {tab_num} is out of range (1-{len(app.tabs)})")
+            return
+
+        # Get the specified tab
+        selected_tab = app.tabs[tab_num - 1]  # Convert to 0-indexed
+
+        # Validate action number
+        if action_num < 1 or action_num > len(selected_tab.action_arr):
+            print(f"Error: Action {action_num} is out of range for tab '{selected_tab.title}' (1-{len(selected_tab.action_arr)})")
+            print("\nAvailable actions:")
+            for i, action in enumerate(selected_tab.action_arr, 1):
+                print(f"  {i}: {action.title}")
+            return
+
+        # Run the specific action
+        print(f"\n==> Running Tab {tab_num} ('{selected_tab.title}'), Action {action_num}")
+        selected_tab.run_sub_action(action_num)
+        print("\n==> Direct action completed")
+
+    else:
+        # Run interactive application
+        app.mainloop()

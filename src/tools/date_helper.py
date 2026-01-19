@@ -11,7 +11,6 @@ import re
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
 # iterate_dates: shit man ChatGPT wrote this guy. I use it in `balance_helper.py`

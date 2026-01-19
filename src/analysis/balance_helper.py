@@ -12,9 +12,7 @@ from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 
 # import logger
-from utils import logfn
 
-@logfn
 class BalanceHelperError(Exception):
     def __init__(self, origin="Balance Helper", msg="Error encountered"):
         self.msg = f"{origin} error encountered: {msg}"
@@ -133,7 +131,6 @@ def model_account_balance(account_id):
 
 
 # GRAPH TYPE 1: by account ID
-@logfn
 def graph_balance_1(edge_code_date, values_array, account_names_array):
     # Create a list of tuples (last_value, account_values, account_name) for sorting
     combined = [(account_value[-1], account_value, account_name) for account_value, account_name in

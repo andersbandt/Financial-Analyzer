@@ -3,7 +3,6 @@
 @brief sub menu for performing ANALYSIS on financial data
 
 """
-# TODO: make every function quittable on at least the first item with the regular escape characters (q, quit, exit)
 
 # import needed packages
 from pprint import pprint
@@ -24,6 +23,7 @@ from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
 from tools import date_helper as dateh
 from utils import log_helper as logh
+import utils
 
 # import user defined modules
 from statement_types import Ledger
@@ -36,186 +36,198 @@ from loguru import logger
 ####      GENERAL HELPER FUNCTIONS    ########################################
 ##############################################################################
 # exec_summary_01: produces a graph of the top-level categories over time
-def exec_summary_01(days_prev, num_slices):
+def exec_summary_01(time_param, method='date', num_slices=6):
+    """
+    Produces a graph of top-level categories over time.
+
+    Args:
+        time_param: If method='date', this is days_prev (int). If method='month', this is months_prev (int).
+        method: 'date' for date-based binning, 'month' for month-based retrieval
+        num_slices: Number of time slices (only used when method='date')
+
+    Returns:
+        True on success
+    """
     # LOAD CATEGORIES
     categories = cath.load_categories()
 
-    # get transactions between certain "edge codes"
-    date_bin_trans, edge_codes = anah.get_date_binned_transaction(days_prev,  # number of previous days
-                                                                  num_slices)  # n = 12 different slices
+    # Get transactions based on chosen method
+    if method == 'date':
+        # METHOD 1: Date-based binning
+        days_prev = time_param
+        date_bin_trans, edge_codes = anah.get_date_binned_transaction(days_prev, num_slices)
 
-    date_bin_dict_arr = []  # this will be an array of dictionaries
-    print("Analyzing spending on top categories for date binned transactions")
-    i = 0
-    for trans in date_bin_trans:
-        print("\n\n")
-        top_cat_str, amounts = anah.create_top_category_amounts_array(trans, categories, count_NA=False)
+        # Create labels from edge codes
+        labels = []
+        for i in range(len(edge_codes) - 1):
+            labels.append(edge_codes[i] + " to " + edge_codes[i + 1])
 
-        # do some post-processing on top-level categories and amounts
-        top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
+        title = "ExS 01: Top categories across time (date-based)"
 
-        # append dict to an array of all date ranges
-        date_bin_dict_arr.append(
-            {"date_range": edge_codes[i] + " to " + edge_codes[i + 1],
-             "amounts": amounts,
-             }
-        )
-        i += 1
+    elif method == 'month':
+        # METHOD 2: Month-based retrieval
+        months_prev = time_param
+        [current_year, current_month, day] = dateh.get_date_int_array()
 
-    # print our created array
-    pprint(date_bin_dict_arr)
+        # Calculate oldest month first
+        oldest_month = current_month - months_prev + 1
+        oldest_year = current_year
+        while oldest_month < 1:
+            oldest_month += 12
+            oldest_year -= 1
 
-    top_cat_dict = {}
-    for cat_str in top_cat_str:
-        top_cat_dict[cat_str] = []
+        # Build arrays from oldest to newest (left to right on graph)
+        date_bin_trans = []
+        labels = []
+        year = oldest_year
+        month = oldest_month
 
-    x_ax = []
-    for d_bin in date_bin_dict_arr:
-        x_ax.append(d_bin["date_range"])
-        i = 0
-        for amount in d_bin["amounts"]:
-            amount = -1 * amount
-            top_cat_dict[top_cat_str[i]].append(amount)
-            i += 1
+        for i in range(months_prev):
+            date_bin_trans.append(transr.recall_transaction_month_bin(year, month))
+            labels.append(f"{year}-{month:02d}")  # Zero-padded month for better sorting
+            month += 1
+            if month > 12:  # handle year wraparound
+                month = 1
+                year += 1
 
-    pprint(top_cat_dict)
+        title = f"ExS 01: Top categories across previous {months_prev} months"
+    else:
+        raise ValueError(f"Invalid method '{method}'. Must be 'date' or 'month'")
 
-    # populate array of y axis values (needed for graphing_analyzer function)
-    y_axis_arr = []
-    for cat_str in top_cat_str:
-        y_axis_arr.append(top_cat_dict[cat_str])
-
-    # set up graphing stuff
-    grapa.create_mul_line_chart(x_ax,
-                                y_axis_arr,
-                                title="ExB 01: Top categories across time",
-                                labels=top_cat_str,
-                                rotate_labels=True,
-                                legend=True,
-                                y_format='currency')
-
-
-# TODO: the order of this is not intuitive (oldest appears on far right)
-# TODO: this is simply the above executive summary with a different array of binned transactions. COMBINE
-# exec_summary_01b: produces graph of previous month ranges
-def exec_summary_01b(months_prev):
-    # populate array of date-binned transaction arrays
-    date_bin_trans = []
-    labels = []
-    [year, month, day] = dateh.get_date_int_array()
-    for i in range(0, months_prev):
-        date_bin_trans.append(transr.recall_transaction_month_bin(year, month))
-        labels.append(f"{year}-{month}")
-        month -= 1
-        if month < 1: # handle new year wraparound
-            month = 12
-            year -= 1
-
-    # perform analysis to sum
+    # Perform analysis to sum categories
     logger.debug("Analyzing spending on top categories for date binned transactions")
-    date_bin_dict_arr = anah.gen_bin_analysis_dict(date_bin_trans) # TODO: audit that I'm reusing this function in other exec summaries
+    date_bin_dict_arr = anah.gen_bin_analysis_dict(date_bin_trans)
 
-    # do even more analysis?
+    # Extract category strings from first bin
     top_cat_str = date_bin_dict_arr[0]["categories"]
+
+    # Build dictionary to organize amounts by category
     top_cat_dict = {}
     for cat_str in top_cat_str:
         top_cat_dict[cat_str] = []
+
+    # Populate amounts for each category across all bins
     for d_bin in date_bin_dict_arr:
         i = 0
         for amount in d_bin["amounts"]:
-            amount = -1 * amount
+            amount = -1 * amount  # Flip sign for expenses
             top_cat_dict[top_cat_str[i]].append(amount)
             i += 1
 
-    # SET UP Y-AXIS
+    # Set up y-axis array for graphing
     y_axis_arr = []
     for cat_str in top_cat_str:
         y_axis_arr.append(top_cat_dict[cat_str])
 
-    # set up graphing stuff
+    # Create the graph
     grapa.create_mul_line_chart(labels,
                                 y_axis_arr,
-                                title=f"ExS 01b: Top categories across previous {months_prev} months",
+                                title=title,
                                 labels=top_cat_str,
                                 rotate_labels=True,
                                 legend=True,
                                 y_format='currency')
+    return True
 
 
-# exec_summary_02:
-# TODO: to allow for 'comp_month_prev' to be > 12 I can use the mod % operator on it and then subtract from year
-# TODO: this function really does not work. The percents are always like equal to 100%
-# @brief 02 of my analysis spending history
-# @desc this function will compare the previous month to some predetermined date range of previous month spending
-# @param    comp_month_prev    this variable will determine how many months back to use as comparison "baseline"
+# exec_summary_02: compares previous month spending to baseline average
+# TODO: this function does not work (all percents are 100%)
 def exec_summary_02(comp_month_prev):
+    """
+    Compares the previous month's spending to an average of the months before it.
+
+    Args:
+        comp_month_prev: Number of months to use as baseline for comparison
+    """
     logger.info("\n\n\n... comparing previous month spending to running averages ...")
 
-    # STEP 1: get transactions from previous month
-    cur_date_arr = dateh.get_date_int_array()
-    prev_year = cur_date_arr[0]  # index 0 dateh.get_date_int_array() is YEAR
-    prev_month = cur_date_arr[1] - 1  # index 1 of dateh.get_date_int_array() is MONTH then less 1 for PREV MONTH
+    # Get current date
+    [current_year, current_month, _] = dateh.get_date_int_array()
+
+    # STEP 1: Calculate previous month
+    prev_month = current_month - 1
+    prev_year = current_year
     if prev_month < 1:
         prev_month = 12
         prev_year -= 1
-    prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
-    logger.info(f"Done retrieving transactions from previous month\n\t {prev_year}-{prev_month}")
 
-    # STEP 2: get transactions from baseline data (before previous month)
-    # TODO: step 2 logic could really be simplified. I need some nice date functions to handle this logic
-    baseline_month_start = prev_month - comp_month_prev
-    baseline_month_end = prev_month - 1
-    prev_year_start = prev_year
-    prev_year_end = cur_date_arr[0]
-    if baseline_month_start < 1:
-        baseline_month_start += 12
-        prev_year_start -= 1
-    if baseline_month_end < 1:
-        baseline_month_end = 12
-        prev_year_end -= 1
-    baseline_range_start = dateh.month_year_to_date_range(
-        prev_year_start,
-        baseline_month_start
-    )
-    baseline_range_end = dateh.month_year_to_date_range(
-        prev_year_end,
-        baseline_month_end
-    )
+    # Get previous month transactions
+    prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
+    logger.info(f"Previous month: {prev_year}-{prev_month:02d}")
+
+    # STEP 2: Calculate baseline period (comp_month_prev months BEFORE previous month)
+    # Example: If prev_month is Dec 2025 and comp_month_prev=3
+    # Baseline should be: Sep 2025, Oct 2025, Nov 2025
+    baseline_end_month = prev_month - 1
+    baseline_end_year = prev_year
+    while baseline_end_month < 1:
+        baseline_end_month += 12
+        baseline_end_year -= 1
+
+    baseline_start_month = baseline_end_month - comp_month_prev + 1
+    baseline_start_year = baseline_end_year
+    while baseline_start_month < 1:
+        baseline_start_month += 12
+        baseline_start_year -= 1
+
+    # Get date ranges for baseline period
+    baseline_range_start = dateh.month_year_to_date_range(baseline_start_year, baseline_start_month)
+    baseline_range_end = dateh.month_year_to_date_range(baseline_end_year, baseline_end_month)
+
+    # Get baseline transactions
     baseline_trans = transr.recall_transaction_data(
         baseline_range_start[0],
-        baseline_range_end[1],
+        baseline_range_end[1]
     )
-    logger.info(f"Done retrieving transactions from baseline\n\t {baseline_range_start[0]} TO {baseline_range_end[1]}")
+    logger.info(f"Baseline period: {baseline_range_start[0]} to {baseline_range_end[1]} ({comp_month_prev} months)")
 
-    # STEP 3: extract totals and make comparison
-    top_cat_str, prev_amounts = anah.create_top_category_amounts_array(prev_month_trans,
-                                                                       cath.load_categories(),
-                                                                       count_NA=False)
-    top_cat_str, baseline_amounts = anah.create_top_category_amounts_array(baseline_trans,
-                                                                           cath.load_categories(),
-                                                                           count_NA=False)
+    # STEP 3: Load categories and calculate amounts (only once to ensure consistency)
+    categories = cath.load_categories()
+    top_cat_str, prev_amounts = anah.create_top_category_amounts_array(
+        prev_month_trans, categories, count_NA=False
+    )
+    _, baseline_amounts = anah.create_top_category_amounts_array(
+        baseline_trans, categories, count_NA=False
+    )
 
-    # do some division on baseline to "normalize" it
-    baseline_amounts = [x / comp_month_prev for x in baseline_amounts]
+    # Strip non-expense categories for cleaner comparison
+    top_cat_str, prev_amounts = grah.strip_non_expense_categories(top_cat_str, prev_amounts)
+    _, baseline_amounts = grah.strip_non_expense_categories(top_cat_str, baseline_amounts)
+
+    # STEP 4: Calculate percentage differences
+    # Normalize baseline to monthly average (divide by number of comparison months)
+    baseline_avg = [abs(x) / comp_month_prev for x in baseline_amounts]
+    prev_abs = [abs(x) for x in prev_amounts]
+
     percent_diffs = []
-    for i in range(0, len(prev_amounts)):
-        if baseline_amounts[i] == 0:
-            delta = -1
+    for i in range(len(prev_abs)):
+        if baseline_avg[i] == 0:
+            # No baseline spending - can't calculate percentage
+            if prev_abs[i] == 0:
+                delta = 0  # No change (both zero)
+            else:
+                delta = 100  # New spending appeared
         else:
-            delta = prev_amounts[i] / baseline_amounts[i]
-            delta = delta - 1
-            delta = delta * 100
+            # Calculate percentage change: ((new - old) / old) * 100
+            delta = ((prev_abs[i] - baseline_avg[i]) / baseline_avg[i]) * 100
+
         percent_diffs.append(delta)
 
-        # do some printout
-        print(f"\t{top_cat_str[i]}\n\t\tDelta: {delta} %\n\t\t{baseline_amounts[i]} vs. {prev_amounts[i]}")
+        # Print detailed comparison
+        print(f"\t{top_cat_str[i]}")
+        print(f"\t\tPrevious month: ${prev_abs[i]:.2f}")
+        print(f"\t\tBaseline avg:   ${baseline_avg[i]:.2f}")
+        print(f"\t\tDelta:          {delta:+.1f}%\n")
 
-    title = f"ExS 02: Delta from past {comp_month_prev} months"
+    # STEP 5: Create bar chart
+    title = f"ExS 02: % Change from {comp_month_prev}-month average"
     grapa.create_bar_chart(
         top_cat_str,
         percent_diffs,
-        xlabel="% difference",
-        title=title)
+        xlabel="% change (positive = spent more than average)",
+        title=title
+    )
+    return True
 
 
 def search_01():
@@ -413,15 +425,20 @@ class TabSpendingHistory(SubMenu):
             return False
 
         # clear tmp folder
+        # TODO: somehow need to abstract the sequence of below (clearing tmp_folder, writing graph creation functions, and calling generate_summary_pdf)
         logh.clear_tmp_folder()
+        grapa.reset_figure_counter()
 
-        # EXEC 1: plot data from previous timeframe
+        # EXEC 1: plot data using date-based binning
         exec_summary_01(
-            months_prev * 30,  # number of days previous
-            6)  # number of bins (N)
+            time_param=months_prev * 30,  # days previous
+            method='date',
+            num_slices=6)
 
-        # EXEC 1b: plot data from previous N months
-        exec_summary_01b(months_prev)
+        # EXEC 1b: plot data using month-based retrieval
+        exec_summary_01(
+            time_param=months_prev,  # months previous
+            method='month')
 
         # EXEC 2: current categories with a big delta to past averages
         exec_summary_02(months_prev)
@@ -432,14 +449,13 @@ class TabSpendingHistory(SubMenu):
         transactions = transr.recall_transaction_data(days_ago, today)
         ledger_stats = anah.return_ledger_exec_dict(transactions)
         print(
-            f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago.strftime('%d')} days ago\n")
+            f"\nGot this for ledger statistics for past {months_prev} months\n\tor {days_ago} days ago\n")
         clip.print_dict(ledger_stats)
 
         # generate pdf file AND open
         print("\nGenerating .pdf ...")
-        image_folder = "tmp"
-        output_pdf = "tmp/spending_document.pdf"
-        logh.generate_summary_pdf(image_folder, output_pdf)
+
+        logh.generate_summary_pdf(utils.OUTPUT_PDF_2)
 
         # great, we made it
         return True

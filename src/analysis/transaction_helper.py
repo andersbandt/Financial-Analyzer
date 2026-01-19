@@ -12,7 +12,6 @@ from cli import cli_helper as clih
 from categories import categories_helper as cath
 
 # import logger
-from utils import logfn
 
 
 def sum_transaction_total(transactions):

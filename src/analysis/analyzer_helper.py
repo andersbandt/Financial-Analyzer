@@ -15,10 +15,8 @@ import tools.date_helper as dateh
 
 # import logger
 from loguru import logger
-from utils import logfn
 
 
-@logfn
 class AnalyzerHelperError(Exception):
     """Analyzer Helper Error"""
     def __init__(self, origin="AnalyzerHelper", msg="Error encountered"):
@@ -34,7 +32,6 @@ class AnalyzerHelperError(Exception):
 ##############################################################################
 
 # return_ledger_exec_summary: returns a dictionary containing a summary of critical information about an array of Transactions
-# @logfn
 def return_ledger_exec_dict(transactions):
     expenses = 0
     incomes = 0
@@ -64,39 +61,54 @@ def return_ledger_exec_dict(transactions):
 
 
 # month_bin_transaction_total: takes in a list of transactions and counts total for each month
-@logfn
 def month_bin_transaction_total(transactions, months_prev):
-    # get current date
-    [cur_year, cur_month, _] = dateh.get_date_int_array()  # Assuming this returns [year, month, day]
+    """
+    Bins transactions by month and returns totals for each month.
 
-    # Generate the 2D array of [month, year] combos
-    ym_arr = []
-    year = cur_year
-    month = cur_month
-    for _ in range(months_prev):
-        ym_arr.append([year, month])
-        month -= 1
-        if month == 0:  # Roll back to December of the previous year
-            month = 12
-            year -= 1
+    Args:
+        transactions: List of Transaction objects to analyze
+        months_prev: Number of previous months to analyze (including current month)
 
-    # Calculate month totals
+    Returns:
+        [labels, month_totals]: Labels (e.g., "2025-08") and corresponding totals
+    """
+    # Get current date
+    [current_year, current_month, _] = dateh.get_date_int_array()
+
+    # Calculate oldest month (go back months_prev - 1 because we include current month)
+    oldest_month = current_month - months_prev + 1
+    oldest_year = current_year
+    while oldest_month < 1:
+        oldest_month += 12
+        oldest_year -= 1
+
+    # Build arrays from oldest to newest (left to right on graph)
     month_totals = []
     labels = []
-    for ym in ym_arr:
-        date_range = dateh.month_year_to_date_range(ym[0], ym[1]) # year, month
+    year = oldest_year
+    month = oldest_month
 
-        # filter transactions by range and sum and add to running array total
+    for _ in range(months_prev):
+        # Get date range for this month
+        date_range = dateh.month_year_to_date_range(year, month)
+
+        # Filter transactions by this month's range and sum
         month_transactions = filter_transactions_date(transactions, date_range[0], date_range[1])
         month_totals.append(transh.sum_transaction_total(month_transactions))
-        labels.append(f"{ym[0]}-{ym[1]}")
+        labels.append(f"{year}-{month:02d}")
+
+        # Move to next month
+        month += 1
+        if month > 12:
+            month = 1
+            year += 1
+
     return [labels, month_totals]
 
 
 # sum_individual_category: returns the dollar ($) total of a certain category in an array of transactions
 #   @param   transactions    list of Transaction objects, category_id- category_id of interest
 #   @return  total_amount    $ dollar total of category
-# @logfn
 def sum_individual_category(transactions, category_id):
     total_amount = 0
     for transaction in transactions:  # for every transaction in the statement
@@ -111,7 +123,6 @@ def sum_individual_category(transactions, category_id):
 
 # create_category_amounts_array: returns the dollar ($) total of all categories in a statement
 # @param categories               this is a Category object
-# @logfn
 def create_category_amounts_array(transactions, categories):
     category_amounts = []  # form 1D array of amounts to return
     for category in categories:
@@ -121,7 +132,6 @@ def create_category_amounts_array(transactions, categories):
 
 # creates a summation of the top level categories (top root categories)
 #   the summation will be of all children node below the root
-# @logfn
 def create_top_category_amounts_array(transactions, categories, count_NA=True):
     tree = cath.create_Tree(categories, cat_type="id")
     top_cat_id = cath.get_top_level_categories(cat_type="id")
@@ -272,7 +282,6 @@ def get_date_binned_transaction(days_prev, N):
     return date_binned_transactions, edge_code_date
 
 
-# @logfn
 def filter_transactions_date(transactions, date_start, date_end):
     logger.debug(f"Filtering transactions between {date_start} TO {date_end}")
     filtered_transactions = []
@@ -290,7 +299,6 @@ def filter_transactions_date(transactions, date_start, date_end):
 #       this function split vectors of B --> N parts. Each part is called a Bx, which is a collection of balance ledger data
 #       @return    spl_Bx             an array of dictionary entries with entry[account_id] = balance amount
 #       @return    edge_code_date     date edge codes (string format YYYY-MM-DD)
-@logfn
 def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date object 'days_prev' less
     date_range_start = dateh.get_date_days_prev(date_range_end, days_prev)
