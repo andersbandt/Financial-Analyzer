@@ -33,10 +33,10 @@ my_custom_theme = Theme(default_color="91", # bright red
 #   @param  values                  a 2D array of the data to print. NOTE: can't be a NUMPY array
 #   @param  format_finance_col      index of column number to format as financial data (starts at 0)
 #   @param  max_width_column        the max width of ANY column in the table
-# TODO: add a title to this
+#   @param  title                   optional title to display above the table
 # @logfn
 def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None,
-                         max_width_column=None, add_row_numbers=True):
+                         max_width_column=None, add_row_numbers=True, title=None):
     # DEBUG PRINTOUT BELOW
     # import pprint
     # pprint.pprint(variable_names)
@@ -75,6 +75,10 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
     # set alignment and formatting
     table.align = "l"
     table.padding_width = 1
+
+    # print title if provided
+    if title is not None:
+        print(f"\n{title}")
     print(table)
 
 

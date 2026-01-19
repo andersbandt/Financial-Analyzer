@@ -166,6 +166,10 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
 
     user_input = autocomplete(prompt_str + " ", strings_arr)
 
+    # Check for quit commands
+    if esc_cmd(user_input):
+        return False
+
     if exact_match:
         if user_input not in strings_arr:
             print(user_input + " is not in inp_auto list!")
@@ -192,6 +196,8 @@ def get_year_input():
 
 def get_month_input():
     month = input("Enter month input (0-12): ")
+    if esc_cmd(month):
+        return False
     try:
         return int(month)
     except ValueError:

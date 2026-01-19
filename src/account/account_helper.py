@@ -62,10 +62,9 @@ def get_retirement_account_id():
 def account_name_to_id(account_name):
     try:
         category_id = dbh.account.get_account_id_from_name(account_name)
-    except Exception as e:  # TODO: narrow the scope of this Exception clause
+    except (KeyError, ValueError, LookupError) as e:
         print("Something went wrong getting account ID from name: " + str(account_name))
         raise e
-        return -1
     return category_id
 
 

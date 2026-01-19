@@ -221,6 +221,9 @@ def exec_summary_02(comp_month_prev):
 def search_01():
     search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description?",
                               "text")
+    if search_str is False:
+        print("Ok, quitting transaction search.\n")
+        return False
     transactions = transr.recall_transaction_desc_keyword(search_str)
     return transactions
 
@@ -233,12 +236,18 @@ def search_02():
 
     if cat_search_type == 1:
         search_str = clih.category_tree_prompt()
+        if search_str is False or search_str == -1:
+            print("Ok, quitting transaction search.\n")
+            return False
         children_id = cath.get_category_children(search_str)
         transactions = transr.recall_transaction_category(search_str)
         for child_id in children_id:
             transactions.extend(transr.recall_transaction_category(child_id))
     elif cat_search_type == 2:
         search_str = clih.category_prompt_all("What is the category to search for?", False)
+        if search_str is False:
+            print("Ok, quitting transaction search.\n")
+            return False
         transactions = transr.recall_transaction_category(search_str)
     elif cat_search_type is False:
         print("Ok, quitting transaction search.\n")
@@ -268,6 +277,115 @@ def search_04():
     return transactions
 
 
+def search_05_multi_filter():
+    """Multi-filter search - allows filtering by multiple criteria at once"""
+    print("\n... setting up multi-filter search ...")
+    print("You can apply multiple filters. Select filters one by one, then apply all at once.\n")
+
+    # Dictionary to store active filters
+    active_filters = {
+        'description': None,
+        'category': None,
+        'date_range': None,
+        'account': None,
+        'amount_min': None,
+        'amount_max': None
+    }
+
+    # Let user select which filters to apply
+    while True:
+        print("\n=== Current Active Filters ===")
+        for filter_name, filter_value in active_filters.items():
+            if filter_value is not None:
+                print(f"  {filter_name}: {filter_value}")
+
+        filter_options = [
+            "Add DESCRIPTION filter",
+            "Add CATEGORY filter",
+            "Add DATE RANGE filter",
+            "Add ACCOUNT filter",
+            "Add AMOUNT filter (min/max)",
+            "DONE - Apply filters and search"
+        ]
+
+        choice = clih.prompt_num_options("\nWhat filter would you like to add?: ", filter_options)
+
+        if choice is False:
+            print("Ok, quitting multi-filter search.\n")
+            return False
+        elif choice == 1:  # Description
+            search_str = clih.spinput("Enter keyword to search in description", "text")
+            if search_str is not False:
+                active_filters['description'] = search_str
+        elif choice == 2:  # Category
+            category_id = clih.category_prompt_all("What is the category to filter by?", False)
+            if category_id is not False:
+                active_filters['category'] = category_id
+        elif choice == 3:  # Date range
+            start_date = clih.get_date_input("What is the start date of search range?")
+            if start_date is not False:
+                end_date = clih.get_date_input("What is the end date of search range?")
+                if end_date is not False:
+                    active_filters['date_range'] = (start_date, end_date)
+        elif choice == 4:  # Account
+            account_id = clih.account_prompt_all("What is the account to filter by?")
+            if account_id is not False:
+                active_filters['account'] = account_id
+        elif choice == 5:  # Amount
+            print("\nAmount filter (leave blank to skip min or max)")
+            amount_min = clih.spinput("Enter minimum amount (or q to skip)", "float")
+            if amount_min is not False:
+                active_filters['amount_min'] = amount_min
+            amount_max = clih.spinput("Enter maximum amount (or q to skip)", "float")
+            if amount_max is not False:
+                active_filters['amount_max'] = amount_max
+        elif choice == 6:  # Done
+            break
+
+    # Check if any filters were set
+    if all(v is None for v in active_filters.values()):
+        print("No filters applied. Returning all transactions.")
+        return transr.recall_transaction_data()
+
+    # Start with all transactions or use date range as base
+    if active_filters['date_range'] is not None:
+        start_date, end_date = active_filters['date_range']
+        transactions = transr.recall_transaction_data(start_date, end_date)
+    else:
+        transactions = transr.recall_transaction_data()
+
+    print(f"\nStarting with {len(transactions)} transactions")
+
+    # Apply each filter progressively
+    if active_filters['description'] is not None:
+        keyword = active_filters['description'].lower()
+        transactions = [t for t in transactions if keyword in t.description.lower()]
+        print(f"After description filter: {len(transactions)} transactions")
+
+    if active_filters['category'] is not None:
+        cat_id = active_filters['category']
+        transactions = [t for t in transactions if t.category_id == cat_id]
+        print(f"After category filter: {len(transactions)} transactions")
+
+    if active_filters['account'] is not None:
+        acc_id = active_filters['account']
+        transactions = [t for t in transactions if t.account_id == acc_id]
+        print(f"After account filter: {len(transactions)} transactions")
+
+    if active_filters['amount_min'] is not None:
+        min_val = active_filters['amount_min']
+        transactions = [t for t in transactions if t.value >= min_val]
+        print(f"After minimum amount filter: {len(transactions)} transactions")
+
+    if active_filters['amount_max'] is not None:
+        max_val = active_filters['amount_max']
+        transactions = [t for t in transactions if t.value <= max_val]
+        print(f"After maximum amount filter: {len(transactions)} transactions")
+
+    print(f"\n=== Final result: {len(transactions)} transactions ===\n")
+    return transactions
+
+
 class TabSpendingHistory(SubMenu):
     def __init__(self, title, basefilepath):
 
@@ -291,6 +409,9 @@ class TabSpendingHistory(SubMenu):
     # a01_exec_summary: creates a list of "executive summary items" about spending data
     def a01_exec_summary(self):
         months_prev = clih.spinput("How many months previous would you like to examine?", inp_type="int")
+        if months_prev is False:
+            print("Ok, quitting executive summary")
+            return False
 
         # clear tmp folder
         logh.clear_tmp_folder()
@@ -335,13 +456,12 @@ class TabSpendingHistory(SubMenu):
         return True
 
 
-    # TODO: add filtering of multiple options at once (description and amount amount < M, date would be super nice, etc)
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
         print("... searching transactions ...")
 
         # get input on what type of search to do
-        search_options = ["DESCRIPTION", "CATEGORY", "DATE", "ACCOUNT"]
+        search_options = ["DESCRIPTION", "CATEGORY", "DATE", "ACCOUNT", "MULTI-FILTER"]
         search_type = clih.prompt_num_options("What type of search do you want to perform?: ",
                                               search_options)
         if search_type is False:
@@ -357,16 +477,21 @@ class TabSpendingHistory(SubMenu):
             transactions = search_03()
         elif search_type == 4:
             transactions = search_04()
+        elif search_type == 5:
+            transactions = search_05_multi_filter()
         else:
             print(f"Can't perform search with search type of: {search_type}")
+            return False
+
+        # check if search was cancelled
+        if transactions is False:
+            print("Search cancelled.")
             return False
 
         # form Ledger, print, and return executive summary
         tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type}")
         tmp_ledger.set_statement_data(transactions)
         tmp_ledger.print_statement(include_sql_key=True)
-
-        # TODO: add some "enter statement" CLI hook here where I can perform my normal search functions.
 
         ledger_exec = anah.return_ledger_exec_dict(transactions)
         print("\n")
@@ -379,7 +504,7 @@ class TabSpendingHistory(SubMenu):
     def a04_graph_category(self):
         # get category ID
         category_id = clih.category_prompt_all("What is the category to graph?", False)
-        if category_id is None or 0:
+        if category_id is None or category_id is False or category_id == 0:
             print("Ok, quitting graph category")
             return False
 
@@ -434,7 +559,13 @@ class TabSpendingHistory(SubMenu):
     def a06_review_month(self):
         # get month of interest
         year = clih.get_year_input()
+        if year is False:
+            print("Ok, quitting review month")
+            return False
         month = clih.get_month_input()
+        if month is False:
+            print("Ok, quitting review month")
+            return False
 
         month_transactions = transr.recall_transaction_month_bin(year, month)
         tmp_ledger = Ledger.Ledger(f"Transactions from ({year},{month})")
@@ -475,11 +606,10 @@ class TabSpendingHistory(SubMenu):
 
 # TODO: these category things should move to section 7 on transaction categorization
 
-    # TODO: this thing really needs to print out what transactions you are updating the category for
     def a08_update_transaction_category(self):
         print(" ... updating transaction categories ...")
 
-        # get input on what type of search to do
+        # STEP 1: Get transactions to update
         search_options = ["SEARCH", "MANUAL"]
         search_type = clih.prompt_num_options("How do you want to procure sql key to update?: ",
                                               search_options)
@@ -492,49 +622,90 @@ class TabSpendingHistory(SubMenu):
             found_transactions = self.a03_search_trans()
             if found_transactions is False:
                 print("... and quitting update transactions category too !")
+                return False
 
-            # TODO: handle this case where only 1 transaction from the search is found more elegantly
-            if len(found_transactions) > 1:
+            # Add all found transactions to the list
+            if len(found_transactions) >= 1:
                 for transaction in found_transactions:
                     found_sql_key.append(transaction.sql_key)
-        elif search_type == 2:
-            found_sql_key.append(clih.spinput("Please enter sql key to update: ", inp_type="int"))
+            else:
+                print("No transactions found from search. Quitting.")
+                return False
 
-        # TODO: structure of this function scares me, why am I doing all this stuff after the SQL keys are found?
-        # prompt user to eliminate any transactions
-        print(found_sql_key)
-        status = True
+        elif search_type == 2:
+            sql_key = clih.spinput("Please enter sql key to update: ", inp_type="int")
+            if sql_key is False:
+                print("Ok, quitting transaction update\n")
+                return False
+            found_sql_key.append(sql_key)
+
+        # STEP 2: Show transactions found and allow removal if from search
+        print(f"\n=== Found {len(found_sql_key)} transaction(s) ===")
+        for id_key in found_sql_key:
+            transaction = transr.get_transaction(id_key)
+            transaction.printTransaction(include_sql_key=True)
+
         if search_type == 1:
+            print("\n--- You can now remove transactions you don't want to update ---")
+            status = True
             while status:
-                # TODO: ensure this spinput handles "no input" as quit? Think about it.
                 sql_to_remove = clih.spinput(
-                    "\nNow can pick to remove transactions. Quit if not needed.\nPlease enter sql key of transaction to remove from update list: ",
+                    "\nEnter sql key of transaction to REMOVE from update list (or quit to continue): ",
                     "int")
                 if sql_to_remove is False:
                     status = False
                 else:
-                    found_sql_key.remove(sql_to_remove)
-                    # reprint updated list
-                    print("\n")
-                    for id_key in found_sql_key:
-                        transaction = transr.get_transaction(id_key)
-                        transaction.printTransaction(include_sql_key=True)
+                    if sql_to_remove in found_sql_key:
+                        found_sql_key.remove(sql_to_remove)
+                        print(f"Removed sql_key={sql_to_remove}")
+                        # reprint updated list
+                        print(f"\n=== {len(found_sql_key)} transaction(s) remaining ===")
+                        for id_key in found_sql_key:
+                            transaction = transr.get_transaction(id_key)
+                            transaction.printTransaction(include_sql_key=True)
+                    else:
+                        print(f"sql_key={sql_to_remove} not in list!")
 
         if len(found_sql_key) == 0:
-            print("No transaction left to update. Quitting")
+            print("No transactions left to update. Quitting")
             return False
 
-        # prompt user to get new category ID
-        new_category_id = clih.category_prompt_all(
-            "What is the new category for this grouping of transactions?",
-            False)  # display = False
+        # STEP 3: Show final list and get new category
+        print(f"\n=== Final list: {len(found_sql_key)} transaction(s) will be updated ===")
+        for id_key in found_sql_key:
+            transaction = transr.get_transaction(id_key)
+            transaction.printTransaction(include_sql_key=True)
 
-        # iterate through final list of keys and update their category ID
+        new_category_id = clih.category_prompt_all(
+            "\nWhat is the new category for these transactions?",
+            False)
+
+        if new_category_id is False:
+            print("Ok, quitting transaction category update")
+            return False
+
+        # STEP 4: Final confirmation
+        new_category_name = cath.category_id_to_name(new_category_id)
+        print(f"\n=== CONFIRMATION ===")
+        print(f"About to update {len(found_sql_key)} transaction(s) to category: {new_category_name}")
+        print(f"SQL keys: {found_sql_key}")
+
+        confirm = clih.promptYesNo("Are you sure you want to update these transactions?")
+        if not confirm:
+            print("Ok, cancelling transaction category update")
+            return False
+
+        # STEP 5: Update transactions
         for key in found_sql_key:
-            dbh.transactions.update_transaction_category_k(
-                key,
-                new_category_id)
+            dbh.transactions.update_transaction_category_k(key, new_category_id)
+
+        print(f"\n✓ Successfully updated {len(found_sql_key)} transaction(s) to category: {new_category_name}")
+        return True
 
     def a09_examine_category(self):
         category_id = clih.category_prompt_all("What is the category to examine?", display=False)
+        if category_id is False:
+            print("Ok, quitting examine category")
+            return False
+        # TODO: implement category examination logic
         return False

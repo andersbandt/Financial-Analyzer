@@ -100,13 +100,23 @@ def get_stacked_bar_chart(x_ind, y_1, y_2, title, width, scale_factor, x_ticks=N
 
 # strip_non_graphical_transactions: strips certain transactions that are part of categories
 #   that don't graph well
-# TODO: finish this function actually
 def strip_non_graphical_transactions(transactions):
-    non_graphical = ["BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"] # tag:HARDCODE
+    from categories import categories_helper as cath
+    non_graphical_names = ["BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"] # tag:HARDCODE
+
+    # Convert category names to IDs for comparison
+    non_graphical_ids = []
+    for cat_name in non_graphical_names:
+        try:
+            cat_id = cath.category_name_to_id(cat_name)
+            non_graphical_ids.append(cat_id)
+        except:
+            # Category might not exist, skip it
+            pass
 
     new_transactions = []
     for trans in transactions:
-        if trans.category_id not in non_graphical:
+        if trans.category_id not in non_graphical_ids:
             new_transactions.append(trans)
 
     return new_transactions

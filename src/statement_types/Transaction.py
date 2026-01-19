@@ -36,6 +36,7 @@ class Transaction:
         # __init__ error handling
         if self.description is None:
             print("Uh oh, transaction created without description")
+            self.description = ''
 
         self.check_date()
         self.check_amount()
@@ -138,16 +139,14 @@ class Transaction:
         return spaces
 
     # print_trans: pretty prints a single transaction
-    # TODO: make this `trim` variable better (apply to generic columns)
     def print_trans(self, print_mode=True, include_sql_key=False, trim=80):
-        # TODO: eliminate this check for description type
-        if self.description is None:
-            self.description = ''
-
         if include_sql_key:
             prnt_str = "KEY: " + "".join(str(self.sql_key)) + "    "
         else:
             prnt_str = ""
+
+        # truncate description to trim length
+        truncated_desc = self.description[0:trim] if len(self.description) > trim else self.description
 
         # add remaining columns
         prnt_str += (
@@ -157,8 +156,8 @@ class Transaction:
                 + "".join(str(self.value))
                 + self.getSpaces(len(str(self.value)), 8)
                 + " || DESC: "
-                + "".join(self.description[0:80])
-                + self.getSpaces(len(self.description), trim)
+                + "".join(truncated_desc)
+                + self.getSpaces(len(truncated_desc), trim)
         )
 
         if self.category_id is not None:
