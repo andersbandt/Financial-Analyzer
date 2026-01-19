@@ -37,6 +37,12 @@ my_custom_theme = Theme(default_color="91", # bright red
 # @logfn
 def print_variable_table(variable_names, values, min_width=15, max_width=40, format_finance_col=None,
                          max_width_column=None, add_row_numbers=True):
+    # DEBUG PRINTOUT BELOW
+    # import pprint
+    # pprint.pprint(variable_names)
+    # pprint.pprint(values)
+    # END OF DEBUG PRINTOUT
+
     # table = ColorTable(theme=Themes.OCEAN) # green text with blue outline
     # table = CustomColorTable()
     table = ColorTable(theme=my_custom_theme)  # green text with blue outline

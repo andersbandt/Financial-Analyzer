@@ -124,6 +124,7 @@ tc = transaction_classifier.TransactionClassifier(max_iter=2000)
 tc.train(X_train, y_train)
 
 
+
 ### STEP 6: EVALUATE PERFORMANCE
 y_pred = tc.predict(X_test)
 
@@ -131,6 +132,7 @@ y_pred = tc.predict(X_test)
 unique_labels = np.unique(np.concatenate([y_test, y_pred]))
 category_names = [cath.category_id_to_name(lbl) for lbl in unique_labels]
 print(classification_report(y_test, y_pred, labels=unique_labels, target_names=category_names))
+
 
 
 # graph_accuracy([100, 500, 1000, 5000, 7500, 10000, 30000],
@@ -141,34 +143,13 @@ print(classification_report(y_test, y_pred, labels=unique_labels, target_names=c
 #                y_test)
 
 
-### actually unused code here
 
-# def encode_categorical_features(data: pd.DataFrame):
-#     cat_features = ["CategoryPath"]
-#     enc = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-#     encoded = enc.fit_transform(data[cat_features])
-#     encoded_df = pd.DataFrame(encoded, columns=enc.get_feature_names_out(cat_features))
-#     data = pd.concat([data.drop(columns=cat_features), encoded_df], axis=1)
-#     return data, enc
+res = input("Do you want to save this classifier? (y or n)")
+if res == "y":
+    print("Ok, saving classifier!")
+    tc.save()
+else:
+    print("Ok, NOT saving")
 
-# create category ancestry chain for addition to vectors
-# def add_category_features(data: pd.DataFrame):
-    # do frequency encoding
-    # freq_map = data["category_id"].value_counts(normalize=True)
-    # # Map back to original DataFrame
-    # data["CategoryIDFreq"] = data["category_id"].map(freq_map)
 
-    # data["CategoryTop"] = data["category_id"].apply(
-    #     lambda x: cath.get_category_parent_path_upwards(x)[-1] if cath.get_category_parent_path_upwards(x) else 0
-    # )
 
-    # add paths back to parent
-    # cat_paths = []
-    # for cid in data["category_id"]:
-    #     if pd.isna(cid):
-    #         cat_paths.append(["Unknown"])
-    #     else:
-    #         cat_paths.append(cath.get_category_parent_path_upwards(cid))
-    # # Join ancestry chain into a string for encoding later
-    # data["CategoryPath"] = [" > ".join(map(str, path)) for path in cat_paths]
-    # return data

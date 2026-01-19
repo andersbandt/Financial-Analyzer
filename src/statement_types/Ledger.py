@@ -97,14 +97,55 @@ class Ledger:
                 i += 1
                 print("Transactions left:", num_to_categorize - i)
 
-
     def categorize_ml(self):
+        """
+        Categorize uncategorized transactions using the trained ML model.
+        """
+        import pandas as pd
         from analysis import transaction_classifier
-        tc = transaction_classifier.TransactionClassifier()
-        tc.load()
+        from account import account_helper as acch
 
+        # Get uncategorized transactions
+        uncategorized = self.getUncategorizedTrans()
+        if len(uncategorized) == 0:
+            print("No uncategorized transactions to classify.")
+            return
 
-        pass
+        print(f"Classifying {len(uncategorized)} transactions using ML model...")
+
+        # Load the trained model
+        tc = transaction_classifier.TransactionClassifier.load()
+
+        # Convert transactions to DataFrame with same format as training data
+        data = pd.DataFrame([{
+            "description": t.description,
+            "value": t.value,
+            "account_id": t.account_id,
+            "date": t.date
+        } for t in uncategorized])
+
+        # Create the same features used during training
+        data["DateTime"] = pd.to_datetime(data["date"], format="%Y-%m-%d", errors="coerce")
+        data["AccountType"] = data["account_id"].apply(acch.get_account_type_by_id)
+        data["Day"] = data["DateTime"].dt.day
+        data["DayOfWeek"] = data["DateTime"].dt.dayofweek
+
+        # Drop columns not needed for prediction
+        X = data.drop(columns=["account_id", "date", "DateTime"])
+
+        # Predict categories
+        predicted_categories = tc.predict(X)
+
+        # Update transactions with predicted categories
+        for transaction, category_id in zip(uncategorized, predicted_categories):
+            transaction.setCategory(category_id)
+            if transaction.note:
+                transaction.note = transaction.note + ";ml_classified"
+            else:
+                transaction.note = "ml_classified"
+
+        print(f"Successfully classified {len(uncategorized)} transactions.")
+        return True
 
     ##############################################################################
     ####      ORDERING FUNCTIONS    ##############################################

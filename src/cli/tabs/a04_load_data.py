@@ -206,9 +206,13 @@ class TabLoadData(SubMenu):
         self.statement.categorizeLedgerAutomatic(categories)
         self.statement.print_statement()
 
+        # TODO: accuracy isn't there to roll this in, or I can just make it more easy to update categories
+        # res = clih.promptYesNo("Do you want to attempt ML categorization of transactions?")
+        # if res:
+        #     self.statement.categorize_ml()
+
         res = clih.promptYesNo("Do you want to attempt manual categorization of remaining transactions?")
         if res:
-
             self.statement.categorize_manual()
         else:
             print("Ok, leaving statement with just automatic categorization applied")

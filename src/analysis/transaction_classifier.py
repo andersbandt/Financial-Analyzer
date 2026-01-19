@@ -80,21 +80,15 @@ class FinancialTextCleaner:
 
 class TransactionClassifier:
     def __init__(self, max_iter=1000, class_weight='balanced'):
-        cleaner = FinancialTextCleaner()
+        self.cleaner = FinancialTextCleaner()
 
         self.preprocess = ColumnTransformer(
 
             transformers=[
                 ("text", Pipeline([
                     ("clean", FunctionTransformer(
-                        lambda x: [cleaner(t) for t in x], validate=False)),
+                        self._clean_text_batch, validate=False)),
                     ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
-                    # ("hash", HashingVectorizer(
-                    #     ngram_range=(2, 5),  # char n-grams capture vendor patterns
-                    #     analyzer="char_wb",
-                    #     n_features=2**13,
-                    #     alternate_sign=False  # helps logistic regression
-                    # ))
                 ]), "description"),
                 # ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Year", "Month", "Day", "DayOfWeek", "IsMonthStart", "IsMonthEnd"])
                 ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Day", "DayOfWeek"])
@@ -112,6 +106,10 @@ class TransactionClassifier:
 
         self.is_trained = False
 
+    def _clean_text_batch(self, x):
+        """Helper method for cleaning text in batches. Must be a regular method for pickling."""
+        return [self.cleaner(t) for t in x]
+
     def train(self, X, y):
         self.model.fit(X, y)
         self.is_trained = True
@@ -121,12 +119,12 @@ class TransactionClassifier:
             raise RuntimeError("Model not trained.")
         return self.model.predict(X)
 
-    def save(self, path="model.joblib"):
+    def save(self, path="analysis/model.joblib"):
         import joblib
         joblib.dump(self.model, path)
 
     @staticmethod
-    def load(path="model.joblib"):
+    def load(path="analysis/model.joblib"):
         import joblib
         clf = TransactionClassifier()
         clf.model = joblib.load(path)

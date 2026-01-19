@@ -270,6 +270,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
 
     # print out STATUS per FILE
     concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+    concat_table_arr = concat_table_arr.tolist()
     clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
 
     # print out STATUS per ACCOUNT
@@ -280,6 +281,7 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
         ([acch.account_id_to_name(acc_id) for acc_id in account_id],
          status_list)
     ).T
+    concat_table_arr = concat_table_arr.tolist()
     clip.print_variable_table(["Account", "Status"], concat_table_arr)
 
     return statement_list

@@ -182,6 +182,8 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
 
 def get_year_input():
     year = input("Enter year input: ")
+    if esc_cmd(year):
+        return False
     try:
         return int(year)
     except ValueError:
