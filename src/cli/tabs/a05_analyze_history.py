@@ -7,11 +7,11 @@
 
 # import needed packages
 from pprint import pprint
+import utils
 
 # import user defined CLI modules
 import cli.cli_helper as clih
 import cli.cli_printer as clip
-import utils
 from cli.cli_class import SubMenu
 from cli.cli_class import Action
 
@@ -392,15 +392,14 @@ class TabSpendingHistory(SubMenu):
         self.basefilepath = basefilepath  # had to add this in, at some point maybe delete?
 
         # initialize information about sub menu options
-        action_arr = [Action("Executive summary", self.a01_exec_summary),
-                      Action("Print database transactions", self.a02_print_db_trans),
-                      Action("Search transactions", self.a03_search_trans),
-                      Action("Graph category data", self.a04_graph_category),
-                      Action("Generate sankey (not working)", self.a05_make_sankey),
-                      Action("Review specific month transactions", self.a06_review_month),
-                      Action("Add note to transaction", self.a07_add_note),
-                      Action("Update transaction category", self.a08_update_transaction_category),
-                      Action("Examine specific category", self.a09_examine_category)
+        action_arr = [
+              Action("Executive summary", self.a01_exec_summary),
+              Action("Print database transactions", self.a02_print_db_trans),
+              Action("Search transactions", self.a03_search_trans),
+              Action("Graph category data", self.a04_graph_category),
+              Action("Generate sankey (not working)", self.a05_make_sankey),
+              Action("Review specific month transactions", self.a06_review_month),
+              Action("Add note to transaction", self.a07_add_note),
                       ]
 
         # call parent class __init__ method
@@ -556,6 +555,7 @@ class TabSpendingHistory(SubMenu):
         grapa.generate_sankey(labels, sources, targets, values)
         return True
 
+
     def a06_review_month(self):
         # get month of interest
         year = clih.get_year_input()
@@ -573,6 +573,7 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.sort_trans_asc()
         tmp_ledger.print_statement(include_sql_key=True)
         return True
+
 
     def a07_add_note(self):
         # get sql key of transaction
@@ -604,108 +605,3 @@ class TabSpendingHistory(SubMenu):
             return True
 
 
-# TODO: these category things should move to section 7 on transaction categorization
-
-    def a08_update_transaction_category(self):
-        print(" ... updating transaction categories ...")
-
-        # STEP 1: Get transactions to update
-        search_options = ["SEARCH", "MANUAL"]
-        search_type = clih.prompt_num_options("How do you want to procure sql key to update?: ",
-                                              search_options)
-        if search_type is False:
-            print("Ok, quitting transaction update\n")
-            return False
-
-        found_sql_key = []
-        if search_type == 1:
-            found_transactions = self.a03_search_trans()
-            if found_transactions is False:
-                print("... and quitting update transactions category too !")
-                return False
-
-            # Add all found transactions to the list
-            if len(found_transactions) >= 1:
-                for transaction in found_transactions:
-                    found_sql_key.append(transaction.sql_key)
-            else:
-                print("No transactions found from search. Quitting.")
-                return False
-
-        elif search_type == 2:
-            sql_key = clih.spinput("Please enter sql key to update: ", inp_type="int")
-            if sql_key is False:
-                print("Ok, quitting transaction update\n")
-                return False
-            found_sql_key.append(sql_key)
-
-        # STEP 2: Show transactions found and allow removal if from search
-        print(f"\n=== Found {len(found_sql_key)} transaction(s) ===")
-        for id_key in found_sql_key:
-            transaction = transr.get_transaction(id_key)
-            transaction.printTransaction(include_sql_key=True)
-
-        if search_type == 1:
-            print("\n--- You can now remove transactions you don't want to update ---")
-            status = True
-            while status:
-                sql_to_remove = clih.spinput(
-                    "\nEnter sql key of transaction to REMOVE from update list (or quit to continue): ",
-                    "int")
-                if sql_to_remove is False:
-                    status = False
-                else:
-                    if sql_to_remove in found_sql_key:
-                        found_sql_key.remove(sql_to_remove)
-                        print(f"Removed sql_key={sql_to_remove}")
-                        # reprint updated list
-                        print(f"\n=== {len(found_sql_key)} transaction(s) remaining ===")
-                        for id_key in found_sql_key:
-                            transaction = transr.get_transaction(id_key)
-                            transaction.printTransaction(include_sql_key=True)
-                    else:
-                        print(f"sql_key={sql_to_remove} not in list!")
-
-        if len(found_sql_key) == 0:
-            print("No transactions left to update. Quitting")
-            return False
-
-        # STEP 3: Show final list and get new category
-        print(f"\n=== Final list: {len(found_sql_key)} transaction(s) will be updated ===")
-        for id_key in found_sql_key:
-            transaction = transr.get_transaction(id_key)
-            transaction.printTransaction(include_sql_key=True)
-
-        new_category_id = clih.category_prompt_all(
-            "\nWhat is the new category for these transactions?",
-            False)
-
-        if new_category_id is False:
-            print("Ok, quitting transaction category update")
-            return False
-
-        # STEP 4: Final confirmation
-        new_category_name = cath.category_id_to_name(new_category_id)
-        print(f"\n=== CONFIRMATION ===")
-        print(f"About to update {len(found_sql_key)} transaction(s) to category: {new_category_name}")
-        print(f"SQL keys: {found_sql_key}")
-
-        confirm = clih.promptYesNo("Are you sure you want to update these transactions?")
-        if not confirm:
-            print("Ok, cancelling transaction category update")
-            return False
-
-        # STEP 5: Update transactions
-        for key in found_sql_key:
-            dbh.transactions.update_transaction_category_k(key, new_category_id)
-
-        print(f"\n✓ Successfully updated {len(found_sql_key)} transaction(s) to category: {new_category_name}")
-        return True
-
-    def a09_examine_category(self):
-        category_id = clih.category_prompt_all("What is the category to examine?", display=False)
-        if category_id is False:
-            print("Ok, quitting examine category")
-            return False
-        # TODO: implement category examination logic
-        return False

@@ -25,7 +25,6 @@ def insert_account(account_name, type_int, retirement):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
 
-        # TODO: is there a more graceful way to handle the first account_id ?
         if check_account_table_empty():
             first_account_id = 2000000001
             # insert new account value

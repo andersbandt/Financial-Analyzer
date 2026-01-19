@@ -105,7 +105,7 @@ def model_balance(starting_balance, transactions):
         # Apply transactions for the current date
         for transaction in transactions:
             if transaction.date == datetime.strftime(current_date, "%Y-%m-%d"):
-                current_balance += transaction.amount
+                current_balance += transaction.value
 
         # Move to the next day
         current_date += timedelta(days=1)

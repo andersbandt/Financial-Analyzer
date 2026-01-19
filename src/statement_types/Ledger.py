@@ -90,12 +90,13 @@ class Ledger:
                       "Suspending statement manual categorize")
                 res = clih.promptYesNo("Do you want to stop categorization?")
                 if res:
-                    return
+                    return False
             else:
                 # set transaction
                 transaction.setCategory(category_id)
                 i += 1
                 print("Transactions left:", num_to_categorize - i)
+        return True
 
     def categorize_ml(self):
         """
@@ -153,12 +154,12 @@ class Ledger:
 
     # sort:trans_asc: sorts the transactions by amount ascending (highest to lowest)
     def sort_trans_asc(self):
-        sorted_trans = sorted(self.transactions, key=lambda t: t.amount)
+        sorted_trans = sorted(self.transactions, key=lambda t: t.value)
         self.transactions = sorted_trans
 
     # sort_trans_desc: sorts the transaction by amount descending (lowest to highest)
     def sort_trans_desc(self):
-        sorted_trans = sorted(self.transactions, key=lambda t: t.amount, reverse=True)
+        sorted_trans = sorted(self.transactions, key=lambda t: t.value, reverse=True)
         self.transactions = sorted_trans
 
     # sort_date_desc: end of transaction array will be most recent date

@@ -12,14 +12,13 @@ from cli import cli_helper as clih
 from categories import categories_helper as cath
 
 # import logger
-from loguru import logger
 from utils import logfn
 
 
 def sum_transaction_total(transactions):
     sum_t = 0
     for transaction in transactions:
-        sum_t += transaction.amount
+        sum_t += transaction.value
     return sum_t
 
 
