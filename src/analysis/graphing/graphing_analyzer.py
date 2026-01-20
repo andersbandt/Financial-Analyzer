@@ -27,7 +27,7 @@ def save_fig():
     _figure_counter += 1
     file_name = f"{_figure_counter:03d}.png"  # Zero-padded to 3 digits (001, 002, etc.)
     save_path = os.path.join(BASEFILEPATH, IMAGE_FOLDER, file_name)
-    plt.savefig(save_path)
+    plt.savefig(save_path, bbox_inches="tight")
     print(f"Saved figure as: {save_path}")
 
 
@@ -70,8 +70,8 @@ def create_bar_chart(labels, values, xlabel=None, title=None):
 
     save_fig()
 
+
 # create_stack_bar_chart: creates a bar chart that is "stacked"
-# NOTE: I believe this is a bar graph
 #   @param      x_axis      this is a matrix of dimension N
 #   @param      y_axis      this is a matrix of dimension [M, N]
 #     https://stackoverflow.com/questions/21688402/stacked-bar-chart-space-between-y-axis-and-first-bar-matplotlib-pyplot
@@ -165,7 +165,7 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
     save_fig()
 
 
-# create_mul_line_chart: creates multiple
+# create_mul_line_chart: creates multiple lines on same plot
 def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, rotate_labels=False, legend=False, y_format=None):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
@@ -184,7 +184,7 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, rotate_la
 
     # rotate labels
     if rotate_labels:
-        plt.xticks(rotation=90)
+        plt.xticks(rotation=45, ha="right")
 
     # add legend and title
     if legend:

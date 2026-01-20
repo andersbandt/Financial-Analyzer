@@ -141,6 +141,7 @@ def get_date_previous(d_prev):
     return prev_date
 
 
+
 # get_date_days_prev: gets the date a previous relative to a different date
 def get_date_days_prev(date_start, days_prev):
     d_y = timedelta(days=days_prev)
@@ -155,6 +156,18 @@ def get_date_int_array():
     current_time = datetime.now()
 
     return [current_time.year, current_time.month, current_time.day]
+
+
+
+def get_previous_month(year: int, month: int):
+    """
+    Returns (prev_year, prev_month) for a given year/month.
+    """
+    if month == 1:
+        return year - 1, 12
+    else:
+        return year, month - 1
+
 
 
 # get_edge_code_dates:

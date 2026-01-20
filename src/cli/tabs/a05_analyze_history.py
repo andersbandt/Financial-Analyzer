@@ -144,15 +144,15 @@ def exec_summary_02(comp_month_prev):
     # Get current date
     [current_year, current_month, _] = dateh.get_date_int_array()
 
-    # STEP 1: Calculate previous month
-    prev_month = current_month - 1
-    prev_year = current_year
-    if prev_month < 1:
-        prev_month = 12
-        prev_year -= 1
+    # Get previous month transactions (until we find a month loaded)
+    prev_year, prev_month = dateh.get_previous_month(current_year, current_month)
+    status = True
+    while status:
+        prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
+        if len(prev_month_trans) > 0:
+            status = False
+        prev_year, prev_month = dateh.get_previous_month(prev_year, prev_month)
 
-    # Get previous month transactions
-    prev_month_trans = transr.recall_transaction_month_bin(prev_year, prev_month)
     logger.info(f"Previous month: {prev_year}-{prev_month:02d}")
 
     # STEP 2: Calculate baseline period (comp_month_prev months BEFORE previous month)
