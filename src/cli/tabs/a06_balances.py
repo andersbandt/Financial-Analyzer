@@ -265,6 +265,8 @@ class TabBalances(SubMenu):
             asset_total[ticker.type] = asset_total.get(ticker.type, 0) + ticker.value
 
         # TODO: add print outs of amounts and where they are coming from. Mainly want to see like where my cash is stored for example
+        import pprint
+        pprint.pprint(asset_total)
 
         # make pie plot
         grapa.create_pie_chart(

@@ -75,15 +75,17 @@ class TabLoadData(SubMenu):
 
         # auto-add certain paycheck related deduction expenses
         if clih.promptYesNo("Do you want to add preset monthly expenses?"):
+            # TODO: need to figure out how to turn this into a DB table and not be hardcoded
+            #   also would be a good idea to automate the complementary transaction
             # retrieve Transaction object based on preset sql
             date = dateh.month_year_to_date_range(year, month)[1]
-            amount = 22
-            transaction1 = Transaction(date, 2000000019, cath.category_name_to_id("HEALTH"), -1*amount, "Texins Gym", note="auto-loaded by month")
+            amount = (42.32*30.5/7)  # $42.32 per week, estimated at months of 30.5 days
+            transaction1 = Transaction(date, 2000000003, cath.category_name_to_id("HEALTH"), -1*amount, "Messina Health INsurance", note="auto-loaded by month")
             transaction1c = Transaction(date,
-                                        2000000019,
+                                        2000000003,
                                         cath.category_name_to_id("INCOME"),
                                         amount,
-                                        "INCOME (Texins Gym)",
+                                        "INCOME (Health insurance)",
                                         note="auto-loaded by month (complementary income)"
                                         )
             self.statement.add_transaction(transaction1)

@@ -68,12 +68,57 @@ class TabInvestment(SubMenu):
         )
         return True
 
-    # TODO: getting this to print out investment specific stuff would be dope (instead of hack job with Transaction printout)
     def a02_print_db_inv(self):
-        transactions = transr.recall_investment_transaction()
-        tmp_ledger = Ledger("All Investment Data")
-        tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement(include_sql_key=False, method=0)
+        """Print all investment transactions with investment-specific columns using prettytable."""
+        live_price = clih.promptYesNo("Do you want to get live price?")
+
+        transactions = transr.recall_investment_transaction(live_price)
+
+        if not transactions or len(transactions) == 0:
+            print("No investment transactions to display")
+            return
+
+        # Build table headers
+        headers = ["DATE", "TICKER", "TYPE", "SHARES", "STRIKE", "CUR PRICE", "GAIN %", "VALUE", "ACCOUNT", "NOTE"]
+
+        # Build rows of data
+        values = []
+        for inv_trans in transactions:
+            # Get calculated values
+            if live_price:
+                current_price = inv_trans.get_price()
+                gain_percent = inv_trans.get_gain()
+                current_value = inv_trans.shares * current_price
+            else:
+                current_price = 0
+                gain_percent = 0
+                current_value = 0
+            account_name = dbh.account.get_account_name_from_id(inv_trans.account_id)
+
+            row = [
+                inv_trans.date,
+                inv_trans.ticker,
+                inv_trans.trans_type,
+                f"{inv_trans.shares:.4f}",
+                f"${inv_trans.strike_price:.2f}",
+                f"${current_price:.2f}",
+                f"{gain_percent:.2f}%",
+                f"${current_value:.2f}",
+                account_name,
+                inv_trans.note if inv_trans.note else ""
+            ]
+            values.append(row)
+
+        # Use the existing generic print_variable_table from cli_printer
+        clip.print_variable_table(
+            headers,
+            values,
+            min_width=10,
+            max_width=50,
+            format_finance_col=None,  # Already formatted in the data
+            add_row_numbers=False,
+            title="All Investment Data"
+        )
 
     def a03_add_investment(self):
         print("... adding investment transaction ...")

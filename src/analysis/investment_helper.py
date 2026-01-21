@@ -4,32 +4,32 @@ import numpy as np
 import pandas as pd
 import datetime
 from datetime import timedelta
+import time
 import yahoo_fin.stock_info as si
 import yfinance as yf
-import warnings
 import xml.etree.ElementTree as ET
-import requests
 import yfinance.exceptions
 
 # import user created modules
 import db.helpers as dbh
-from tools import date_helper as dateh
 from account import account_helper as acch
 from analysis.data_recall import transaction_recall as transr
 from cli import cli_printer as clip
 from utils import internet_helper
 from statement_types.Transaction import Transaction
 
-# import logger
 
 # XML filepath for saving money market tickers
-MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmticks.xml" # tag:hardcode
+MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmticks.xml"  # tag:hardcode
+
+# Price cache: {ticker: price} - lasts entire program run
+_PRICE_CACHE = {}
 
 
 class InvestmentHelperError(Exception):
     def __init__(self, origin="InvestmentHelper", msg="Error encountered"):
         self.msg = f"{origin} error encountered: {msg}"
-        return self.msg
+        super().__init__(self.msg)
 
     def __str__(self):
         return self.msg
@@ -38,7 +38,7 @@ class InvestmentHelperError(Exception):
 
 class InvestmentTransaction(Transaction):
     def __init__(self, date, account_id, category_id, ticker, shares, value, trans_type, description, note=None,
-                 sql_key=None):
+                 sql_key=None, live_price=True):
         super().__init__(date, account_id, category_id, value, description, note, sql_key)
 
         self.ticker = ticker
@@ -52,15 +52,13 @@ class InvestmentTransaction(Transaction):
         self.gain = 0
 
         self.type = get_ticker_asset_type(ticker)
-        self.update_price()
+        if live_price:
+            self.update_price()
         self.value = self.price * self.shares
 
     def update_price(self):
-        try:
-            self.price = get_ticker_price(self.ticker)
-        except yfinance.exceptions.YFRateLimitError:
-            print("yfinance is currently rate limited. Can't update price")
-            return None
+        """Update the current price for this ticker (uses caching)."""
+        self.price = get_ticker_price(self.ticker)
 
     def get_price(self):
         return round(self.price, 2)
@@ -118,13 +116,15 @@ class InvestmentTransaction(Transaction):
 ##############################################################################
 
 def validate_ticker(ticker):
-    print(" ... validating ticker for ticker: ", ticker)
+    """Validate that a ticker exists and has a fetchable price."""
+    print(f" ... validating ticker: {ticker}")
 
     price = get_ticker_price(ticker)
-    if price is False:
+    if price == 0:
+        print(f"Invalid ticker or unable to fetch price for: {ticker}")
         return False
 
-    print("Valid ticker found with price: ", price)
+    print(f"Valid ticker found with price: ${price:.2f}")
     return True
 
 
@@ -154,48 +154,100 @@ def get_last_trading_day():
     else:
         return today
 
+
+def clear_price_cache():
+    """Clear the price cache. Useful for forcing fresh data."""
+    global _PRICE_CACHE
+    _PRICE_CACHE = {}
+    print("Price cache cleared")
+
+
+def get_cache_stats():
+    """Return cache statistics for debugging."""
+    return {"cached_tickers": len(_PRICE_CACHE)}
+
+
 # get_ticker_price: returns the current live price for a certain ticker
-def get_ticker_price(ticker):
-    # check for internet connection
+def get_ticker_price(ticker, use_cache=True, max_retries=2):
+    """
+    Get current price for a ticker with caching and rate limit handling.
+
+    Args:
+        ticker: Stock ticker symbol
+        use_cache: Whether to use cached prices (default True)
+        max_retries: Number of retries on rate limit (default 2)
+
+    Returns:
+        float: Current price, or 0 if unable to fetch
+    """
+    # Check internet connection
     if not internet_helper.is_connected():
-        print('Not connected to Internet!')
-        return False
+        print(f'Not connected to Internet! Cannot fetch price for {ticker}')
+        return 0
 
-    # METHOD 1: download data from yf module
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    try:
-        data = yf.download(ticker,
-                       start=get_last_trading_day() - timedelta(1),
-                       end=get_last_trading_day())
-    except requests.exceptions.JSONDecodeError:
-        data = None
-    warnings.filterwarnings("default")
+    # Check cache first (no expiration - lasts entire program run)
+    if use_cache and ticker in _PRICE_CACHE:
+        return _PRICE_CACHE[ticker]
 
-    if not data.empty or data is not None:
+    # Attempt to fetch with retry logic
+    for attempt in range(max_retries + 1):
         try:
-            price = float(data['Close'].iloc[0])  # Ensures it's a float
-            return price
-        except IndexError:
-            pass
+            # Use yfinance Ticker - most reliable method
+            ticker_obj = yf.Ticker(ticker)
 
-    # METHOD 2: Ticker class I guess?
-    mf = yf.Ticker(ticker)
-    hist = mf.history(period="1d")
-    if not hist.empty:
-        return hist['Close'].iloc[-1]
+            # Try fast_info first (fastest, least rate-limited)
+            try:
+                price = ticker_obj.fast_info.get('lastPrice')
+                if price and not np.isnan(price):
+                    _PRICE_CACHE[ticker] = float(price)
+                    return float(price)
+            except (AttributeError, KeyError, TypeError):
+                pass
 
-    # METHOD 3: attempt to get live price using yahoo_fin. This method seems to always fail due to one of below errors
-    try:
-        price = si.get_live_price(ticker)
-        if np.isnan(price):
-            price = 0
-        warnings.filterwarnings("default")
-        print(f"method 2: {price}")
-        return price
-    except (AssertionError, requests.exceptions.JSONDecodeError):
-        pass
+            # Fallback to history
+            hist = ticker_obj.history(period="1d")
+            if not hist.empty:
+                price = hist['Close'].iloc[-1]
+                if not np.isnan(price):
+                    _PRICE_CACHE[ticker] = float(price)
+                    return float(price)
 
+        except yfinance.exceptions.YFRateLimitError:
+            if attempt < max_retries:
+                wait_time = (2 ** attempt)  # Exponential backoff: 1s, 2s
+                print(f"Rate limited fetching {ticker}, waiting {wait_time}s before retry {attempt + 1}/{max_retries}...")
+                time.sleep(wait_time)
+            else:
+                print(f"Rate limit exceeded for {ticker} after {max_retries} retries")
+                return 0
+
+        except Exception as e:
+            print(f"Error fetching price for {ticker}: {type(e).__name__}")
+            return 0
+
+    print(f"Unable to fetch price for {ticker}")
     return 0
+
+
+def batch_get_ticker_prices(tickers, delay_between_requests=0.1):
+    """
+    Fetch prices for multiple tickers with rate limiting protection.
+
+    Args:
+        tickers: List of ticker symbols
+        delay_between_requests: Seconds to wait between API calls (default 0.1)
+
+    Returns:
+        dict: {ticker: price} mapping
+    """
+    prices = {}
+    for i, ticker in enumerate(tickers):
+        prices[ticker] = get_ticker_price(ticker)
+        # Add delay between requests to avoid rate limiting (skip for last item)
+        if i < len(tickers) - 1:
+            time.sleep(delay_between_requests)
+    return prices
+
 
 # get_ticker_price_data: generates an array of historical price data
 #   input for interval: "1d", "1wk", or "1m"
@@ -239,23 +291,42 @@ def ticker_info_dump(ticker):
         return None
 
 
-def get_ticker_asset_type(ticker):
-    ticker = yf.Ticker(ticker)
-    try:
-        info = ticker.info
-        asset_type = info.get("quoteType")
-    except yfinance.exceptions.YFRateLimitError:
-        print("yfinance is currently rate limited. Can't get ticker asset type")
-        return None
-    # industry = info.get("industry")
-    # sector = info.get("sector")
-    # exchange = info.get("exchange")
-    # print(f"\nLooking at {ticker}")
-    # print(quoteType)
-    # print(industry)
-    # print(sector)
-    # print(exchange)
-    return asset_type
+def get_ticker_asset_type(ticker, max_retries=2):
+    """
+    Get the asset type (quoteType) for a ticker with rate limit handling.
+
+    Returns: Asset type string (e.g., 'EQUITY', 'ETF', 'MUTUALFUND') or None
+    """
+    ticker_obj = yf.Ticker(ticker)
+
+    for attempt in range(max_retries + 1):
+        try:
+            # Try fast_info first (less rate limited)
+            try:
+                quote_type = ticker_obj.fast_info.get('quoteType')
+                if quote_type:
+                    return quote_type
+            except (AttributeError, KeyError, TypeError):
+                pass
+
+            # Fallback to full info
+            info = ticker_obj.info
+            return info.get("quoteType")
+
+        except yfinance.exceptions.YFRateLimitError:
+            if attempt < max_retries:
+                wait_time = (2 ** attempt)
+                print(f"Rate limited fetching asset type for {ticker}, waiting {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                print(f"Rate limit exceeded getting asset type for {ticker}")
+                return None
+
+        except Exception as e:
+            print(f"Error fetching asset type for {ticker}: {type(e).__name__}")
+            return None
+
+    return None
 
 
 ##############################################################################
@@ -311,9 +382,7 @@ def get_all_active_ticker():
 
 def get_account_ticker_shares(account_id, ticker):
     ticker_tuple = dbh.investments.get_ticker_shares(account_id, ticker)
-    if len(ticker_tuple) > 1:
-        raise InvestmentHelperError(msg="Something is weird retrieving ticker shares per account")
-    return ticker_tuple[0][2]
+    return ticker_tuple[2]
 
 
 # summarize_account: this function is for showcasing account view and holdings

@@ -54,7 +54,7 @@ def convert_ledge_to_transactions(ledger_data):
     return transactions
 
 
-def convert_ledge_to_investment_transactions(ledger_data):
+def convert_ledge_to_investment_transactions(ledger_data, live_price):
     transactions = []  # clear transactions
     for item in ledger_data:
         transactions.append(
@@ -68,7 +68,8 @@ def convert_ledge_to_investment_transactions(ledger_data):
                 item[6],  # trans_type
                 item[8],  # description
                 note=item[9],  # note
-                sql_key=item[0]  # SQL key
+                sql_key=item[0],  # SQL key
+                live_price=live_price
             )
         )
     return transactions
@@ -139,7 +140,7 @@ def recall_transaction_account(account_id):
     return transactions
 
 
-def recall_investment_transaction():
+def recall_investment_transaction(live_price):
     ledger_data = dbh.investments.get_investment_ledge_data()
-    investment_transactions = convert_ledge_to_investment_transactions(ledger_data)
+    investment_transactions = convert_ledge_to_investment_transactions(ledger_data, live_price)
     return investment_transactions
