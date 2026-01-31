@@ -241,7 +241,7 @@ class TabSpendingHistory(SubMenu):
               Action("Print database transactions", self.a02_print_db_trans),
               Action("Search transactions", self.a03_search_trans),
               Action("Graph category data", self.a04_graph_category),
-              Action("Generate sankey (not working)", self.a05_make_sankey),
+              Action("Generate sankey diagram", self.a05_make_sankey),
               Action("Review specific month transactions", self.a06_review_month),
               Action("Add note to transaction", self.a07_add_note),
                       ]
@@ -342,27 +342,89 @@ class TabSpendingHistory(SubMenu):
         grapa.show_plots()
         return True
 
-    # TODO: really to handle my incomes everything actually needs to feed into an income group, and all the expenses out of that
-    # TODO: clean up the "non-graphical" transactions
-    # TODO: it sucks because I put in a whole day to get this working with everything but ..... it might look better with only the top level categories
+
     def a05_make_sankey(self):
-        # set up date information\
-        # TODO: should I just have this actually enter calendar years? Or possible two options. 1- calendary year like 2024 or 2-date range
-        days_ago = dateh.get_date_previous(365) # tag:HARDCODE
+        # Ask user which view they want
+        print("\nSankey Diagram Options:")
+        print("  1. Top-level categories (Income → Food, Housing, etc.)")
+        print("  2. Hierarchical view (show subcategory relationships)")
+        view_choice = clih.spinput("Which view would you like? (1 or 2): ", inp_type="int")
 
-        # get raw transactions and categories to use from time period
-        transactions = transr.recall_transaction_data(date_start=days_ago)
+        if view_choice == 1:
+            view_mode = "top_level"
+            categories = cath.get_top_level_categories()
+        elif view_choice == 2:
+            view_mode = "hierarchical"
+            categories = cath.load_categories()
+        else:
+            print("Invalid choice. Defaulting to top-level view.")
+            view_mode = "top_level"
+            categories = cath.get_top_level_categories()
 
-        #categories = cath.load_categories()
-        categories = cath.get_top_level_categories()
+        # Ask user for date range
+        print("\nDate Range Options:")
+        print("  1. Calendar year (e.g., 2024)")
+        print("  2. Last X days")
+        print("  3. Custom date range")
+        date_choice = clih.spinput("How would you like to select dates? (1-3): ", inp_type="int")
 
-        spending_data = anah.generate_sankey_data(transactions, categories)
+        if date_choice == 1:
+            # Calendar year
+            year = clih.get_year_input()
+            if year is False:
+                print("Invalid year. Cancelling.")
+                return False
+            date_start = f"{year}-01-01"
+            date_end = f"{year}-12-31"
+            print(f"Selected: {year} ({date_start} to {date_end})")
+
+        elif date_choice == 2:
+            # Last X days
+            days = clih.spinput("How many days back?: ", inp_type="int")
+            if days is False:
+                print("Invalid input. Cancelling.")
+                return False
+            date_start = dateh.get_date_previous(days)
+            date_end = dateh.get_cur_str_date()
+            print(f"Selected: Last {days} days ({date_start} to {date_end})")
+
+        elif date_choice == 3:
+            # Custom date range
+            print("Enter start date (YYYY-MM-DD):")
+            date_start = clih.spinput("Start date: ", inp_type="text")
+            if date_start is False:
+                print("Invalid input. Cancelling.")
+                return False
+            print("Enter end date (YYYY-MM-DD):")
+            date_end = clih.spinput("End date: ", inp_type="text")
+            if date_end is False:
+                print("Invalid input. Cancelling.")
+                return False
+            print(f"Selected: {date_start} to {date_end}")
+
+        else:
+            print("Invalid choice. Defaulting to last 365 days.")
+            date_start = dateh.get_date_previous(365)
+            date_end = dateh.get_cur_str_date()
+
+        # Get transactions for selected date range
+        transactions = transr.recall_transaction_data(date_start=date_start, date_end=date_end)
+
+        if not transactions:
+            print(f"No transactions found for date range {date_start} to {date_end}")
+            return False
+
+        spending_data = anah.generate_sankey_data(transactions, categories, view_mode=view_mode)
 
         # Create source and target indices
         labels, sources, targets, values = anah.process_sankey_data(spending_data)
 
+        # Build intuitive title
+        view_name = "Top-Level" if view_mode == "top_level" else "Hierarchical"
+        title = f"Spending Flow - {view_name} View ({date_start} to {date_end})"
+
         # Generate the Sankey diagram
-        grapa.generate_sankey(labels, sources, targets, values)
+        grapa.generate_sankey(labels, sources, targets, values, title=title)
         return True
 
 

@@ -163,9 +163,19 @@ def create_top_category_amounts_array(transactions, categories, count_NA=True):
     return top_cat_str, category_amounts
 
 
-def generate_sankey_data(transactions, categories):
+def generate_sankey_data(transactions, categories, view_mode="top_level"):
     """
     Processes transactions and categories into spending_data format for Sankey.
+
+    Args:
+        transactions: List of transaction objects
+        categories: List of category objects to include
+        view_mode: "top_level" or "hierarchical"
+            - "top_level": Shows income flowing to top-level expense categories
+            - "hierarchical": Shows parent -> child category relationships
+
+    Returns:
+        List of dicts with 'category', 'subcategory', 'amount' keys
     """
     # Map categories by ID for quick access
     category_map = {cat.id: cat for cat in categories}
@@ -173,23 +183,54 @@ def generate_sankey_data(transactions, categories):
     # Prepare data structure to aggregate amounts
     spending_dict = defaultdict(float)
 
-    for transaction in transactions:
-        # Get the category ID and corresponding Category object
-        parent_id = cath.get_category_parent(
-            transaction.category_id,
-            printmode=True)
-        category = category_map.get(parent_id)
+    if view_mode == "top_level":
+        # TOP-LEVEL VIEW: Roll up all transactions to their top-level categories
+        for transaction in transactions:
+            # Get the top-level category for this transaction
+            top_level_id = cath.get_category_parent(transaction.category_id, printmode=False)
+            top_level_cat = category_map.get(top_level_id)
 
-        if not category:
-            # Skip if category is not found
-            continue
+            if not top_level_cat:
+                continue
 
-        # Define category and subcategory names
-        parent_name = category_map.get(category.parent, category).name  # Parent or self if no parent
-        child_name = category.name
+            # Create self-referencing flow (income source will be added in process_sankey_data)
+            parent_name = top_level_cat.name
+            child_name = top_level_cat.name
 
-        # Aggregate transaction amount
-        spending_dict[(parent_name, child_name)] += transaction.value
+            spending_dict[(parent_name, child_name)] += transaction.value
+
+    elif view_mode == "hierarchical":
+        # HIERARCHICAL VIEW: Show parent -> child category relationships
+        # Load all categories for lookup
+        all_categories = cath.load_categories()
+        all_cat_map = {cat.id: cat for cat in all_categories}
+
+        for transaction in transactions:
+            trans_cat = all_cat_map.get(transaction.category_id)
+
+            if not trans_cat:
+                continue
+
+            # Determine parent-child relationship
+            if trans_cat.parent == 1:
+                # Top-level category - self-reference (will flow from income)
+                parent_name = trans_cat.name
+                child_name = trans_cat.name
+            else:
+                # Child category - find parent and create parent -> child flow
+                parent_cat = all_cat_map.get(trans_cat.parent)
+
+                if parent_cat:
+                    parent_name = parent_cat.name
+                    child_name = trans_cat.name
+                else:
+                    # Parent not found, skip
+                    continue
+
+            spending_dict[(parent_name, child_name)] += transaction.value
+
+    else:
+        raise ValueError(f"Invalid view_mode '{view_mode}'. Must be 'top_level' or 'hierarchical'")
 
     # Convert aggregated data to spending_data format
     spending_data = [
@@ -227,6 +268,26 @@ def process_sankey_data(data):
     # Combine categories and subcategories, ensuring no duplicates
     labels = list(categories | subcategories)  # Set union to ensure uniqueness
 
+    # Find income source category (positive amounts) - prefer one that exists in data
+    income_source = None
+    for item in data:
+        if item["amount"] > 0:
+            income_source = item["category"]
+            break
+
+    # If no income found in data, check if "PAYCHECK" category exists, otherwise use first category
+    if income_source is None:
+        if "PAYCHECK" in labels:
+            income_source = "PAYCHECK"
+        elif labels:
+            income_source = labels[0]
+        else:
+            income_source = "Income"  # Fallback if no labels at all
+
+    # Ensure income source is in labels
+    if income_source not in labels:
+        labels.append(income_source)
+
     sources = []
     targets = []
     values = []
@@ -236,13 +297,12 @@ def process_sankey_data(data):
         Recursively process each item, adding links and labels.
         """
         if item["amount"] < 0:
-            if item["category"] == item["subcategory"]: # handle top-level categories
-                source_idx = labels.index("PAYCHECK")
+            if item["category"] == item["subcategory"]:  # handle top-level categories
+                source_idx = labels.index(income_source)
             else:
                 source_idx = labels.index(item["category"])
         else:
             source_idx = labels.index(item["category"])
-
 
         sources.append(source_idx)
 

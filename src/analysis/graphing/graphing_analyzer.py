@@ -199,7 +199,7 @@ def create_mul_line_chart(x_axis, y_axis_arr, title=None, labels=None, rotate_la
 
 # Sankey diagrams visualize the contributions to a flow by defining source to represent
 # the source node, target for the target node, value to set the flow volume, and label that shows the node name.
-def generate_sankey(labels, sources, targets, values):
+def generate_sankey(labels, sources, targets, values, title="Spending Sankey Diagram"):
     # Create the Sankey diagram
     fig = go.Figure(go.Sankey(
         node=dict(
@@ -217,7 +217,7 @@ def generate_sankey(labels, sources, targets, values):
 
     # Customize chart layout
     fig.update_layout(
-        title_text="Spending Sankey Diagram",
+        title_text=title,
         font_size=12,
     )
 
