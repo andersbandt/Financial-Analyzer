@@ -5,7 +5,6 @@
 """
 
 # import needed packages
-from pprint import pprint
 import utils
 
 # import user defined CLI modules
@@ -18,6 +17,7 @@ from cli.cli_class import Action
 import db.helpers as dbh
 import categories.categories_helper as cath
 from analysis import analyzer_helper as anah
+from analysis import transaction_helper as transh
 from analysis.graphing import graphing_analyzer as grapa
 from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
@@ -230,174 +230,6 @@ def exec_summary_02(comp_month_prev):
     return True
 
 
-def search_01():
-    search_str = clih.spinput("\nWhat is the keyword you want to search for in transaction description?",
-                              "text")
-    if search_str is False:
-        print("Ok, quitting transaction search.\n")
-        return False
-    transactions = transr.recall_transaction_desc_keyword(search_str)
-    return transactions
-
-
-def search_02():
-    # determine user choice of type of category search
-    cat_search_type = clih.prompt_num_options("What type of category search?",
-                                              ["recursive (children)", "individual"])
-    cat_search_type = 2 # tag:HARDCODE
-
-    if cat_search_type == 1:
-        search_str = clih.category_tree_prompt()
-        if search_str is False or search_str == -1:
-            print("Ok, quitting transaction search.\n")
-            return False
-        children_id = cath.get_category_children(search_str)
-        transactions = transr.recall_transaction_category(search_str)
-        for child_id in children_id:
-            transactions.extend(transr.recall_transaction_category(child_id))
-    elif cat_search_type == 2:
-        search_str = clih.category_prompt_all("What is the category to search for?", False)
-        if search_str is False:
-            print("Ok, quitting transaction search.\n")
-            return False
-        transactions = transr.recall_transaction_category(search_str)
-    elif cat_search_type is False:
-        print("Ok, quitting transaction search.\n")
-        return False
-    else:
-        print(f"Uh oh, bad category search type of: {cat_search_type}")
-        return False
-    return transactions
-
-
-def search_03():
-    start_date = clih.get_date_input("What is the start date of search range?")
-    end_date = clih.get_date_input("What is the end date of search range?")
-    if start_date is False or end_date is False:
-        print("Ok, quitting transaction search.\n")
-        return False
-    transactions = transr.recall_transaction_data(start_date, end_date)
-    return transactions
-
-
-def search_04():
-    account_id = clih.account_prompt_all("What is the account you want to search?")
-    if account_id is False:
-        print("Ok, quitting transaction search.\n")
-        return False
-    transactions = transr.recall_transaction_account(account_id)
-    return transactions
-
-
-def search_05_multi_filter():
-    """Multi-filter search - allows filtering by multiple criteria at once"""
-    print("\n... setting up multi-filter search ...")
-    print("You can apply multiple filters. Select filters one by one, then apply all at once.\n")
-
-    # Dictionary to store active filters
-    active_filters = {
-        'description': None,
-        'category': None,
-        'date_range': None,
-        'account': None,
-        'amount_min': None,
-        'amount_max': None
-    }
-
-    # Let user select which filters to apply
-    while True:
-        print("\n=== Current Active Filters ===")
-        for filter_name, filter_value in active_filters.items():
-            if filter_value is not None:
-                print(f"  {filter_name}: {filter_value}")
-
-        filter_options = [
-            "Add DESCRIPTION filter",
-            "Add CATEGORY filter",
-            "Add DATE RANGE filter",
-            "Add ACCOUNT filter",
-            "Add AMOUNT filter (min/max)",
-            "DONE - Apply filters and search"
-        ]
-
-        choice = clih.prompt_num_options("\nWhat filter would you like to add?: ", filter_options)
-
-        if choice is False:
-            print("Ok, quitting multi-filter search.\n")
-            return False
-        elif choice == 1:  # Description
-            search_str = clih.spinput("Enter keyword to search in description", "text")
-            if search_str is not False:
-                active_filters['description'] = search_str
-        elif choice == 2:  # Category
-            category_id = clih.category_prompt_all("What is the category to filter by?", False)
-            if category_id is not False:
-                active_filters['category'] = category_id
-        elif choice == 3:  # Date range
-            start_date = clih.get_date_input("What is the start date of search range?")
-            if start_date is not False:
-                end_date = clih.get_date_input("What is the end date of search range?")
-                if end_date is not False:
-                    active_filters['date_range'] = (start_date, end_date)
-        elif choice == 4:  # Account
-            account_id = clih.account_prompt_all("What is the account to filter by?")
-            if account_id is not False:
-                active_filters['account'] = account_id
-        elif choice == 5:  # Amount
-            print("\nAmount filter (leave blank to skip min or max)")
-            amount_min = clih.spinput("Enter minimum amount (or q to skip)", "float")
-            if amount_min is not False:
-                active_filters['amount_min'] = amount_min
-            amount_max = clih.spinput("Enter maximum amount (or q to skip)", "float")
-            if amount_max is not False:
-                active_filters['amount_max'] = amount_max
-        elif choice == 6:  # Done
-            break
-
-    # Check if any filters were set
-    if all(v is None for v in active_filters.values()):
-        print("No filters applied. Returning all transactions.")
-        return transr.recall_transaction_data()
-
-    # Start with all transactions or use date range as base
-    if active_filters['date_range'] is not None:
-        start_date, end_date = active_filters['date_range']
-        transactions = transr.recall_transaction_data(start_date, end_date)
-    else:
-        transactions = transr.recall_transaction_data()
-
-    print(f"\nStarting with {len(transactions)} transactions")
-
-    # Apply each filter progressively
-    if active_filters['description'] is not None:
-        keyword = active_filters['description'].lower()
-        transactions = [t for t in transactions if keyword in t.description.lower()]
-        print(f"After description filter: {len(transactions)} transactions")
-
-    if active_filters['category'] is not None:
-        cat_id = active_filters['category']
-        transactions = [t for t in transactions if t.category_id == cat_id]
-        print(f"After category filter: {len(transactions)} transactions")
-
-    if active_filters['account'] is not None:
-        acc_id = active_filters['account']
-        transactions = [t for t in transactions if t.account_id == acc_id]
-        print(f"After account filter: {len(transactions)} transactions")
-
-    if active_filters['amount_min'] is not None:
-        min_val = active_filters['amount_min']
-        transactions = [t for t in transactions if t.value >= min_val]
-        print(f"After minimum amount filter: {len(transactions)} transactions")
-
-    if active_filters['amount_max'] is not None:
-        max_val = active_filters['amount_max']
-        transactions = [t for t in transactions if t.value <= max_val]
-        print(f"After maximum amount filter: {len(transactions)} transactions")
-
-    print(f"\n=== Final result: {len(transactions)} transactions ===\n")
-    return transactions
-
-
 class TabSpendingHistory(SubMenu):
     def __init__(self, title, basefilepath):
 
@@ -473,46 +305,8 @@ class TabSpendingHistory(SubMenu):
 
     # a03_search_trans: performs a search of transaction database
     def a03_search_trans(self):
-        print("... searching transactions ...")
-
-        # get input on what type of search to do
-        search_options = ["DESCRIPTION", "CATEGORY", "DATE", "ACCOUNT", "MULTI-FILTER"]
-        search_type = clih.prompt_num_options("What type of search do you want to perform?: ",
-                                              search_options)
-        if search_type is False:
-            print("Ok, quitting transaction search.\n")
-            return False
-
-        # get transaction description keyword
-        if search_type == 1:
-            transactions = search_01()
-        elif search_type == 2:
-            transactions = search_02()
-        elif search_type == 3:
-            transactions = search_03()
-        elif search_type == 4:
-            transactions = search_04()
-        elif search_type == 5:
-            transactions = search_05_multi_filter()
-        else:
-            print(f"Can't perform search with search type of: {search_type}")
-            return False
-
-        # check if search was cancelled
-        if transactions is False:
-            print("Search cancelled.")
-            return False
-
-        # form Ledger, print, and return executive summary
-        tmp_ledger = Ledger.Ledger(f"Transactions with for search type {search_type}")
-        tmp_ledger.set_statement_data(transactions)
-        tmp_ledger.print_statement(include_sql_key=True)
-
-        ledger_exec = anah.return_ledger_exec_dict(transactions)
-        print("\n")
-        pprint(ledger_exec)
-        # TODO: DEVIATION from returning boolean. How to handle? Sub helper function for the actual search probably?
-        return transactions
+        # Call the search helper function
+        return transh.search_trans()
 
 
     # a04_graph_category: walks user through producing a graph of a certain category

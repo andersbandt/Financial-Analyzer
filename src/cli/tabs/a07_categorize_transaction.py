@@ -16,6 +16,7 @@ from categories import categories_helper
 from statement_types import Transaction
 from statement_types import Ledger
 from analysis.data_recall import transaction_recall as transr
+from analysis import transaction_helper as transh
 import db.helpers as dbh
 
 
@@ -86,7 +87,7 @@ class TabTransCategorize(SubMenu):
 
         found_sql_key = []
         if search_type == 1:
-            found_transactions = self.a03_search_trans()
+            found_transactions = transh.search_trans()
             if found_transactions is False:
                 print("... and quitting update transactions category too !")
                 return False
@@ -110,7 +111,7 @@ class TabTransCategorize(SubMenu):
         print(f"\n=== Found {len(found_sql_key)} transaction(s) ===")
         for id_key in found_sql_key:
             transaction = transr.get_transaction(id_key)
-            transaction.printTransaction(include_sql_key=True)
+            transaction.print_trans(include_sql_key=True)
 
         if search_type == 1:
             print("\n--- You can now remove transactions you don't want to update ---")
@@ -129,7 +130,7 @@ class TabTransCategorize(SubMenu):
                         print(f"\n=== {len(found_sql_key)} transaction(s) remaining ===")
                         for id_key in found_sql_key:
                             transaction = transr.get_transaction(id_key)
-                            transaction.printTransaction(include_sql_key=True)
+                            transaction.print_trans(include_sql_key=True)
                     else:
                         print(f"sql_key={sql_to_remove} not in list!")
 
@@ -141,7 +142,7 @@ class TabTransCategorize(SubMenu):
         print(f"\n=== Final list: {len(found_sql_key)} transaction(s) will be updated ===")
         for id_key in found_sql_key:
             transaction = transr.get_transaction(id_key)
-            transaction.printTransaction(include_sql_key=True)
+            transaction.print_trans(include_sql_key=True)
 
         new_category_id = clih.category_prompt_all(
             "\nWhat is the new category for these transactions?",
