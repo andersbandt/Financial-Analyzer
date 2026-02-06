@@ -88,7 +88,67 @@ class TabCategory(SubMenu):
             print(f"ALERT: this is a duplicate category name: {item}")
 
         # CHECK 2: check validity of parent_id
-        # TODO: finish implementing this check on parent_id
+        categories = dbh.category.get_category_ledger_data()
+
+        # Build set of valid category IDs for quick lookup
+        valid_ids = {cat[0] for cat in categories}  # cat[0] is category_id
+
+        # Check each category's parent_id
+        orphaned = []
+        for cat in categories:
+            category_id = cat[0]
+            parent_id = cat[1]
+            category_name = cat[2]
+
+            # Skip the root category (parent_id=1 should exist or be self-referential)
+            if category_id == 1:
+                continue
+
+            # Check if parent_id exists
+            if parent_id not in valid_ids:
+                orphaned.append((category_id, category_name, parent_id))
+
+        # Report orphaned categories
+        if orphaned:
+            print("\nALERT: Found categories with invalid parent_id:")
+            for cat_id, cat_name, parent_id in orphaned:
+                print(f"  Category '{cat_name}' (ID={cat_id}) has non-existent parent_id={parent_id}")
+        else:
+            print("\n✓ All parent_id references are valid")
+
+        # CHECK 3: check for circular references
+        def has_circular_reference(cat_id, visited=None):
+            if visited is None:
+                visited = set()
+
+            if cat_id in visited:
+                return True  # Circular reference detected
+
+            if cat_id == 1:  # Root category
+                return False
+
+            visited.add(cat_id)
+
+            # Find parent of current category
+            parent = next((c[1] for c in categories if c[0] == cat_id), None)
+            if parent is None:
+                return False
+
+            return has_circular_reference(parent, visited)
+
+        circular_refs = []
+        for cat in categories:
+            cat_id = cat[0]
+            cat_name = cat[2]
+            if has_circular_reference(cat_id):
+                circular_refs.append((cat_id, cat_name))
+
+        if circular_refs:
+            print("\nALERT: Found circular parent references:")
+            for cat_id, cat_name in circular_refs:
+                print(f"  Category '{cat_name}' (ID={cat_id}) has circular parent chain")
+        else:
+            print("✓ No circular parent references found")
 
         return True
 
@@ -182,7 +242,6 @@ class TabCategory(SubMenu):
             f"Updated {cath.category_id_to_name(category_id)} to parent {cath.category_id_to_name(new_parent_id)} !!! Ok!")
 
     # a07_delete_keyword: prompts user to delete keywords. Modeled after a05_delete_category
-    # TODO: add some final printout to summarize what is getting deleted
     def a07_delete_keyword(self):
         # print out keywords
         self.a04_print_keywords()
@@ -193,8 +252,29 @@ class TabCategory(SubMenu):
             keyword_id = clih.spinput("What is the keyword ID you want to DROP?", inp_type="int")
             if keyword_id is False:
                 return None
+
+            # Get keyword details before deletion for summary printout
+            all_keywords = dbh.keywords.get_keyword_ledger_data()
+            keyword_to_delete = next((kw for kw in all_keywords if kw[0] == keyword_id), None)
+
+            if keyword_to_delete is None:
+                print(f"ERROR: Keyword with ID {keyword_id} not found!")
+                continue
+
+            # Print summary of what's being deleted
+            keyword_string = keyword_to_delete[2]
+            category_id = keyword_to_delete[1]
+            category_name = cath.category_id_to_name(category_id)
+
+            print(f"\n--- Deleting Keyword ---")
+            print(f"  ID:       {keyword_id}")
+            print(f"  Keyword:  '{keyword_string}'")
+            print(f"  Category: {category_name} (ID={category_id})")
+            print(f"------------------------")
+
+            # Delete the keyword
             dbh.keywords.delete_keyword(keyword_id)
-            print("Ok deleted keyword with SQL ID: " + str(keyword_id))
+            print(f"✓ Successfully deleted keyword '{keyword_string}'\n")
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

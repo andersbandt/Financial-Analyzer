@@ -3,6 +3,8 @@
 
 # import needed modules
 import re
+import pandas as pd
+import numpy as np
 
 
 # import ML modules (sklearn)
@@ -81,6 +83,7 @@ class FinancialTextCleaner:
 class TransactionClassifier:
     def __init__(self, max_iter=1000, class_weight='balanced'):
         self.cleaner = FinancialTextCleaner()
+        self.class_weight = class_weight
 
         self.preprocess = ColumnTransformer(
 
@@ -88,10 +91,10 @@ class TransactionClassifier:
                 ("text", Pipeline([
                     ("clean", FunctionTransformer(
                         self._clean_text_batch, validate=False)),
-                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=2000))
+                    ("tfidf", TfidfVectorizer(ngram_range=(1, 3), max_features=3000))
                 ]), "description"),
-                # ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Year", "Month", "Day", "DayOfWeek", "IsMonthStart", "IsMonthEnd"])
-                ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Day", "DayOfWeek"])
+                # Using more features including Month for seasonal patterns, IsWeekend for weekday/weekend differences
+                ("num", StandardScaler(with_mean=False), ["value", "AccountType", "Month", "Day", "DayOfWeek", "IsWeekend", "AmountBucket"])
             ]
         )
 
@@ -100,7 +103,7 @@ class TransactionClassifier:
             ("clf", LogisticRegression(
                 multi_class="multinomial",
                 max_iter=max_iter,
-                class_weight=None
+                class_weight=self.class_weight  # FIX: Use the parameter instead of None
             ))
         ])
 

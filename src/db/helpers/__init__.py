@@ -8,6 +8,7 @@ import db.helpers.investments as investments
 import db.helpers.keywords as keywords
 import db.helpers.transactions as ledger
 import db.helpers.file_mapping as file_mapping
+import db.helpers.ticker_metadata as ticker_metadata
 
 """
 The above import statements are necessary for making an

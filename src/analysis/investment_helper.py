@@ -1,4 +1,3 @@
-
 # import needed modules
 import numpy as np
 import pandas as pd
@@ -18,12 +17,40 @@ from cli import cli_printer as clip
 from utils import internet_helper
 from statement_types.Transaction import Transaction
 
-
 # XML filepath for saving money market tickers
 MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmticks.xml"  # tag:hardcode
 
+# Finnhub API configuration
+# Get your free API key at https://finnhub.io/register
+FINNHUB_API_KEY = "d632gspr01qnpqnvib80d632gspr01qnpqnvib8g"  # tag:hardcode
+
 # Price cache: {ticker: price} - lasts entire program run
 _PRICE_CACHE = {}
+
+# Asset type cache: {ticker: asset_type} - lasts entire program run
+_ASSET_TYPE_CACHE = {}
+
+# Initialize Finnhub client (lazy loaded)
+_finnhub_client = None
+
+
+def get_finnhub_client():
+    """Get or create Finnhub client instance."""
+    global _finnhub_client
+    if _finnhub_client is None:
+        try:
+            import finnhub
+            if FINNHUB_API_KEY != "YOUR_API_KEY_HERE" and FINNHUB_API_KEY != "d632gspr01qnpqnvib80d632gspr01qnpqnvib8g":
+                _finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+                print("✓ Finnhub client initialized")
+            elif FINNHUB_API_KEY == "d632gspr01qnpqnvib80d632gspr01qnpqnvib8g":
+                _finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+                print("✓ Finnhub client initialized (will fall back to Yahoo for unsupported tickers)")
+            else:
+                print("⚠️  Finnhub API key not configured (using fallback sources)")
+        except ImportError:
+            print("⚠️  finnhub-python not installed. Install with: pip install finnhub-python")
+    return _finnhub_client
 
 
 class InvestmentHelperError(Exception):
@@ -45,16 +72,22 @@ class InvestmentTransaction(Transaction):
         self.shares = shares
         self.trans_type = trans_type
         try:
-            self.strike_price = self.value/self.shares
+            self.strike_price = self.value / self.shares
         except ZeroDivisionError:
             self.strike_price = -1
         self.price = 0
         self.gain = 0
 
-        self.type = get_ticker_asset_type(ticker)
+        # Only fetch live data if live_price=True
         if live_price:
+            self.type = get_ticker_asset_type(ticker)
             self.update_price()
-        self.value = self.price * self.shares
+            self.value = self.price * self.shares
+        else:
+            # Use cached data or placeholder when not fetching live prices
+            self.type = _ASSET_TYPE_CACHE.get(ticker, "UNKNOWN")
+            self.price = self.strike_price  # Use historical strike price
+            # self.value keeps the value passed to constructor
 
     def update_price(self):
         """Update the current price for this ticker (uses caching)."""
@@ -65,14 +98,13 @@ class InvestmentTransaction(Transaction):
 
     def get_gain(self):
         try:
-            self.gain = self.price/self.strike_price
-            self.gain = (self.gain - 1)*100  # express gain in percent
+            self.gain = self.price / self.strike_price
+            self.gain = (self.gain - 1) * 100  # express gain in percent
         except ZeroDivisionError:
             self.gain = 0
 
         return round(self.gain, 3)
 
-# TODO: somehow capture in Obsidian or something that this thing exists and like class structure and shit
     def print_trans(self, print_mode=True, include_sql_key=False):
         # add some InvestmentTransaction specific information
         prnt_str = " || TICKER: " + "".join(
@@ -93,22 +125,6 @@ class InvestmentTransaction(Transaction):
         if print_mode:
             print(prnt_str)
         return prnt_str
-
-
-# TODO: combine this with InvestmentTransaction? (delete Ticker?)
-# class Ticker:
-#     def __init__(self, ticker, shares):
-#         self.ticker = ticker
-#         self.shares = shares
-#         self.price = get_ticker_price(ticker)
-#         self.value = self.shares * self.price
-
-
-# def create_ticker_from_transaction(transaction):
-#     ticker = transaction[0]
-#     shares = transaction[2]
-#     ticker_class = Ticker(ticker, shares)
-#     return ticker_class
 
 
 ##############################################################################
@@ -162,15 +178,37 @@ def clear_price_cache():
     print("Price cache cleared")
 
 
+def clear_asset_type_cache():
+    """Clear the asset type cache. Useful for forcing fresh data."""
+    global _ASSET_TYPE_CACHE
+    _ASSET_TYPE_CACHE = {}
+    print("Asset type cache cleared")
+
+
+def clear_all_caches():
+    """Clear all caches (price and asset type)."""
+    clear_price_cache()
+    clear_asset_type_cache()
+
+
 def get_cache_stats():
     """Return cache statistics for debugging."""
-    return {"cached_tickers": len(_PRICE_CACHE)}
+    return {
+        "cached_prices": len(_PRICE_CACHE),
+        "cached_asset_types": len(_ASSET_TYPE_CACHE)
+    }
 
 
 # get_ticker_price: returns the current live price for a certain ticker
 def get_ticker_price(ticker, use_cache=True, max_retries=2):
     """
-    Get current price for a ticker with caching and rate limit handling.
+    Get current price for a ticker with multi-source fallback and caching.
+
+    Tries multiple data sources in order:
+    1. Finnhub (60 calls/min, most reliable)
+    2. yfinance (fast_info) - fallback
+    3. yahoo_fin (si.get_live_price) - fallback #2
+    4. yfinance (history) - last resort
 
     Args:
         ticker: Stock ticker symbol
@@ -189,43 +227,57 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
     if use_cache and ticker in _PRICE_CACHE:
         return _PRICE_CACHE[ticker]
 
-    # Attempt to fetch with retry logic
-    for attempt in range(max_retries + 1):
+    # METHOD 1: Try Finnhub (60 calls/min - best option!)
+    finnhub_client = get_finnhub_client()
+    if finnhub_client:
         try:
-            # Use yfinance Ticker - most reliable method
-            ticker_obj = yf.Ticker(ticker)
-
-            # Try fast_info first (fastest, least rate-limited)
-            try:
-                price = ticker_obj.fast_info.get('lastPrice')
-                if price and not np.isnan(price):
-                    _PRICE_CACHE[ticker] = float(price)
-                    return float(price)
-            except (AttributeError, KeyError, TypeError):
-                pass
-
-            # Fallback to history
-            hist = ticker_obj.history(period="1d")
-            if not hist.empty:
-                price = hist['Close'].iloc[-1]
-                if not np.isnan(price):
-                    _PRICE_CACHE[ticker] = float(price)
-                    return float(price)
-
-        except yfinance.exceptions.YFRateLimitError:
-            if attempt < max_retries:
-                wait_time = (2 ** attempt)  # Exponential backoff: 1s, 2s
-                print(f"Rate limited fetching {ticker}, waiting {wait_time}s before retry {attempt + 1}/{max_retries}...")
-                time.sleep(wait_time)
-            else:
-                print(f"Rate limit exceeded for {ticker} after {max_retries} retries")
-                return 0
-
+            quote = finnhub_client.quote(ticker)
+            price = quote.get('c')  # 'c' is current price
+            if price and price > 0:
+                _PRICE_CACHE[ticker] = float(price)
+                # print(f"✓ {ticker} via Finnhub")  # Uncomment for verbose logging
+                return float(price)
         except Exception as e:
-            print(f"Error fetching price for {ticker}: {type(e).__name__}")
-            return 0
+            # Finnhub doesn't have this ticker (common for mutual funds, some ETFs)
+            pass  # Silently fall back to yfinance
 
-    print(f"Unable to fetch price for {ticker}")
+    # METHOD 2: Try yfinance fast_info
+    try:
+        ticker_obj = yf.Ticker(ticker)
+        price = ticker_obj.fast_info.get('lastPrice')
+        if price and not np.isnan(price):
+            _PRICE_CACHE[ticker] = float(price)
+            # print(f"✓ {ticker} via yfinance")  # Uncomment for verbose logging
+            return float(price)
+    except yfinance.exceptions.YFRateLimitError:
+        pass  # Continue to next method
+    except Exception as e:
+        pass  # Continue to next method
+
+    # METHOD 3: Try yahoo_fin as fallback
+    try:
+        price = si.get_live_price(ticker)
+        if price and not np.isnan(price):
+            _PRICE_CACHE[ticker] = float(price)
+            # print(f"✓ {ticker} via yahoo_fin")  # Uncomment for verbose logging
+            return float(price)
+    except Exception as e:
+        pass  # Continue to next method
+
+    # METHOD 4: Last resort - yfinance history
+    try:
+        ticker_obj = yf.Ticker(ticker)
+        hist = ticker_obj.history(period="1d")
+        if not hist.empty:
+            price = hist['Close'].iloc[-1]
+            if not np.isnan(price):
+                _PRICE_CACHE[ticker] = float(price)
+                # print(f"✓ {ticker} via yfinance history")  # Uncomment for verbose logging
+                return float(price)
+    except Exception as e:
+        pass
+
+    print(f"❌ Unable to fetch price for {ticker} from any source")
     return 0
 
 
@@ -291,42 +343,92 @@ def ticker_info_dump(ticker):
         return None
 
 
-def get_ticker_asset_type(ticker, max_retries=2):
+def get_ticker_asset_type(ticker, use_cache=True, use_db=True, max_retries=2):
     """
-    Get the asset type (quoteType) for a ticker with rate limit handling.
+    Get the asset type (quoteType) for a ticker with DB and memory caching.
+
+    Priority order:
+    1. Memory cache (fastest)
+    2. Database (no API call)
+    3. Finnhub API
+    4. yfinance API (fallback)
+
+    Args:
+        ticker: Stock ticker symbol
+        use_cache: Whether to use memory cache (default True)
+        use_db: Whether to check/store in database (default True)
+        max_retries: Number of retries on rate limit (default 2)
 
     Returns: Asset type string (e.g., 'EQUITY', 'ETF', 'MUTUALFUND') or None
     """
-    ticker_obj = yf.Ticker(ticker)
+    # Check memory cache first
+    if use_cache and ticker in _ASSET_TYPE_CACHE:
+        return _ASSET_TYPE_CACHE[ticker]
 
-    for attempt in range(max_retries + 1):
+    # Check database second (no API call!)
+    if use_db:
+        db_asset_type = dbh.ticker_metadata.get_ticker_asset_type(ticker)
+        if db_asset_type:
+            _ASSET_TYPE_CACHE[ticker] = db_asset_type
+            return db_asset_type
+
+    # Not in cache or DB - need to fetch from API
+    asset_type = None
+
+    # METHOD 1: Try Finnhub (60 calls/min)
+    finnhub_client = get_finnhub_client()
+    if finnhub_client:
         try:
-            # Try fast_info first (less rate limited)
-            try:
-                quote_type = ticker_obj.fast_info.get('quoteType')
-                if quote_type:
-                    return quote_type
-            except (AttributeError, KeyError, TypeError):
-                pass
-
-            # Fallback to full info
-            info = ticker_obj.info
-            return info.get("quoteType")
-
-        except yfinance.exceptions.YFRateLimitError:
-            if attempt < max_retries:
-                wait_time = (2 ** attempt)
-                print(f"Rate limited fetching asset type for {ticker}, waiting {wait_time}s...")
-                time.sleep(wait_time)
+            profile = finnhub_client.company_profile2(symbol=ticker)
+            # Map Finnhub type to yfinance-style type
+            finnhub_type = profile.get('finnhubIndustry', '')
+            if 'ETF' in finnhub_type.upper():
+                asset_type = 'ETF'
             else:
-                print(f"Rate limit exceeded getting asset type for {ticker}")
-                return None
-
+                asset_type = 'EQUITY'  # Default for stocks
         except Exception as e:
-            print(f"Error fetching asset type for {ticker}: {type(e).__name__}")
-            return None
+            # Finnhub doesn't have this ticker - silently fall back
+            pass
 
-    return None
+    # METHOD 2: Fallback to yfinance if Finnhub failed
+    if not asset_type:
+        ticker_obj = yf.Ticker(ticker)
+        for attempt in range(max_retries + 1):
+            try:
+                # Try fast_info first (less rate limited)
+                try:
+                    quote_type = ticker_obj.fast_info.get('quoteType')
+                    if quote_type:
+                        asset_type = quote_type
+                        break
+                except (AttributeError, KeyError, TypeError):
+                    pass
+
+                # Fallback to full info
+                info = ticker_obj.info
+                asset_type = info.get("quoteType")
+                break
+
+            except yfinance.exceptions.YFRateLimitError:
+                if attempt < max_retries:
+                    wait_time = (2 ** attempt)
+                    print(f"Rate limited fetching asset type for {ticker}, waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"Rate limit exceeded getting asset type for {ticker}")
+                    break
+
+            except Exception as e:
+                print(f"Error fetching asset type for {ticker}: {type(e).__name__}")
+                break
+
+    # Cache and save to DB if we got a result
+    if asset_type:
+        _ASSET_TYPE_CACHE[ticker] = asset_type
+        if use_db:
+            dbh.ticker_metadata.insert_ticker_metadata(ticker, asset_type)
+
+    return asset_type
 
 
 ##############################################################################
@@ -371,12 +473,28 @@ def get_account_mm_ticker(account_id):
 ##############################################################################
 
 # get_all_active_ticker: returns "active" tickers
-def get_all_active_ticker():
+def get_all_active_ticker(live_price=False, delay_between_tickers=0.15):
+    """
+    Get all active investment positions.
+
+    Args:
+        live_price: If True, fetch live prices (slower, may hit rate limits)
+        delay_between_tickers: Seconds to wait between API calls when live_price=True (default 0.15)
+
+    Returns:
+        List of InvestmentTransaction objects with non-zero shares
+    """
     ticker_list = []
-    transactions = transr.recall_investment_transaction()
-    for transaction in transactions:
+    transactions = transr.recall_investment_transaction(live_price)
+
+    for i, transaction in enumerate(transactions):
         if transaction.shares != 0:
             ticker_list.append(transaction)
+
+            # Add delay between tickers to avoid rate limiting (skip for last item)
+            if live_price and i < len(transactions) - 1:
+                time.sleep(delay_between_tickers)
+
     return ticker_list
 
 
@@ -398,8 +516,8 @@ def summarize_account(account_id, printmode=True):
     for ticker in tickers:
         transaction = dbh.investments.get_ticker_shares(account_id, ticker[0])
         #def __init__(self, date, account_id, category_id, ticker, shares, value, trans_type, description, note=None,sql_key=None):
-        ticker = InvestmentTransaction("2000/1/1", account_id, -1, transaction[0], transaction[2], -1, -1, "description")
-
+        ticker = InvestmentTransaction("2000/1/1", account_id, -1, transaction[0], transaction[2], -1, -1,
+                                       "description")
 
         if ticker.shares != 0:
             account_value += ticker.value
@@ -444,3 +562,79 @@ def create_active_investment_dict():
 def delete_investment_list(sql_key_arr):
     for key in sql_key_arr:
         dbh.investments.delete_investment(key)
+
+
+def populate_ticker_metadata_from_investments(delay_between_tickers=1.0):
+    """
+    One-time setup: Populate ticker_metadata table from existing investment transactions.
+
+    This fetches asset types for all unique tickers in your investment table
+    and stores them in the database so future lookups are instant.
+
+    Args:
+        delay_between_tickers: Seconds to wait between API calls (default 1.0)
+    """
+    print("\n" + "="*80)
+    print("POPULATING TICKER METADATA FROM INVESTMENT HISTORY")
+    print("="*80)
+
+    # Get all unique tickers from investment table
+    conn = dbh.investments.sqlite3.connect(dbh.investments.DATABASE_DIRECTORY)
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT ticker FROM investment")
+    all_tickers = [row[0] for row in cur.fetchall()]
+    conn.close()
+
+    print(f"\nFound {len(all_tickers)} unique tickers in investment table")
+
+    # Check which ones are already in metadata table
+    existing_tickers = dbh.ticker_metadata.get_all_tickers()
+    tickers_to_fetch = [t for t in all_tickers if t not in existing_tickers]
+
+    if not tickers_to_fetch:
+        print("✓ All tickers already have metadata!")
+        return
+
+    print(f"Need to fetch metadata for {len(tickers_to_fetch)} tickers\n")
+
+    # Fetch and store asset types
+    success_count = 0
+    fail_count = 0
+
+    for i, ticker in enumerate(tickers_to_fetch, 1):
+        print(f"[{i}/{len(tickers_to_fetch)}] Fetching {ticker}...", end=" ")
+
+        asset_type = get_ticker_asset_type(ticker, use_db=False)  # Force API fetch
+
+        if asset_type:
+            print(f"✓ {asset_type}")
+            success_count += 1
+        else:
+            print(f"❌ Failed")
+            fail_count += 1
+
+        # Rate limiting delay (except for last item)
+        if i < len(tickers_to_fetch):
+            time.sleep(delay_between_tickers)
+
+    print("\n" + "="*80)
+    print(f"RESULTS: {success_count} successful, {fail_count} failed")
+    print("="*80 + "\n")
+    print("✓ Ticker metadata populated! Future asset allocation will be much faster.")
+
+
+def print_ticker_metadata_table():
+    """Print all ticker metadata in a nice table."""
+    data = dbh.ticker_metadata.get_ticker_metadata_table()
+
+    if not data:
+        print("No ticker metadata in database yet.")
+        print("Run 'Populate ticker metadata' from Investments tab to set up.")
+        return
+
+    print(f"\nTicker Metadata ({len(data)} tickers)")
+    print("-" * 80)
+    clip.print_variable_table(
+        ["Ticker", "Asset Type", "Name", "Last Updated"],
+        data
+    )

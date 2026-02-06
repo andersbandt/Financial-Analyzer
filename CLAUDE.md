@@ -246,3 +246,44 @@ Located in `src/cli/cli_helper.py`:
 - No API integration (Plaid, bank APIs) - all data is manually downloaded CSV/PDF
 - Some duplicate prevention logic exists but is not foolproof
 - Investment tracking is basic compared to transaction tracking
+
+## ML Model Improvements (Future Work)
+
+Current ML model (`src/analysis.py` + `src/analysis/transaction_classifier.py`) achieves ~70% accuracy on 60-class classification with ~4,500 transactions. This is challenging due to:
+- Small dataset size (75 transactions per category average)
+- High class imbalance (some categories have only 1-3 samples)
+- Similar/overlapping categories (EATING OUT vs FAST FOOD vs BARS)
+
+### Recommended Improvements:
+
+**1. Hierarchical Classification (Highest Impact)**
+- Implement 2-stage model: Top-level categories (Food, Transport, Bills) → Sub-categories
+- Expected improvement: 85%+ accuracy on top-level, easier to maintain
+- Requires: Restructure category table to explicit hierarchy levels
+
+**2. Hybrid Keyword + ML Approach**
+- Use keyword rules for high-confidence cases (~90% of transactions)
+- Reserve ML for ambiguous cases only (~10%)
+- Current keyword system in `Ledger.categorizeStatementAutomatic()` could be primary classifier
+
+**3. Category Consolidation**
+- Merge rare categories (<10 samples) into "OTHER" or parent categories
+- Combine similar categories (EATING OUT + FAST FOOD + BARS → DINING)
+- Reduces complexity, improves model performance
+
+**4. Alternative Models**
+- Try Random Forest or XGBoost (often better than LogisticRegression for tabular data)
+- Consider ensemble methods combining multiple models
+- Experiment with deep learning (transformers) if dataset grows significantly
+
+**5. Feature Engineering**
+- Extract merchant names from descriptions (regex patterns)
+- Add time-of-day features if available
+- Create account-category interaction features
+
+**Current Model Features:**
+- Text: TF-IDF on transaction descriptions (trigrams, 3000 features)
+- Numeric: value, AccountType, Month, Day, DayOfWeek, IsWeekend, AmountBucket
+- Class balancing enabled (`class_weight='balanced'`)
+
+See `/tmp/claude.../scratchpad/ML_IMPROVEMENTS_SUMMARY.md` for detailed recent improvements.

@@ -249,26 +249,83 @@ class TabBalances(SubMenu):
         return True
 
     def a07_asset_allocation(self):
-        # add liquid assets
-        asset_total = {
-            "CASH": balh.get_liquid_balance()
-        }
+        # Track detailed breakdown by asset type and account
+        asset_breakdown = {}  # {asset_type: [(account_name, amount), ...]}
+        asset_total = {}      # {asset_type: total_amount}
 
-        # add investment assets
-        tickers = invh.get_all_active_ticker()
+        # Add liquid cash assets (bank accounts, checking, savings, etc.)
+        liquid_balance = balh.get_liquid_balance()
+        asset_total["CASH"] = liquid_balance
+        asset_breakdown["CASH"] = [("Liquid Accounts", liquid_balance)]
+
+        # Track money market separately for CASH breakdown
+        money_market_total = 0
+        money_market_accounts = []
+
+        # Add investment assets (with live prices and rate limiting)
+        print("Fetching live investment prices (this may take a moment)...")
+        tickers = invh.get_all_active_ticker(live_price=True, delay_between_tickers=0.2)
+
         for ticker in tickers:
-            # keep pie chart clean by grouping similar categories. tag:HARDCODE
-            if ticker.type == "MONEYMARKET":
-                ticker.type = "CASH"
+            account_name = dbh.account.get_account_name_from_id(ticker.account_id)
+            original_type = ticker.type
 
-            # Add ticker value, initialize with 0 if the key does not exist
+            # Handle None asset type (fallback to UNKNOWN)
+            if ticker.type is None:
+                ticker.type = "UNKNOWN"
+
+            # Track money market separately before merging into CASH
+            if ticker.type == "MONEYMARKET":
+                money_market_total += ticker.value
+                money_market_accounts.append((account_name, ticker.ticker, ticker.value))
+                ticker.type = "CASH"  # Merge into CASH for pie chart
+
+            # Add to totals
             asset_total[ticker.type] = asset_total.get(ticker.type, 0) + ticker.value
 
-        # TODO: add print outs of amounts and where they are coming from. Mainly want to see like where my cash is stored for example
-        import pprint
-        pprint.pprint(asset_total)
+            # Add to breakdown
+            if ticker.type not in asset_breakdown:
+                asset_breakdown[ticker.type] = []
+            asset_breakdown[ticker.type].append((account_name, ticker.ticker, ticker.value))
 
-        # make pie plot
+        # Print detailed breakdown
+        print("\n" + "="*80)
+        print("ASSET ALLOCATION BREAKDOWN")
+        print("="*80)
+
+        for asset_type in sorted(asset_total.keys()):
+            print(f"\n{asset_type}: ${asset_total[asset_type]:,.2f}")
+            print("-" * 60)
+
+            if asset_type == "CASH":
+                # Special handling for CASH - show liquid vs money market
+                print(f"  Liquid Accounts:        ${liquid_balance:,.2f}")
+                if money_market_total > 0:
+                    print(f"  Money Market Funds:     ${money_market_total:,.2f}")
+                    for acc_name, ticker, amount in money_market_accounts:
+                        print(f"    • {acc_name:30s} ({ticker:6s})  ${amount:>12,.2f}")
+            else:
+                # Group by account and show tickers
+                account_groups = {}
+                for item in asset_breakdown[asset_type]:
+                    if len(item) == 3:  # (account_name, ticker, value)
+                        acc_name, ticker, value = item
+                        if acc_name not in account_groups:
+                            account_groups[acc_name] = []
+                        account_groups[acc_name].append((ticker, value))
+
+                for acc_name, holdings in sorted(account_groups.items()):
+                    acc_total = sum(val for _, val in holdings)
+                    print(f"  {acc_name:40s}  ${acc_total:>12,.2f}")
+                    for ticker, value in holdings:
+                        print(f"    • {ticker:10s}  ${value:>12,.2f}")
+
+        # Print summary totals
+        print("\n" + "="*80)
+        print(f"TOTAL NET WORTH: ${sum(asset_total.values()):,.2f}")
+        print("="*80 + "\n")
+
+        # Make pie plot
         grapa.create_pie_chart(
             asset_total.values(),
             asset_total.keys(),

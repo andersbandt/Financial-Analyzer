@@ -372,7 +372,7 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
     # init date edge limits
     edge_code_date = dateh.get_edge_code_dates(date_range_end, days_prev, N)
 
-    added_sql_key = [] # TODO (low priority): figure out if this thing is actually needed or we can restructure the flow
+    added_sql_key = []
     # search through edge code limits to add N bin A vectors
     for i in range(0, N):
         # init A vector (dict)

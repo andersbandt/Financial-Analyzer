@@ -122,11 +122,29 @@ def create_stack_bar_chart(x_axis, y_axis_arr, title=None, labels=None, y_label=
 
 
 # create_stack_line_chart: creates a line chart that is "stacked"
-def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=None):
-    # TODO: just add some built-in sorting to this function. I know I implemented it somewhere else too
-
+def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=None, sort_by_column="last"):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
+
+    # Determine the sorting column
+    if sort_by_column == "first":
+        column_index = 0
+    elif sort_by_column == "last":
+        column_index = -1
+    elif sort_by_column is None:
+        column_index = None  # No sorting
+    else:
+        raise ValueError("Invalid value for sort_by_column. Use 'first', 'last', or None.")
+
+    # Sort y_axis and labels based on the specified column (largest at bottom)
+    if column_index is not None:
+        if label:
+            sorted_data = sorted(zip(y_axis, label), key=lambda x: x[0][column_index], reverse=True)
+            y_axis, label = zip(*sorted_data)
+            y_axis = list(y_axis)
+            label = list(label)
+        else:
+            y_axis = sorted(y_axis, key=lambda x: x[column_index], reverse=True)
 
     plt.stackplot(x_axis, y_axis, labels=label)
     plt.title(title)

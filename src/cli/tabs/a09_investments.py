@@ -36,6 +36,8 @@ class TabInvestment(SubMenu):
                       Action("Add dividend", self.a06_add_dividend),
                       Action("Delete investment", self.a07_delete_investment),
                       Action("Ticker investigation", self.a08_check_ticker),
+                      Action("Populate ticker metadata (one-time setup)", self.a09_populate_ticker_metadata),
+                      Action("Print ticker metadata", self.a10_print_ticker_metadata),
                       Action("DEBUG", self.a99_debug)
                       ]
 
@@ -374,6 +376,24 @@ class TabInvestment(SubMenu):
         invh.ticker_info_dump(ticker)
         price = invh.get_ticker_price(ticker)
         print(f"Price: {price}")
+
+    def a09_populate_ticker_metadata(self):
+        """One-time setup to populate ticker metadata from investment history."""
+        print("\n⚠️  This will fetch asset types for all tickers in your investment history.")
+        print("This is a ONE-TIME setup that makes future operations much faster.\n")
+
+        confirm = clih.promptYesNo("Continue?")
+        if not confirm:
+            print("Cancelled.")
+            return False
+
+        invh.populate_ticker_metadata_from_investments(delay_between_tickers=1.0)
+        return True
+
+    def a10_print_ticker_metadata(self):
+        """Print the ticker metadata table."""
+        invh.print_ticker_metadata_table()
+        return True
 
     def a99_debug(self):
         account_id = "2000000005"

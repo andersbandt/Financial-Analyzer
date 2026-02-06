@@ -95,7 +95,7 @@ class TabLoadData(SubMenu):
         self.update_listing()
         return True
 
-    # TODO: why does this function exist again?
+
     def a02_load_all_data(self):
         print("... loading in ALL financial data")
         statement_list = []

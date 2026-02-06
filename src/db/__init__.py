@@ -77,6 +77,11 @@ class TableStatements:
                     account_id              FOREIGN KEY INT(10) REFERENCES account(id),
                     amount                  NUMERIC(10,2),
                     date                    DATE)"""
+    ticker_metadata = """CREATE TABLE ticker_metadata
+                    (ticker                 VARCHAR(10) PRIMARY KEY,
+                    asset_type              VARCHAR(50),
+                    name                    VARCHAR(100),
+                    last_updated            DATETIME)"""
 
 
 """

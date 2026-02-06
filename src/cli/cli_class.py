@@ -1,4 +1,6 @@
-# TODO: try to spice up this class by some thing like execution memory
+
+
+
 class Action:
     def __init__(self, title, action):
         self.title = title
