@@ -23,7 +23,9 @@ def insert_transaction(transaction: Transaction) -> bool:
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO transactions (date, account_id, category_id, amount, description, note, date_added) VALUES(?, ?, ?, ?, ?, ?, ?)",
+            """INSERT INTO transactions (date, account_id, category_id, amount, description, note, date_added,
+               plaid_transaction_id, plaid_account_id, transaction_source, plaid_synced_at)
+               VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 transaction.date,
                 transaction.account_id,
@@ -32,6 +34,10 @@ def insert_transaction(transaction: Transaction) -> bool:
                 transaction.description,
                 transaction.note,
                 datetime.datetime.now(),
+                getattr(transaction, 'plaid_transaction_id', None),
+                getattr(transaction, 'plaid_account_id', None),
+                getattr(transaction, 'transaction_source', 'MANUAL'),
+                getattr(transaction, 'plaid_synced_at', None),
             ),
         )
         conn.set_trace_callback(None)

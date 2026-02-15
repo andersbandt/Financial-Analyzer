@@ -7,6 +7,10 @@ category_tree.PNG
 # Databases - to prevent personal financial information from being online!
 *.db
 
+# Plaid API credentials and encryption keys
+plaid_config.json
+*.key
+
 
 
 # Pycharm stuff

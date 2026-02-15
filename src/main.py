@@ -39,7 +39,7 @@ def main(tab_num=None, action_num=None):
 
 def db_init():
     """Create the database using the values of TableStatements."""
-    from db import DATABASE_DIRECTORY, TableStatements, all_tables_init, populate_tables
+    from db import DATABASE_DIRECTORY, TableStatements, all_tables_init, populate_tables, migrate_plaid_schema
 
     print("NOTICE: you are currently using ...")
     print(f"\t\t {DATABASE_DIRECTORY}")
@@ -60,6 +60,10 @@ def db_init():
         return False
 
     populate_tables(DATABASE_DIRECTORY)
+
+    # Run Plaid schema migration (safe to run multiple times)
+    migrate_plaid_schema(DATABASE_DIRECTORY)
+
     return True
 
 

@@ -8,5 +8,6 @@ from cli.tabs import a05_analyze_history
 from cli.tabs import a06_balances
 from cli.tabs import a07_categorize_transaction
 from cli.tabs import a09_investments
+from cli.tabs import a10_plaid
 
 

@@ -17,4 +17,6 @@ legacy-cgi # if using Python 3.13 or greater
 loguru
 plotly
 scikit-learn
+plaid-python>=16.0.0
+cryptography>=41.0.0
 

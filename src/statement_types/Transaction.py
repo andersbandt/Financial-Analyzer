@@ -14,13 +14,21 @@ from categories import categories_helper as cath
 
 
 class Transaction:
-    def __init__(self, date, account_id, category_id, value, description, note=None, sql_key=None):
+    def __init__(self, date, account_id, category_id, value, description, note=None, sql_key=None,
+                 plaid_transaction_id=None, plaid_account_id=None,
+                 transaction_source='MANUAL', plaid_synced_at=None):
         self.account_id = account_id
         self.category_id = category_id
         self.date = date
         self.value = value
         self.note = note
         self.description = description
+
+        # Plaid-specific fields (optional, for backward compatibility)
+        self.plaid_transaction_id = plaid_transaction_id
+        self.plaid_account_id = plaid_account_id
+        self.transaction_source = transaction_source  # 'PLAID', 'CSV', or 'MANUAL'
+        self.plaid_synced_at = plaid_synced_at
 
         try:
             self.value = float(self.value)

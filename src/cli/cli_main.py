@@ -15,6 +15,7 @@ class MainApplication:
         self.tab7 = None
         self.tab8 = None
         self.tab9 = None
+        self.tab10 = None
 
         self.tabs = []
 
@@ -25,7 +26,7 @@ class MainApplication:
         self.initTabs()
 
     def setTabs(self):
-        self.tabs = [self.tab1, self.tab2, self.tab3, self.tab4, self.tab5, self.tab6, self.tab7, self.tab8, self.tab9]
+        self.tabs = [self.tab1, self.tab2, self.tab3, self.tab4, self.tab5, self.tab6, self.tab7, self.tab8, self.tab9, self.tab10]
 
     # set up tab control
     def initTabs(self):
@@ -40,6 +41,7 @@ class MainApplication:
         self.tab7 = a07_categorize_transaction.TabTransCategorize("Categorize Transactions", self.basefilepath)
         self.tab8 = a02_categories.TabCategory("Budgeting", self.basefilepath)
         self.tab9 = a09_investments.TabInvestment("Review investments", self.basefilepath)
+        self.tab10 = a10_plaid.TabPlaid("Plaid Integration", self.basefilepath)
 
         self.setTabs()
         print("Tabs should be initialized")

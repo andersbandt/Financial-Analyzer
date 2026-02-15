@@ -82,6 +82,22 @@ class TableStatements:
                     asset_type              VARCHAR(50),
                     name                    VARCHAR(100),
                     last_updated            DATETIME)"""
+    plaid_sync_state = """CREATE TABLE plaid_sync_state
+                    (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    account_id              INT(10) REFERENCES account(account_id),
+                    last_successful_sync    DATETIME,
+                    last_attempted_sync     DATETIME,
+                    last_error_message      VARCHAR(500),
+                    sync_count              INT DEFAULT 0,
+                    cursor                  VARCHAR(1000),
+                    is_syncing              BOOLEAN DEFAULT 0);"""
+    plaid_credentials = """CREATE TABLE plaid_credentials
+                    (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id_encrypted     BLOB,
+                    secret_key_encrypted    BLOB,
+                    environment             VARCHAR(20),
+                    created_at              DATETIME,
+                    is_active               BOOLEAN DEFAULT 1);"""
 
 
 """
@@ -109,6 +125,34 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
         return False
     print("\n\n")
     return True
+
+
+def migrate_plaid_schema(database_directory: str):
+    """One-time migration to add Plaid support to existing databases"""
+    migration_statements = [
+        "ALTER TABLE account ADD COLUMN plaid_account_id VARCHAR(100)",
+        "ALTER TABLE account ADD COLUMN plaid_institution_id VARCHAR(100)",
+        "ALTER TABLE account ADD COLUMN access_token_encrypted BLOB",
+        "ALTER TABLE account ADD COLUMN access_token_synced DATETIME",
+        "ALTER TABLE account ADD COLUMN is_plaid_linked BOOLEAN DEFAULT 0",
+
+        "ALTER TABLE transactions ADD COLUMN plaid_transaction_id VARCHAR(100)",
+        "ALTER TABLE transactions ADD COLUMN plaid_account_id VARCHAR(100)",
+        "ALTER TABLE transactions ADD COLUMN transaction_source VARCHAR(20) DEFAULT 'MANUAL'",
+        "ALTER TABLE transactions ADD COLUMN plaid_synced_at DATETIME",
+
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_plaid_transaction ON transactions(plaid_transaction_id) WHERE plaid_transaction_id IS NOT NULL",
+        "CREATE INDEX IF NOT EXISTS idx_plaid_account ON account(plaid_account_id)",
+    ]
+
+    with sqlite3.connect(database_directory) as conn:
+        cursor = conn.cursor()
+        for statement in migration_statements:
+            try:
+                cursor.execute(statement)
+            except sqlite3.OperationalError as e:
+                # Column/index already exists, skip
+                pass
 
 
 def populate_tables(database_directory: str):
