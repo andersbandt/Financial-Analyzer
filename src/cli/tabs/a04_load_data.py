@@ -30,6 +30,10 @@ from tools import date_helper as dateh
 from loguru import logger
 
 
+# TODO: would be kind of cool to have a printout of what transactions exactly where categorized when manual categorization is applied
+
+
+
 class TabLoadData(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None

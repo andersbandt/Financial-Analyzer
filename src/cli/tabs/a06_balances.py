@@ -31,11 +31,12 @@ class TabBalances(SubMenu):
         # initialize information about sub menu options
         action_arr = [Action("Show executive wealth summary", self.a01_show_wealth),
                       Action("Add balance", self.a02_add_balance),
-                      Action("Graph balances per account", self.a03_graph_account_balance),
+                      Action("Graph executive summary", self.a03_graph_account_balance),
                       Action("Retirement modeling", self.a04_retirement_modeling),
                       Action("Delete a balance", self.a05_delete_balance),
                       Action("Print raw balance table", self.a06_print_balance_table),
-                      Action("View asset allocation", self.a07_asset_allocation)]
+                      Action("View asset allocation", self.a07_asset_allocation),
+                      Action("Graph single account balance", self.a08_graph_single_account_balance)]
 
         # call parent class __init__ method
         super().__init__(title, basefilepath, action_arr)
@@ -124,7 +125,7 @@ class TabBalances(SubMenu):
 
         # generate pdf file AND open
         print("\nGenerating .pdf ...")
-        logh.generate_summary_pdf()
+        logh.generate_summary_pdf("balance_graphs.pdf")
 
     # a04_retirement_modeling: performs some statistical analysis on likely-hood of retirement goals
     def a04_retirement_modeling(self, num_simulations=10000):
@@ -230,10 +231,26 @@ class TabBalances(SubMenu):
             dbh.balance.delete_balance(sql_key)
         return True
 
-    # a06_print_balance_table: prints all recorded .db balances
-    def a06_print_balance_table(self):
-        # retrieve ledger data as tuples and convert into 2D array
-        balance_ledge = dbh.balance.get_balance_ledge_data()
+    # a06_print_balance_table: prints recorded .db balances (all accounts or a specific one)
+    def a06_print_balance_table(self, account_id=None):
+        # prompt user to filter by account if not already specified
+        if account_id is None:
+            show_all = clih.promptYesNo("Show all accounts?")
+            if not show_all:
+                account_id = clih.account_prompt_all("Which account?")
+                if account_id is False or account_id is None:
+                    return False
+
+        # retrieve balance data
+        if account_id is not None:
+            balance_ledge = dbh.balance.get_balance_by_account_id(account_id)
+        else:
+            balance_ledge = dbh.balance.get_balance_ledge_data()
+
+        if len(balance_ledge) == 0:
+            print("No balance records found.")
+            return True
+
         balance_arr = np.array(balance_ledge)
 
         # convert account ID to name
@@ -333,3 +350,28 @@ class TabBalances(SubMenu):
             title="Asset Allocation"
         )
         grapa.show_plots()
+
+    def a08_graph_single_account_balance(self):
+        account_id = clih.account_prompt_all("Which account do you want to graph?")
+        if account_id is False or account_id is None:
+            return False
+
+        account_name = dbh.account.get_account_name_from_id(account_id)
+
+        # Try modeled day-by-day balance (works for accounts with transactions)
+        balance_history = balh.model_account_balance(account_id)
+        if balance_history:
+            dates = [date for date, balance in balance_history]
+            balances = [balance for date, balance in balance_history]
+        else:
+            # Fall back to raw balance snapshots (investment accounts, etc.)
+            raw = dbh.balance.get_balance_by_account_id(account_id)
+            if not raw:
+                print("No balance data found for that account.")
+                return False
+            dates = [entry[3] for entry in raw]
+            balances = [entry[2] for entry in raw]
+
+        grapa.create_line_chart(dates, balances, title=f"Balance Over Time: {account_name}", y_format='currency', rotate_xticks=True)
+        grapa.show_plots()
+        return True

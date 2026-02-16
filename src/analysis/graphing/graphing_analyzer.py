@@ -159,7 +159,7 @@ def create_stack_line_chart(x_axis, y_axis, title=None, label=None, y_format=Non
     save_fig()
 
 
-def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
+def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None, rotate_xticks=False):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
 
@@ -179,6 +179,10 @@ def create_line_chart(x_axis, y_axis, title=None, legend=False, y_format=None):
         plt.legend(loc="best")
 
     plt.title(title if title else 'Stacked Line Chart')
+
+    if rotate_xticks:
+        plt.xticks(rotation=90)
+        plt.tight_layout()
 
     save_fig()
 

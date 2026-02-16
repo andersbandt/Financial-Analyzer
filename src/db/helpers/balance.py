@@ -26,7 +26,7 @@ def get_balance_by_account_id(account_id):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT * FROM balance WHERE account_id=?",
+            "SELECT * FROM balance WHERE account_id=? ORDER BY bal_date ASC",
             (account_id,),
         )
         balances_data = cur.fetchall()
@@ -98,7 +98,7 @@ def get_balance_ledge_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT * FROM balance",
+            "SELECT * FROM balance ORDER BY bal_date ASC",
         )
         ledger_data = cur.fetchall()
     return ledger_data
