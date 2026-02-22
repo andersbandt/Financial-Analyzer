@@ -10,27 +10,38 @@ import numpy as np
 ####      PLOTTING FUNCTIONS    ##############################################
 ##############################################################################
 
-def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=False):
+def get_pie_plot(amounts, labels, explode=0.1, title=None, legend=True, min_label_pct=3.0):
     # Clear the current figure
     plt.clf()
+
+    amounts = list(amounts)
+    labels = list(labels)
 
     # Automatically create explode array based on the length of `amounts`
     explode_values = [explode] * len(amounts) if explode else [0] * len(amounts)
 
+    total = sum(amounts)
+
+    # Suppress inline percentage label for slices too small to display cleanly
+    def autopct_filter(pct):
+        return f'{pct:.1f}%' if pct >= min_label_pct else ''
+
     # Add plot with additional options for better appearance
     wedges, texts, autotexts = plt.pie(
         amounts,
-        labels=labels,
+        labels=None,  # Labels go in the legend instead to avoid crowding
         explode=explode_values,
-        autopct='%1.1f%%',  # Display percentages
+        autopct=autopct_filter,
+        pctdistance=0.75,
         shadow=True,
         startangle=140,
         normalize=True
     )
 
-    # Optionally add a legend and title
-    if legend:
-        plt.legend(wedges, labels, loc="best")
+    # Always show a legend so small slices (<min_label_pct) are still labeled
+    legend_labels = [f'{l}  ${v:,.0f}  ({v/total*100:.1f}%)' for l, v in zip(labels, amounts)]
+    plt.legend(wedges, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5), fontsize=9)
+
     if title:
         plt.title(title)
 

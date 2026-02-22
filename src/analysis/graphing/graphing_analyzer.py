@@ -45,13 +45,13 @@ def show_plots():
 ####      SPENDING PLOTTING FUNCTIONS    #####################################
 ##############################################################################
 
-def create_pie_chart(values, labels, explode=0.1, title="Pie Chart"):
+def create_pie_chart(values, labels, explode=0.1, title="Pie Chart", legend=True):
     plt.rcdefaults() # sets rc defaults
     plt.clf() # clears the entire current figure with all its axes
 
     logger.debug("Running graphing_analyzer: create_pie_chart")
     fig = plt.figure(1)
-    grah.get_pie_plot(values, labels, explode, title)
+    grah.get_pie_plot(values, labels, explode, title, legend=legend)
     return fig
 
 
