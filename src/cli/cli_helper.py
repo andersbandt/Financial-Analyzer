@@ -5,6 +5,7 @@
 """
 
 # import needed modules
+import re
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from datetime import datetime
@@ -43,10 +44,12 @@ def esc_cmd(inp):
 def parse_inp_type(inp, inp_type):
     # TYPE: (int)
     if inp_type == "int":
-        # TODO: add check for correctly-position commas (also applies for float down below)
-        inp = inp.replace(',', '')  # get rid of commas
+        if ',' in inp:
+            if not re.match(r'^\d{1,3}(,\d{3})*$', inp.strip()):
+                print(f"Unusual comma placement in '{inp}' — did you mean a different number?")
+                return False
+        inp = inp.replace(',', '')
         try:
-            # TODO: consider deleting this int check and adding one that covers both int and float
             inp = int(inp)
         except ValueError as e:
             print("was that really an int?")
@@ -58,8 +61,12 @@ def parse_inp_type(inp, inp_type):
         return inp
     # TYPE: (float)
     elif inp_type == "float":
+        if isinstance(inp, str) and ',' in inp:
+            if not re.match(r'^\d{1,3}(,\d{3})*(\.\d+)?$', inp.strip()):
+                print(f"Unusual comma placement in '{inp}' — did you mean a different number?")
+                return False
         try:
-            inp = inp.replace(',', '')  # get rid of commas
+            inp = inp.replace(',', '')
         except AttributeError:
             pass
         try:
@@ -123,7 +130,6 @@ def prompt_for_int_array():
         int_arr.append(new_int)
 
 
-# TODO: perform an audit that I am using this for every use-case
 def action_on_int_array(prompt_str, print_func, action_func):
     print(prompt_str)
     int_arr = prompt_for_int_array()
@@ -326,26 +332,6 @@ def category_tree_prompt():
                 return cur_cat_obj.id
 
     return False
-
-    category_arr2 = []
-    category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
-    status = True
-    while status:
-        # print(prompt)
-        print("Type 'y' to finalize category")
-        print("Type 'x' to go one level up")
-        cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
-                            exact_match=False)
-
-    # category_arr2 = []
-    # category_arr2.extend([Category.Category(child_id) for child_id in cur_cat_obj.children_id])
-    # status = True
-    # while status:
-    #     # print(prompt)
-    #     print("Type 'y' to finalize category")
-    #     print("Type 'x' to go one level up")
-    #     cat_inp2 = inp_auto("Or select a category from list: ", [cat.name for cat in category_arr2], echo=True,
-    #                         exact_match=False)
 
 
 # TODO: I think I should refactor this to be outside cli_helper
