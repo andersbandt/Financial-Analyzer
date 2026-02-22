@@ -71,10 +71,9 @@ class TabInvestment(SubMenu):
         )
         return True
 
-    # TODO: would be cool to add measure of % gain over time ??? what economic metric would that be?
     def a02_print_db_inv(self):
         """Print all investment transactions with investment-specific columns using prettytable."""
-        # TODO: determine if I answer yes here it will use the cached values if possible
+        # Note: answering yes uses _PRICE_CACHE so repeat calls within a session are instant
         live_price = clih.promptYesNo("Do you want to get live price?")
 
         transactions = transr.recall_investment_transaction(live_price)
@@ -84,7 +83,7 @@ class TabInvestment(SubMenu):
             return
 
         # Build table headers
-        headers = ["DATE", "TICKER", "TYPE", "SHARES", "STRIKE", "CUR PRICE", "GAIN %", "VALUE", "ACCOUNT", "NOTE"]
+        headers = ["DATE", "TICKER", "TYPE", "SHARES", "STRIKE", "CUR PRICE", "GAIN %", "CAGR %", "ORIG VALUE", "VALUE", "ACCOUNT", "NOTE"]
 
         # Build rows of data
         values = []
@@ -100,7 +99,19 @@ class TabInvestment(SubMenu):
                 current_value = 0
             account_name = dbh.account.get_account_name_from_id(inv_trans.account_id)
 
-            # TODO: add original purchase value (if appilcabe). Instead of just current value
+            # CAGR: compound annual growth rate from purchase date to today
+            cagr = 0
+            if live_price and current_price > 0 and inv_trans.strike_price > 0:
+                try:
+                    purchase_date = datetime.datetime.strptime(inv_trans.date, "%Y-%m-%d").date()
+                    years_held = (datetime.date.today() - purchase_date).days / 365.25
+                    if years_held > 0:
+                        cagr = ((current_price / inv_trans.strike_price) ** (1 / years_held) - 1) * 100
+                except (ValueError, ZeroDivisionError):
+                    cagr = 0
+
+            orig_value = inv_trans.strike_price * inv_trans.shares
+
             row = [
                 inv_trans.date,
                 inv_trans.ticker,
@@ -109,6 +120,8 @@ class TabInvestment(SubMenu):
                 f"${inv_trans.strike_price:.2f}",
                 f"${current_price:.2f}",
                 f"{gain_percent:.2f}%",
+                f"{cagr:.2f}%" if live_price else "N/A",
+                f"${orig_value:.2f}",
                 f"${current_value:.2f}",
                 account_name,
                 inv_trans.note if inv_trans.note else ""
@@ -116,7 +129,7 @@ class TabInvestment(SubMenu):
             values.append(row)
 
         # Sort rows - prompt user for sort preference
-        sort_options = {"1": ("DATE", 0), "2": ("TICKER", 1), "3": ("VALUE", 7)}
+        sort_options = {"1": ("DATE", 0), "2": ("TICKER", 1), "3": ("VALUE", 9)}
         print("Sort by: 1=Date  2=Ticker  3=Value")
         sort_choice = input("Sort choice (default=1): ").strip() or "1"
         sort_label, sort_col = sort_options.get(sort_choice, ("DATE", 0))
@@ -158,7 +171,7 @@ class TabInvestment(SubMenu):
 
         # if ticker is not a Money Market ticker, check if they want to add opposite buy/sell event
         if not ticker == invh.get_account_mm_ticker(account_id):
-            is_mm_trnas = False
+            is_mm_trans = False
             mm_trans = clih.promptYesNo("Do you want to add an equal and opposite money market SELL/BUY event?")
         else:
             is_mm_trans = True
@@ -175,19 +188,25 @@ class TabInvestment(SubMenu):
             print("FUCK you entered something other than 1 or 2. I gotta quit now.")
             return False
 
-        # TODO: add some logic that if we are a money market transaction (is_mm_trans) we only ask for value in dollars
+        if is_mm_trans:
+            # Money market: 1 share = $1, so just ask for dollar value and derive shares
+            value = clih.spinput("What is the dollar value of this money market transaction?: ", inp_type="float")
+            if value is False:
+                print("... exiting add investment")
+                return False
+            shares = value
+        else:
+            # get the number of shares
+            shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
+            if shares is False:
+                print("... exiting add investment")
+                return False
 
-        # get the number of shares
-        shares = clih.spinput("What is the number of shares of this investment?: ", inp_type="float")
-        if shares is False:
-            print("... exiting add investment")
-            return False
-
-        # get investment value at time of buy/sell
-        value = clih.spinput("What was the value of this investment for this transaction?: ", inp_type="float")
-        if value is False:
-            print("... exiting add investment")
-            return False
+            # get investment value at time of buy/sell
+            value = clih.spinput("What was the value of this investment for this transaction?: ", inp_type="float")
+            if value is False:
+                print("... exiting add investment")
+                return False
 
         # get investment date
         date = clih.get_date_input("What is the date of this investment transaction?: ")
@@ -259,16 +278,6 @@ class TabInvestment(SubMenu):
                                                     datetime.datetime.now(),
                                                     interval,
                                                     filter_weekdays=False)
-
-            # print out the raw historical price data
-            # print(type(price_data))
-            # for date in price_data["date"]:
-            #     print(date)
-
-            # for i in range(0, len(cur_data)):
-            #     if cur_data[i] != prev_data[i]:
-            #         print(f"\nMISMATCH BELOW!")
-            #         print(f"\n{cur_data[i]} != {prev_data[i]}")
 
             # do some verification of the length
             if len(price_data["close"]) != len(total_arr):
