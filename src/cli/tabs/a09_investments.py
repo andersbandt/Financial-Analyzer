@@ -70,8 +70,10 @@ class TabInvestment(SubMenu):
         )
         return True
 
+    # TODO: would be cool to add measure of % gain over time ??? what economic metric would that be?
     def a02_print_db_inv(self):
         """Print all investment transactions with investment-specific columns using prettytable."""
+        # TODO: determine if I answer yes here it will use the cached values if possible
         live_price = clih.promptYesNo("Do you want to get live price?")
 
         transactions = transr.recall_investment_transaction(live_price)
@@ -97,6 +99,7 @@ class TabInvestment(SubMenu):
                 current_value = 0
             account_name = dbh.account.get_account_name_from_id(inv_trans.account_id)
 
+            # TODO: add original purchase value (if appilcabe). Instead of just current value
             row = [
                 inv_trans.date,
                 inv_trans.ticker,
@@ -110,6 +113,13 @@ class TabInvestment(SubMenu):
                 inv_trans.note if inv_trans.note else ""
             ]
             values.append(row)
+
+        # Sort rows - prompt user for sort preference
+        sort_options = {"1": ("DATE", 0), "2": ("TICKER", 1), "3": ("VALUE", 7)}
+        print("Sort by: 1=Date  2=Ticker  3=Value")
+        sort_choice = input("Sort choice (default=1): ").strip() or "1"
+        sort_label, sort_col = sort_options.get(sort_choice, ("DATE", 0))
+        values.sort(key=lambda r: r[sort_col])
 
         # Use the existing generic print_variable_table from cli_printer
         clip.print_variable_table(

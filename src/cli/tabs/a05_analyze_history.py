@@ -131,7 +131,6 @@ def exec_summary_01(time_param, method='date', num_slices=6):
 
 
 # exec_summary_02: compares previous month spending to baseline average
-# TODO: this function does not work (all percents are 100%)
 def exec_summary_02(comp_month_prev):
     """
     Compares the previous month's spending to an average of the months before it.
@@ -191,8 +190,10 @@ def exec_summary_02(comp_month_prev):
     )
 
     # Strip non-expense categories for cleaner comparison
-    top_cat_str, prev_amounts = grah.strip_non_expense_categories(top_cat_str, prev_amounts)
-    _, baseline_amounts = grah.strip_non_expense_categories(top_cat_str, baseline_amounts)
+    # Save original cat_str before stripping so baseline uses the same unmodified index order
+    original_top_cat_str = top_cat_str
+    top_cat_str, prev_amounts = grah.strip_non_expense_categories(original_top_cat_str, prev_amounts)
+    _, baseline_amounts = grah.strip_non_expense_categories(original_top_cat_str, baseline_amounts)
 
     # STEP 4: Calculate percentage differences
     # Normalize baseline to monthly average (divide by number of comparison months)

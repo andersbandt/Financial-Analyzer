@@ -38,8 +38,8 @@ def esc_cmd(inp):
 #       @param[in]      inp         string input string from python input()
 #       @param[in]      inp_type
 #                           text     string return of input
-#                           int      will return any POSITIVE VALUE (will return -1 on bad input) # TODO: verify this actually can't handle "-" minus sign
-#                           float    will return any float value (maybe POSITIVE ONLY?)
+#                           int      will return any integer value (positive or negative; returns False on bad input)
+#                           float    will return any float value (positive or negative)
 def parse_inp_type(inp, inp_type):
     # TYPE: (int)
     if inp_type == "int":
@@ -185,13 +185,20 @@ def inp_auto(prompt_str, strings_arr, echo=False, disp_options=True, exact_match
 ##############################################################################
 
 def get_year_input():
-    year = input("Enter year input: ")
-    if esc_cmd(year):
-        return False
-    try:
-        return int(year)
-    except ValueError:
-        return False
+    valid_years = dateh.get_valid_years()
+    while True:
+        year = input(f"Enter year input {valid_years[0]}-{valid_years[-1]}: ")
+        if esc_cmd(year):
+            return False
+        try:
+            year_int = int(year)
+        except ValueError:
+            print("Invalid year. Please enter a number.")
+            continue
+        if year_int not in valid_years:
+            print(f"Year must be between {valid_years[0]} and {valid_years[-1]}.")
+            continue
+        return year_int
 
 
 def get_month_input():
