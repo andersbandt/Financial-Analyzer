@@ -258,7 +258,6 @@ class TabSpendingHistory(SubMenu):
             return False
 
         # clear tmp folder
-        # TODO: somehow need to abstract the sequence of below (clearing tmp_folder, writing graph creation functions, and calling generate_summary_pdf)
         logh.clear_tmp_folder()
         grapa.reset_figure_counter()
 
@@ -323,7 +322,11 @@ class TabSpendingHistory(SubMenu):
         months = []
 
         ### METHOD 2: all sub-children categories as well
-        sub_categories = cath.get_category_children(category_id) # TODO: add a function to get ALL subcategory children (this is just one level below right now)
+        all_levels = clih.promptYesNo("Include all subcategory levels? (No = direct children only)")
+        if all_levels:
+            sub_categories = cath.get_all_category_descendants(category_id)
+        else:
+            sub_categories = cath.get_category_children(category_id)
         sub_categories.append(category_id)
         month_totals = [] # now this should be a matrix of size MxN where N is the number of bar graph slices (number of months in this case)
         labels = []

@@ -259,11 +259,12 @@ class TabBalances(SubMenu):
 
         # use clip to print table
         clip.print_variable_table(
-            ["SQL key", "Balance", "Account", "Date"],
+            ["SQL key", "Account", "Balance", "Date"],
             balance_arr.tolist(),
             format_finance_col=2
         )
         return True
+
 
     def a07_asset_allocation(self):
         # Track detailed breakdown by asset type and account
@@ -304,6 +305,20 @@ class TabBalances(SubMenu):
             if ticker.type not in asset_breakdown:
                 asset_breakdown[ticker.type] = []
             asset_breakdown[ticker.type].append((account_name, ticker.ticker, ticker.value))
+
+        # For investment accounts where all live price fetches returned $0 (API failure),
+        # fall back to the latest recorded DB balance rather than showing $0.
+        accounts_with_positions = {t.account_id for t in tickers}
+        accounts_with_live_data = {t.account_id for t in tickers if t.value > 0}
+        for acc_id in (accounts_with_positions - accounts_with_live_data):
+            fallback_bal, fallback_date = balh.get_account_balance(acc_id)
+            if fallback_bal and fallback_bal > 0:
+                acc_name = dbh.account.get_account_name_from_id(acc_id)
+                print(f"  (Live price unavailable for {acc_name}, using DB balance: ${fallback_bal:,.2f} as of {fallback_date})")
+                asset_total["INVESTMENT"] = asset_total.get("INVESTMENT", 0) + fallback_bal
+                if "INVESTMENT" not in asset_breakdown:
+                    asset_breakdown["INVESTMENT"] = []
+                asset_breakdown["INVESTMENT"].append((acc_name, "DB FALLBACK", fallback_bal))
 
         # Print detailed breakdown
         print("\n" + "="*80)

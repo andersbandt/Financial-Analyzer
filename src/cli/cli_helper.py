@@ -44,9 +44,9 @@ def parse_inp_type(inp, inp_type):
     # TYPE: (int)
     if inp_type == "int":
         # TODO: add check for correctly-position commas (also applies for float down below)
-        # TODO: consider deleting this int check and adding one that covers both int and float
         inp = inp.replace(',', '')  # get rid of commas
         try:
+            # TODO: consider deleting this int check and adding one that covers both int and float
             inp = int(inp)
         except ValueError as e:
             print("was that really an int?")

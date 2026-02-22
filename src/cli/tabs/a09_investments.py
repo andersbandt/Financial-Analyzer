@@ -38,6 +38,7 @@ class TabInvestment(SubMenu):
                       Action("Ticker investigation", self.a08_check_ticker),
                       Action("Populate ticker metadata (one-time setup)", self.a09_populate_ticker_metadata),
                       Action("Print ticker metadata", self.a10_print_ticker_metadata),
+                      Action("Edit ticker asset type", self.a11_edit_ticker_metadata),
                       Action("DEBUG", self.a99_debug)
                       ]
 
@@ -403,6 +404,45 @@ class TabInvestment(SubMenu):
     def a10_print_ticker_metadata(self):
         """Print the ticker metadata table."""
         invh.print_ticker_metadata_table()
+        return True
+
+    def a11_edit_ticker_metadata(self):
+        """Manually set the asset type for a ticker in the metadata table."""
+        invh.print_ticker_metadata_table()
+
+        ticker = clih.spinput("\nEnter ticker to edit: ", inp_type="text")
+        if ticker is False:
+            return False
+        ticker = ticker.upper().strip()
+
+        # Show current classification
+        current = dbh.ticker_metadata.get_ticker_metadata(ticker)
+        if current:
+            print(f"\nCurrent classification for {ticker}: {current[1]}")
+        else:
+            print(f"\n{ticker} not yet in metadata — will be added.")
+
+        # Show valid options
+        valid_types = ["EQUITY", "ETF", "MUTUALFUND", "BOND", "MONEYMARKET", "UNKNOWN"]
+        print("\nValid asset types:")
+        for i, t in enumerate(valid_types, 1):
+            print(f"  {i}. {t}")
+
+        choice = clih.spinput("Enter number or type a custom value: ", inp_type="text")
+        if choice is False:
+            return False
+        try:
+            new_type = valid_types[int(choice) - 1]
+        except (ValueError, IndexError):
+            new_type = choice.upper().strip()
+
+        print(f"\nSetting {ticker} → {new_type}")
+        if not clih.promptYesNo("Confirm?"):
+            print("Cancelled.")
+            return False
+
+        invh.update_ticker_asset_type(ticker, new_type)
+        print(f"Updated {ticker} → {new_type}")
         return True
 
     def a99_debug(self):

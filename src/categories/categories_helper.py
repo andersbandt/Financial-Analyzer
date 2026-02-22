@@ -127,6 +127,25 @@ def get_category_children(category_id, printmode=None):
     return category_children
 
 
+def get_all_category_descendants(category_id):
+    """
+    Returns all descendant category IDs at every level below category_id.
+    Fetches category data once and recurses in memory.
+    """
+    cat_ledge_data = dbh.category.get_category_ledger_data()
+
+    def _collect(parent_id):
+        result = []
+        for cat_sql in cat_ledge_data:
+            if cat_sql[1] == parent_id:
+                child_id = cat_sql[0]
+                result.append(child_id)
+                result.extend(_collect(child_id))
+        return result
+
+    return _collect(category_id)
+
+
 def get_category_parent(category_id, printmode=None):
     # debug print statement
     if printmode:

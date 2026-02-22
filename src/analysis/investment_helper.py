@@ -475,24 +475,47 @@ def get_account_mm_ticker(account_id):
 # get_all_active_ticker: returns "active" tickers
 def get_all_active_ticker(live_price=False, delay_between_tickers=0.15):
     """
-    Get all active investment positions.
+    Get all active investment positions (net shares > 0 after accounting for sells).
+
+    Aggregates shares by (account_id, ticker) via the DB so fully-sold positions
+    are excluded. Previously this iterated raw transactions, which incorrectly
+    included SELL rows as non-zero-share positions.
 
     Args:
         live_price: If True, fetch live prices (slower, may hit rate limits)
         delay_between_tickers: Seconds to wait between API calls when live_price=True (default 0.15)
 
     Returns:
-        List of InvestmentTransaction objects with non-zero shares
+        List of InvestmentTransaction objects representing net active positions
     """
     ticker_list = []
-    transactions = transr.recall_investment_transaction(live_price)
+    today = datetime.date.today().strftime("%Y-%m-%d")
 
-    for i, transaction in enumerate(transactions):
-        if transaction.shares != 0:
-            ticker_list.append(transaction)
+    for account_id in acch.get_account_id_by_type(4):
+        for (ticker_sym,) in dbh.investments.get_account_ticker(account_id):
+            try:
+                net_row = dbh.investments.get_ticker_shares(account_id, ticker_sym)
+                net_shares = net_row[2]
+            except (IndexError, TypeError):
+                continue
 
-            # Add delay between tickers to avoid rate limiting (skip for last item)
-            if live_price and i < len(transactions) - 1:
+            if not net_shares or net_shares <= 0:
+                continue
+
+            inv_trans = InvestmentTransaction(
+                date=today,
+                account_id=account_id,
+                category_id=-1,
+                ticker=ticker_sym,
+                shares=net_shares,
+                value=0,
+                trans_type="HOLD",
+                description=f"Net position: {ticker_sym}",
+                live_price=live_price,
+            )
+            ticker_list.append(inv_trans)
+
+            if live_price:
                 time.sleep(delay_between_tickers)
 
     return ticker_list
@@ -621,6 +644,15 @@ def populate_ticker_metadata_from_investments(delay_between_tickers=1.0):
     print(f"RESULTS: {success_count} successful, {fail_count} failed")
     print("="*80 + "\n")
     print("✓ Ticker metadata populated! Future asset allocation will be much faster.")
+
+
+def update_ticker_asset_type(ticker, asset_type):
+    """
+    Manually set the asset type for a ticker, updating both the DB and memory cache.
+    Use this to correct misclassifications (e.g. BND classified as ETF instead of BOND).
+    """
+    dbh.ticker_metadata.insert_ticker_metadata(ticker, asset_type)
+    _ASSET_TYPE_CACHE[ticker] = asset_type
 
 
 def print_ticker_metadata_table():
