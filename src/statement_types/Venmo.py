@@ -13,9 +13,9 @@ import statement_types.Transaction as Transaction
 # @desc This class parses ONLY statements that have a funding source of a Venmo balance
 #     or transactions that are deposits into Venmo
 class Venmo(csvStatement.csvStatement):
-    def __init__(self, account_id, year, month, filepath, date_col, amount_col, description_col, category_col):
+    def __init__(self, account_id, year, month, filepath, date_col, amount_col, description_col, category_col, exclude_header=False, inverse_amount=False):
         # call parent class __init__ method
-        super().__init__(account_id, year, month, filepath, date_col, amount_col, description_col, category_col)
+        super().__init__(account_id, year, month, filepath, date_col, amount_col, description_col, category_col, exclude_header=exclude_header, inverse_amount=inverse_amount)
 
         # verify .csv extension validity
         file_extension = os.path.splitext(self.filepath)[1]

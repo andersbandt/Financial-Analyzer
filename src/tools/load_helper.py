@@ -162,12 +162,23 @@ def join_statement(statement_list):
     return statement
 
 
-# tag: HARDCODE
 def create_statement(year, month, filepath, account_id_prompt=False):
-    # determine account_id
+    # Defined inside the function to avoid circular import:
+    # Statement.py imports load_helper, so module-level st.X references would
+    # be evaluated while statement_types is still being initialized.
+    statement_class_registry = {
+        "csvStatement":      st.csvStatement.csvStatement,
+        "Marcus":            st.Marcus.Marcus,
+        "VanguardBrokerage": st.VanguardBrokerage.VanguardBrokerage,
+        "VanguardRoth":      st.VanguardRoth.VanguardRoth,
+        "Venmo":             st.Venmo.Venmo,
+        "Robinhood":         st.Robinhood.Robinhood,
+        "CitiMastercard":    st.CitiMasterCard.CitiMastercard,
+    }
+    csv_kwarg_classes = {"csvStatement", "Venmo"}
+
     logger.debug("\nCreating statement at: " + filepath)
 
-    ### GRAB ACCOUNT_ID either automatic or based on filepath
     account_id = match_file_to_account(filepath)
 
     if account_id is None:
@@ -176,68 +187,46 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         else:
             return None
 
-    # TODO (big): really need to get rid of this hardcode to Statement if I want to make this app mainstream
-    #   somehow basically save the preset columns for everything as XML or something
-    # tag:HARDCODE
-    if account_id == 2000000001:  # Marcus
-        stat = st.Marcus.Marcus(account_id, year, month, filepath)
-        return stat
-    elif account_id in {2000000002, 2000000003, 2000000004, 2000000016}:
-        stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
-                                            0,
-                                            1,
-                                            4,
-                                            -1)  # date_col, amount_col, description_col, category_col
-        return stat
-    elif account_id == 2000000005:  # Vanguard Brokerage
-        stat = st.VanguardBrokerage.VanguardBrokerage(account_id, year, month, filepath)
-        return stat
-    elif account_id == 2000000006:  # Vanguard Roth
-        stat = st.VanguardRoth.VanguardRoth(account_id, year, month, filepath)
-        return stat
-    elif account_id == 2000000007:  # Venmo
-        stat = st.Venmo.Venmo(account_id, year, month, filepath, -1, -1, -1, -1)  # Venmo inherits from csvStatement
-        return stat
-    elif account_id == 2000000008:  # Robinhood
-        stat = st.Robinhood.Robinhood(account_id, year, month, filepath)
-        return stat
-    elif account_id == 2000000009:  # Apple Card
-        stat = st.AppleCard.AppleCard(account_id, year, month, filepath, -1, -1, -1, -1)
-        # stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
-        #                                     1,
-        #                                     3,
-        #                                     2,
-        #                                     -1)  # date_col, amount_col, description_col, category_col
-        return stat
-    elif account_id == 2000000012:  # Chase Card
-        stat = st.ChaseCard.ChaseCard(account_id, year, month, filepath)
-        return stat
-    elif account_id == 2000000017: # CitiMastercard AAdvantage
-        stat = st.CitiMasterCard.CitiMastercard(account_id, year, month, filepath,
-                                            1,
-                                            3,
-                                            4,
-                                        2,
-                                            -1,
-                                                exclude_header=True)  # date_col, amount_col, description_col, category_col
-        return stat
-    elif account_id == 2000000020:  # Amex Delta Gold Card
-        stat = st.csvStatement.csvStatement(account_id, year, month, filepath,
-                                            0,
-                                            2,
-                                            1,
-                                            -1,
-                                            exclude_header=True,
-                                            inverse_amount=True)  # date_col, amount_col, description_col, category_col
-        return stat
-    # if no valid account_id was found
-    else:
+    config = dbh.statement_parser.get_parser_config(account_id)
+
+    if config is None:
         print("\n\n#################### CRITICAL PROGRAM SOURCE ERROR   ###################################")
         print("No valid account selected in tools-load_helper-create_statement()")
-        print("Error in code account binding: " + "No valid Statement Class exists for the selected account ID")
-        print("You likely need to edit the create_statement() function hardcode !!!")
-        print("psssst -- this function is located in src/tools/load_helper.py")
+        print(f"No statement_parser entry found for account_id: {account_id}")
+        print("Add a row to the statement_parser table for this account.")
         raise Exception()
+
+    class_name = config["class_name"]
+    cls = statement_class_registry.get(class_name)
+
+    if cls is None:
+        print("\n\n#################### CRITICAL PROGRAM SOURCE ERROR   ###################################")
+        print("No valid account selected in tools-load_helper-create_statement()")
+        print(f"Unknown class_name '{class_name}' in statement_parser for account_id: {account_id}")
+        print("Add the class to statement_class_registry in src/tools/load_helper.py.")
+        raise Exception()
+
+    if class_name in csv_kwarg_classes:
+        stat = cls(account_id, year, month, filepath,
+                   config["date_col"],
+                   config["amount_col"],
+                   config["description_col"],
+                   config["category_col"],
+                   exclude_header=bool(config["exclude_header"]),
+                   inverse_amount=bool(config["inverse_amount"]))
+    elif class_name == "CitiMastercard":
+        stat = cls(account_id, year, month, filepath,
+                   config["date_col"],
+                   config["amount_col"],   # debit_col
+                   config["credit_col"],
+                   config["description_col"],
+                   config["category_col"],
+                   exclude_header=bool(config["exclude_header"]))
+    else:
+        # PDF-based or fully self-contained parsers
+        stat = cls(account_id, year, month, filepath)
+
+    return stat
 
 
 # get_month_year_statement_list:

@@ -5,8 +5,6 @@ from statement_types import Statement
 from statement_types import csvStatement
 
 from statement_types import CitiMasterCard
-from statement_types import AppleCard
-from statement_types import ChaseCard
 
 from statement_types import Marcus
 from statement_types import Venmo

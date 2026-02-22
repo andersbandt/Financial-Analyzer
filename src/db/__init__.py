@@ -98,6 +98,16 @@ class TableStatements:
                     environment             VARCHAR(20),
                     created_at              DATETIME,
                     is_active               BOOLEAN DEFAULT 1);"""
+    statement_parser = """CREATE TABLE statement_parser
+                    (account_id             INTEGER PRIMARY KEY,
+                    class_name              VARCHAR(50) NOT NULL,
+                    date_col                INTEGER DEFAULT -1,
+                    amount_col              INTEGER DEFAULT -1,
+                    description_col         INTEGER DEFAULT -1,
+                    category_col            INTEGER DEFAULT -1,
+                    credit_col              INTEGER DEFAULT -1,
+                    exclude_header          BOOLEAN DEFAULT 0,
+                    inverse_amount          BOOLEAN DEFAULT 0);"""
 
 
 """
@@ -180,7 +190,23 @@ def populate_tables(database_directory: str):
     #     ALTER TABLE account ADD COLUMN retirement BOOLEAN;
     # """
 
-    statements = [account_statement, categories_statement, keyword_statement]
+    statement_parser_statement = """
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000001, 'Marcus',            -1, -1, -1, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000002, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000003, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000004, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000005, 'VanguardBrokerage', -1, -1, -1, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000006, 'VanguardRoth',       -1, -1, -1, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000007, 'Venmo',              -1, -1, -1, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000008, 'Robinhood',          -1, -1, -1, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000009, 'csvStatement',       1,  6,  2, -1, -1, 1, 1);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000012, 'csvStatement',       0,  5,  2, -1, -1, 1, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000016, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000017, 'CitiMastercard',     1,  3,  2, -1,  4, 1, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000020, 'csvStatement',      0,  2,  1, -1, -1, 1, 1);
+    """
+
+    statements = [account_statement, categories_statement, keyword_statement, statement_parser_statement]
     with sqlite3.connect(database_directory) as conn:
         # conn.set_trace_callback(print)
         cursor = conn.cursor()
@@ -191,3 +217,20 @@ def populate_tables(database_directory: str):
                 pass
                 # print(e)
         conn.set_trace_callback(None)
+
+
+def migrate_statement_parser_configs(database_directory: str):
+    """Fix any statement_parser rows that were seeded with the old class names."""
+    migrations = [
+        # AppleCard was replaced by csvStatement with explicit column indices
+        "UPDATE statement_parser SET class_name='csvStatement', date_col=1, amount_col=6, description_col=2, category_col=-1, exclude_header=1, inverse_amount=1 WHERE account_id=2000000009 AND class_name='AppleCard'",
+        # ChaseCard was replaced by csvStatement with explicit column indices
+        "UPDATE statement_parser SET class_name='csvStatement', date_col=0, amount_col=5, description_col=2, category_col=-1, exclude_header=1, inverse_amount=0 WHERE account_id=2000000012 AND class_name='ChaseCard'",
+    ]
+    with sqlite3.connect(database_directory) as conn:
+        cursor = conn.cursor()
+        for stmt in migrations:
+            try:
+                cursor.execute(stmt)
+            except sqlite3.OperationalError:
+                pass
