@@ -9,8 +9,6 @@ import statement_types.csvStatement as csvStatement
 import statement_types.Transaction as Transaction
 
 
-# TODO: can i figure out how to eliminate this and convert it to a csv statement? Might be a good use case of improving csvStatement class to have more options like the debit and crdit col and shit
-
 
 # below are the indexes (column numbers) of the source data from the CSV file
 # date

@@ -14,8 +14,8 @@ from statement_types import VanguardBrokerage
 from statement_types import VanguardRoth
 
 
-# TODO: I should really refactor all the classes to not even use specific ones and only use the csv Statement one
 
+# TODO: either delete the following code or add
 
 # below code is from `nathan-hello` on Github from a branch I deleted. Preserving it here in case it becomes useful later
 

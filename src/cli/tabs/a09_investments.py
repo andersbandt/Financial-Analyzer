@@ -71,6 +71,7 @@ class TabInvestment(SubMenu):
         )
         return True
 
+    # TODO: there is a lot of noise with stuff like DIV and money market transactions here
     def a02_print_db_inv(self):
         """Print all investment transactions with investment-specific columns using prettytable."""
         # Note: answering yes uses _PRICE_CACHE so repeat calls within a session are instant

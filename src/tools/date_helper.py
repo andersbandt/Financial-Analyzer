@@ -57,7 +57,6 @@ def check_sql_date_format(date_string):
     return True
 
 
-# TODO: this is currently dependent on how many monthly statement year folders I have on my local filesystem
 def get_valid_years():
     current_year = datetime.now().year
     return list(range(2020, current_year + 1))  # tag:hardcode

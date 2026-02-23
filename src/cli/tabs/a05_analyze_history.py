@@ -347,6 +347,7 @@ class TabSpendingHistory(SubMenu):
         return True
 
 
+# TODO: would be interesting to have an option where it averages the months (from the same chosen date range) and displays that instead
     def a05_make_sankey(self):
         # Ask user which view they want
         print("\nSankey Diagram Options:")

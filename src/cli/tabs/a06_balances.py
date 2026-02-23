@@ -265,7 +265,7 @@ class TabBalances(SubMenu):
         )
         return True
 
-
+    # TODO: this function still has weird things going on. I don't like the printout.
     def a07_asset_allocation(self):
         # Track detailed breakdown by asset type and account
         asset_breakdown = {}  # {asset_type: [(account_name, amount), ...]}
