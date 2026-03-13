@@ -59,12 +59,6 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
             formatted_value = "${:,.2f}".format(float(entry[format_finance_col]))
             entry[format_finance_col] = formatted_value
 
-    # if we want to add row numbers
-    if add_row_numbers:
-        pass
-        # TODO: this isn't working for example when I load data with a04_load_data
-        # values = [[i + 1] + row for i, row in enumerate(values)]
-        # variable_names = ["Row"] + variable_names
 
     # populate data
     table.field_names = variable_names

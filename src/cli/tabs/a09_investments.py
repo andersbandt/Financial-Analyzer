@@ -71,7 +71,6 @@ class TabInvestment(SubMenu):
         )
         return True
 
-    # TODO: there is a lot of noise with stuff like DIV and money market transactions here
     def a02_print_db_inv(self):
         """Print all investment transactions with investment-specific columns using prettytable."""
         # Note: answering yes uses _PRICE_CACHE so repeat calls within a session are instant
@@ -128,6 +127,18 @@ class TabInvestment(SubMenu):
                 inv_trans.note if inv_trans.note else ""
             ]
             values.append(row)
+
+        # Filter by transaction type
+        available_types = sorted(set(r[2] for r in values))  # col 2 = TYPE
+        type_options = ["ALL"] + available_types
+        print("\nFilter by type: " + "  ".join(f"{i}={t}" for i, t in enumerate(type_options)))
+        type_choice = input("Type filter (default=0 ALL, comma-sep for multiple e.g. 1,3): ").strip() or "0"
+        try:
+            selected_types = {type_options[int(i.strip())] for i in type_choice.split(",")}
+        except (ValueError, IndexError):
+            selected_types = {"ALL"}
+        if "ALL" not in selected_types:
+            values = [r for r in values if r[2] in selected_types]
 
         # Sort rows - prompt user for sort preference
         sort_options = {"1": ("DATE", 0), "2": ("TICKER", 1), "3": ("VALUE", 9)}

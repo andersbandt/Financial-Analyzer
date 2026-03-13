@@ -27,7 +27,7 @@ class SubMenu:
             self.print_menu_options()
 
             # handle user input
-            usr_inp = self.parse_input()
+            usr_inp = input("Please enter your selection: ")
 
             # if user wants to quit
             if usr_inp == "q":
@@ -66,8 +66,3 @@ class SubMenu:
 
         # print quit option
         print("EXIT: press 'q' to QUIT")
-
-    # TODO: evaluate usage of this and delete (overlap with CLI helper)
-    def parse_input(self):
-        usr_inp = input("Please enter your selection: ")
-        return usr_inp

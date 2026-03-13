@@ -8,8 +8,6 @@ import statement_types.csvStatement as csvStatement
 import statement_types.Transaction as Transaction
 
 
-# TODO: need to figure out how to tack on person of interest
-#   the "FROM" column is always the person who initiated the request, not just where the money is going
 # @brief class description for Venmo statement
 # @desc This class parses ONLY statements that have a funding source of a Venmo balance
 #     or transactions that are deposits into Venmo

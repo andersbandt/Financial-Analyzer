@@ -278,7 +278,6 @@ def category_prompt_all(prompt_str, display):
 
 
 # category_prompt: walks the user through selecting a Category from given array input
-# TODO: reduce size. Separate parsing or make recursive. Or both.
 def category_tree_prompt():
     category_arr = cath.load_top_level_categories()
 
@@ -334,7 +333,6 @@ def category_tree_prompt():
     return False
 
 
-# TODO: I think I should refactor this to be outside cli_helper
 # get_category_input: this function should display a transaction to the user and prompt them through categorization
 #   with the end result being returning the associated category_id with the transaction in question
 def get_category_input(transaction, mode=2):
