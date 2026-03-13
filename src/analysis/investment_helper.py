@@ -1,4 +1,7 @@
+
 # import needed modules
+import json
+import os
 import numpy as np
 import pandas as pd
 import datetime
@@ -24,8 +27,17 @@ MM_ACCOUNT_PATH = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/mmt
 # Get your free API key at https://finnhub.io/register
 FINNHUB_API_KEY = "d632gspr01qnpqnvib80d632gspr01qnpqnvib8g"  # tag:hardcode
 
-# Price cache: {ticker: price} - lasts entire program run
+# Persistent price cache file (gitignored) - survives program restarts
+PRICE_CACHE_FILE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "db", "price_cache.json"))
+
+# Price cache: {ticker: price} - populated from file on first use, then kept in memory
 _PRICE_CACHE = {}
+
+# Price cache dates: {ticker: "YYYY-MM-DD"} - tracks when each price was last fetched live
+_PRICE_CACHE_DATES = {}
+
+# Whether the file cache has been loaded into memory yet (lazy load on first use)
+_price_cache_file_loaded = False
 
 # Asset type cache: {ticker: asset_type} - lasts entire program run
 _ASSET_TYPE_CACHE = {}
@@ -158,7 +170,6 @@ def print_ticker_info(ticker):
     return
 
 
-# TODO (LOW PRIORITY): this thing doesn't account for holidays that occur on a Friday. Kind of fixed it with always going 1 BEFORE last trading day
 def get_last_trading_day():
     today = datetime.datetime.now()
     weekday = today.weekday()
@@ -171,10 +182,42 @@ def get_last_trading_day():
         return today
 
 
+def _ensure_price_cache_loaded():
+    """Lazily load the file-persisted price cache into memory on first call."""
+    global _price_cache_file_loaded
+    if _price_cache_file_loaded:
+        return
+    _price_cache_file_loaded = True
+    if not os.path.exists(PRICE_CACHE_FILE):
+        return
+    try:
+        with open(PRICE_CACHE_FILE, 'r') as f:
+            data = json.load(f)
+        for ticker, entry in data.items():
+            _PRICE_CACHE[ticker] = entry['price']
+            _PRICE_CACHE_DATES[ticker] = entry['date']
+    except Exception as e:
+        print(f"⚠️  Could not load price cache file: {e}")
+
+
+def _save_price_cache_to_file():
+    """Persist the current price cache (with dates) to the JSON file."""
+    try:
+        data = {
+            ticker: {"price": _PRICE_CACHE[ticker], "date": _PRICE_CACHE_DATES.get(ticker, str(datetime.date.today()))}
+            for ticker in _PRICE_CACHE
+        }
+        with open(PRICE_CACHE_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️  Could not save price cache file: {e}")
+
+
 def clear_price_cache():
     """Clear the price cache. Useful for forcing fresh data."""
-    global _PRICE_CACHE
+    global _PRICE_CACHE, _PRICE_CACHE_DATES
     _PRICE_CACHE = {}
+    _PRICE_CACHE_DATES = {}
     print("Price cache cleared")
 
 
@@ -218,14 +261,29 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
     Returns:
         float: Current price, or 0 if unable to fetch
     """
+    # Load file-persisted cache into memory on first call
+    _ensure_price_cache_loaded()
+
+    # Check cache (memory + previously loaded from file)
+    if use_cache and ticker in _PRICE_CACHE:
+        date_str = _PRICE_CACHE_DATES.get(ticker, "?")
+        today = str(datetime.date.today())
+        if date_str != today:
+            print(f"  📅 {ticker}: using cached price ${_PRICE_CACHE[ticker]:.2f} (last fetched {date_str})")
+        return _PRICE_CACHE[ticker]
+
     # Check internet connection
     if not internet_helper.is_connected():
         print(f'Not connected to Internet! Cannot fetch price for {ticker}')
         return 0
 
-    # Check cache first (no expiration - lasts entire program run)
-    if use_cache and ticker in _PRICE_CACHE:
-        return _PRICE_CACHE[ticker]
+    today = str(datetime.date.today())
+
+    def _cache_and_save(price):
+        _PRICE_CACHE[ticker] = float(price)
+        _PRICE_CACHE_DATES[ticker] = today
+        _save_price_cache_to_file()
+        return float(price)
 
     # METHOD 1: Try Finnhub (60 calls/min - best option!)
     finnhub_client = get_finnhub_client()
@@ -234,9 +292,8 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
             quote = finnhub_client.quote(ticker)
             price = quote.get('c')  # 'c' is current price
             if price and price > 0:
-                _PRICE_CACHE[ticker] = float(price)
                 # print(f"✓ {ticker} via Finnhub")  # Uncomment for verbose logging
-                return float(price)
+                return _cache_and_save(price)
         except Exception as e:
             # Finnhub doesn't have this ticker (common for mutual funds, some ETFs)
             pass  # Silently fall back to yfinance
@@ -246,9 +303,8 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
         ticker_obj = yf.Ticker(ticker)
         price = ticker_obj.fast_info.get('lastPrice')
         if price and not np.isnan(price):
-            _PRICE_CACHE[ticker] = float(price)
             # print(f"✓ {ticker} via yfinance")  # Uncomment for verbose logging
-            return float(price)
+            return _cache_and_save(price)
     except yfinance.exceptions.YFRateLimitError:
         pass  # Continue to next method
     except Exception as e:
@@ -258,9 +314,8 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
     try:
         price = si.get_live_price(ticker)
         if price and not np.isnan(price):
-            _PRICE_CACHE[ticker] = float(price)
             # print(f"✓ {ticker} via yahoo_fin")  # Uncomment for verbose logging
-            return float(price)
+            return _cache_and_save(price)
     except Exception as e:
         pass  # Continue to next method
 
@@ -271,9 +326,8 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
         if not hist.empty:
             price = hist['Close'].iloc[-1]
             if not np.isnan(price):
-                _PRICE_CACHE[ticker] = float(price)
                 # print(f"✓ {ticker} via yfinance history")  # Uncomment for verbose logging
-                return float(price)
+                return _cache_and_save(price)
     except Exception as e:
         pass
 

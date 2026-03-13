@@ -7,6 +7,9 @@ category_tree.PNG
 # Databases - to prevent personal financial information from being online!
 *.db
 
+# Persistent price cache - local only, not committed
+price_cache.json
+
 # Plaid API credentials and encryption keys
 plaid_config.json
 *.key

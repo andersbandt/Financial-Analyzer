@@ -68,7 +68,7 @@ class TabTransCategorize(SubMenu):
 
         uncategorized_statement = Ledger.Ledger("Uncategorized Transactions!", transactions=transactions)
         uncategorized_statement.categorizeLedgerAutomatic(categories_helper.load_categories())
-        uncategorized_statement.categorize_manual()
+        uncategorized_statement.categorize_manual()  # return value intentionally ignored here
         uncategorized_statement.update_statement()
 
         return True

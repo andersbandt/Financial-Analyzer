@@ -23,11 +23,11 @@ class BalanceHelperError(Exception):
 
 
 def get_account_balance(account_id):
-    # TODO: following investment specific thing not working properly
-    #     bal = invh.summarize_account(account_id, printmode=True)
-    #     bal_date = dateh.get_cur_str_date()
-
-    bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
+    if dbh.account.get_account_type(account_id) == 4:  # investment account: compute live balance
+        bal = invh.summarize_account(account_id, printmode=False)
+        bal_date = dateh.get_cur_str_date()
+    else:
+        bal, bal_date = dbh.balance.get_recent_balance(account_id, add_date=True)
     return bal, bal_date
 
 

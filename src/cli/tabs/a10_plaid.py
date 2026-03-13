@@ -409,7 +409,7 @@ class TabPlaid(SubMenu):
         if uncategorized:
             print(f"\n⚠️  {len(uncategorized)} transaction(s) remain uncategorized.")
             if clih.promptYesNo("Manually categorize remaining transactions?"):
-                statement.categorize_manual()
+                statement.categorize_manual()  # return value intentionally ignored here
 
         # Save to database
         print("\n" + "-"*80)

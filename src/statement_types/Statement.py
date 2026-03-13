@@ -65,7 +65,7 @@ class Statement(Ledger.Ledger):
         for transaction in self.transactions:
             loaded = loadh.check_transaction_load_status(transaction)
             if loaded:
-                transaction.note = "duplicate ?"
+                transaction.add_note("duplicate ?")
                 print("Uh oh, is this transaction already in the ledger???")
                 transaction.print_trans(include_sql_key=False)
                 err_trans.append(transaction)

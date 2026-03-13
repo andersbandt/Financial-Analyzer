@@ -96,7 +96,13 @@ class Transaction:
     # setCategory: sets the category
     def setCategory(self, c_id):
         self.category_id = c_id
-        pass
+
+    def add_note(self, note_str):
+        """Append a note, preserving existing notes separated by ';'."""
+        if self.note:
+            self.note = self.note + ";" + note_str
+        else:
+            self.note = note_str
 
     ##############################################################################
     ####      CATEGORIZATION FUNCTIONS    ########################################
@@ -118,10 +124,7 @@ class Transaction:
                         if keyword in self.description.upper():
                             # ASSIGN CATEGORY, EDIT/CREATE NOTE, and EXIT
                             self.category_id = category.id
-                            if self.note is not None:
-                                self.note = self.note + ";keyword=" + keyword
-                            else:
-                                self.note = f"keyword={keyword}"
+                            self.add_note(f"keyword={keyword}")
                             return True
                 except Exception as e:
                     print("ERROR: couldn't automatically categorize transaction:", e)

@@ -30,10 +30,6 @@ from tools import date_helper as dateh
 from loguru import logger
 
 
-# TODO: would be kind of cool to have a printout of what transactions exactly where categorized when manual categorization is applied
-
-
-
 class TabLoadData(SubMenu):
     def __init__(self, title, basefilepath):
         self.statement = None
@@ -56,12 +52,11 @@ class TabLoadData(SubMenu):
     ####      ACTION FUNCTIONS           #########################################
     ##############################################################################
 
-    # TODO: I think duplicate detection overwrites any previous note. Possibly standardize note additions within the Transaction class itself with a function
     def a01_load_data(self):
         print("... loading in financial data for certain year/month ...")
 
         # get month / year combination to examine in
-        [year, month] = clih.prompt_year_month() # TODO: there is no check for valid year in this function
+        [year, month] = clih.prompt_year_month()
 
         # create list of Statement objects for each file for the particular month/year combination
         statement_list = loadh.get_month_year_statement_list(
@@ -98,7 +93,6 @@ class TabLoadData(SubMenu):
         self.statement.print_statement()
         self.update_listing()
         return True
-
 
     def a02_load_all_data(self):
         print("... loading in ALL financial data")
@@ -219,7 +213,16 @@ class TabLoadData(SubMenu):
 
         res = clih.promptYesNo("Do you want to attempt manual categorization of remaining transactions?")
         if res:
-            self.statement.categorize_manual()
+            _, manually_categorized = self.statement.categorize_manual()
+            if manually_categorized:
+                print(f"\n--- {len(manually_categorized)} transaction(s) manually categorized ---")
+                headers = ["DATE", "AMOUNT", "DESC", "CATEGORY", "NOTE"]
+                values = [
+                    [t.date, t.value, t.description,
+                     cath.category_id_to_name(t.category_id), t.note]
+                    for t in manually_categorized
+                ]
+                clip.print_variable_table(headers, values)
         else:
             print("Ok, leaving statement with just automatic categorization applied")
 
@@ -291,8 +294,10 @@ class TabLoadData(SubMenu):
     ####      OTHER HELPER FUNCTIONS           ###################################
     ##############################################################################
 
-    # TODO: problems with this include 1-file name changes, 2-no actual detection of what is in database
-    #   for example CreditCard3.csv became CreditCard4.csv halfway through my years
+    # NOTE: this method only checks file presence on disk, not what is in the database (that is method 2's job).
+    #   If a filename changed over time (e.g. CreditCard3.csv -> CreditCard4.csv), this will show false gaps.
+    #   Fix is a data fix: add BOTH filename patterns to the file_mapping table pointing to the same account_id.
+    #   No code change needed — match_file_to_account() already does pattern matching against that table.
     def check_data_integrity_01(self, acc_id_arr):
         acc_data_status = []
         bad_months = {acc_id: [] for acc_id in acc_id_arr}  # To track BAD months per account
@@ -346,7 +351,16 @@ class TabLoadData(SubMenu):
 
         return True
 
-    # TODO: lots of mismatches being flagged. Believe current issue is mismatch between month start/end search ranges
+    # NOTE: mismatches are expected and have two root causes — this method is unreliable as-is:
+    #   1. DUPLICATE DETECTION: re-loading a file counts all transactions in it, but previously-flagged
+    #      duplicates were never saved to DB, so file count > DB count for already-loaded months. This is
+    #      correct behavior, not a bug, but it makes the comparison noisy.
+    #   2. DATE BOUNDARIES: get_transaction_count() uses an exclusive upper bound (first day of next month)
+    #      while statement files may contain transactions at month edges. Minor but adds more false mismatches.
+    #   REAL FIX: the file_history table (in schema) was intended to track loaded files and would make this
+    #   method reliable — but it was never implemented (no DB helper, never written to). To fix properly:
+    #   write to file_history in save_statement(), add a db helper to query it, then method 2 can simply
+    #   check file_history instead of re-parsing every file.
     def check_data_integrity_02(self, acc_id_arr):
         """
         Checks data integrity by comparing the total count of transactions in files

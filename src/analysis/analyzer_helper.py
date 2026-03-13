@@ -382,7 +382,6 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
 
         # iterate through all balances data
         for bx in balance_data:
-            # TODO: possible could create a Balance class.... could be parent of Transaction honestly?
             # bx outline
             # bx[0] = sql key
             # bx[1] = account_id

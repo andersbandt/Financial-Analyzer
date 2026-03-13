@@ -72,6 +72,7 @@ class Ledger:
     def categorize_manual(self):
         i = 0
         num_to_categorize = self.get_number_uncategorized()
+        manually_categorized = []
 
         # prompt user for mode of categorization
         # cat_mode = clih.spinput("What num mode do you want to do categorization?\n"
@@ -90,13 +91,14 @@ class Ledger:
                       "Suspending statement manual categorize")
                 res = clih.promptYesNo("Do you want to stop categorization?")
                 if res:
-                    return False
+                    return False, manually_categorized
             else:
                 # set transaction
                 transaction.setCategory(category_id)
+                manually_categorized.append(transaction)
                 i += 1
                 print("Transactions left:", num_to_categorize - i)
-        return True
+        return True, manually_categorized
 
     def categorize_ml(self):
         """
@@ -140,10 +142,7 @@ class Ledger:
         # Update transactions with predicted categories
         for transaction, category_id in zip(uncategorized, predicted_categories):
             transaction.setCategory(category_id)
-            if transaction.note:
-                transaction.note = transaction.note + ";ml_classified"
-            else:
-                transaction.note = "ml_classified"
+            transaction.add_note("ml_classified")
 
         print(f"Successfully classified {len(uncategorized)} transactions.")
         return True
