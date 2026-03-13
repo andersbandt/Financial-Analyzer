@@ -83,8 +83,6 @@ def get_category_id_from_name(category_name):
 
 
 def get_category_name_from_id(category_id):
-    # TODO: need to implement some type checking on here and MANY OTHER DATABASE FUNCTIONS.
-
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute("SELECT name FROM category WHERE category_id=?", (category_id,))
