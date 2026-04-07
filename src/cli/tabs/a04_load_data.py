@@ -204,9 +204,9 @@ class TabLoadData(SubMenu):
         categories = cath.load_categories()
 
         self.statement.categorizeLedgerAutomatic(categories)
-        self.statement.print_statement()
+        self.statement.print_statement(sort_by_category=True)
 
-        # TODO: accuracy isn't there to roll this in, or I can just make it more easy to update categories
+        # NOTE: accuracy isn't there to roll this in, or I can just make it more easy to update categories
         # res = clih.promptYesNo("Do you want to attempt ML categorization of transactions?")
         # if res:
         #     self.statement.categorize_ml()

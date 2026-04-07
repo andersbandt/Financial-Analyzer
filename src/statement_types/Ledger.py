@@ -176,7 +176,7 @@ class Ledger:
     ##############################################################################
 
     # printStatement: pretty prints a statement
-    def print_statement(self, include_sql_key=False, method=1):
+    def print_statement(self, include_sql_key=False, method=1, sort_by_category=False):
         if self.transactions is None:
             print("ERROR: can't print empty ledger!")
             return
@@ -216,6 +216,9 @@ class Ledger:
                         transaction.note
                     ]
                 values.append(cur_values)
+            if sort_by_category:
+                cat_idx = headers.index("CATEGORY")
+                values.sort(key=lambda r: ("" if r[cat_idx] is None else r[cat_idx]))
             clip.print_variable_table(headers, values, min_width=15, max_width=80, max_width_column="DESC")
 
         return True

@@ -347,7 +347,7 @@ class TabSpendingHistory(SubMenu):
         return True
 
 
-# TODO: would be interesting to have an option where it averages the months (from the same chosen date range) and displays that instead
+# TODO: add mode where it takes a date range, and averages each month. Displays a more accurate average month view
     def a05_make_sankey(self):
         # Ask user which view they want
         print("\nSankey Diagram Options:")

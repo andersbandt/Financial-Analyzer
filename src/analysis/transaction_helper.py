@@ -89,33 +89,11 @@ def search_01():
 
 def search_02():
     """Search by category"""
-    # determine user choice of type of category search
-    cat_search_type = clih.prompt_num_options("What type of category search?",
-                                              ["recursive (children)", "individual"])
-    cat_search_type = 2 # tag:HARDCODE
-
-    if cat_search_type == 1:
-        search_str = clih.category_tree_prompt()
-        if search_str is False or search_str == -1:
-            print("Ok, quitting transaction search.\n")
-            return False
-        children_id = cath.get_category_children(search_str)
-        transactions = transr.recall_transaction_category(search_str)
-        for child_id in children_id:
-            transactions.extend(transr.recall_transaction_category(child_id))
-    elif cat_search_type == 2:
-        search_str = clih.category_prompt_all("What is the category to search for?", False)
-        if search_str is False:
-            print("Ok, quitting transaction search.\n")
-            return False
-        transactions = transr.recall_transaction_category(search_str)
-    elif cat_search_type is False:
+    search_str = clih.category_prompt_all("What is the category to search for?", False)
+    if search_str is False:
         print("Ok, quitting transaction search.\n")
         return False
-    else:
-        print(f"Uh oh, bad category search type of: {cat_search_type}")
-        return False
-    return transactions
+    return transr.recall_transaction_category(search_str)
 
 
 def search_03():

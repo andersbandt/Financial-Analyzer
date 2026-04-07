@@ -258,20 +258,23 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
             account_list.append(None)
 
     # print out STATUS per FILE
-    concat_table_arr = np.vstack((status_list, account_list, file_list)).T
+    account_name_list = [dbh.account.get_account_name_from_id(acc_id) if acc_id is not None else None for acc_id in account_list]
+    concat_table_arr = np.vstack((status_list, account_list, account_name_list, file_list)).T
     concat_table_arr = concat_table_arr.tolist()
-    clip.print_variable_table(["Status", "Account", "Filepath"], concat_table_arr)
+    clip.print_variable_table(["Status", "Account", "Name", "Filepath"], concat_table_arr)
 
     # print out STATUS per ACCOUNT
     account_id = acch.get_all_acc_id()
     status_list = [acc_id in account_list for acc_id in account_id]
+    type_list = [acch.get_acc_type_mapping(acch.get_account_type_by_id(acc_id)).name for acc_id in account_id]
 
-    concat_table_arr = np.vstack(
-        ([acch.account_id_to_name(acc_id) for acc_id in account_id],
-         status_list)
-    ).T
-    concat_table_arr = concat_table_arr.tolist()
-    clip.print_variable_table(["Account", "Status"], concat_table_arr)
+    rows = list(zip(
+        [acch.account_id_to_name(acc_id) for acc_id in account_id],
+        type_list,
+        status_list,
+    ))
+    rows.sort(key=lambda r: r[1])
+    clip.print_variable_table(["Account", "Type", "Status"], [list(r) for r in rows])
 
     return statement_list
 

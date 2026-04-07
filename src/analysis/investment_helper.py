@@ -7,7 +7,10 @@ import pandas as pd
 import datetime
 from datetime import timedelta
 import time
-import yahoo_fin.stock_info as si
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message=".*requests_html.*")
+    import yahoo_fin.stock_info as si
 import yfinance as yf
 import xml.etree.ElementTree as ET
 import yfinance.exceptions
