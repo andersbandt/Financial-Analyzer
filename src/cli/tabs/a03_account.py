@@ -26,7 +26,9 @@ class TabAccount(SubMenu):
             Action("Add account", self.a02_add_account),
             Action("Rename account", self.a03_rename_account),
             Action("Add automatic file search string", self.a04_add_file_search_str),
-            Action("Print account map", self.a05_print_account_file_map)
+            Action("Print account map", self.a05_print_account_file_map),
+            Action("Edit file mapping", self.a06_edit_file_mapping),
+            Action("Delete file mapping", self.a07_delete_file_mapping),
         ]
 
         # call parent class __init__ method
@@ -118,8 +120,38 @@ class TabAccount(SubMenu):
         return True
 
     def a05_print_account_file_map(self):
-        ledge_data = dbh.file_mapping.get_file_mapping_ledge_data()
-        print(ledge_data)
+        ledger_data = dbh.file_mapping.get_file_mapping_ledge_data()
+        clip.print_variable_table(
+            ["ID", "Account ID", "Search String"],
+            [list(row) for row in ledger_data],
+        )
+
+    def a06_edit_file_mapping(self):
+        self.a05_print_account_file_map()
+        mapping_id = clih.spinput("Enter mapping ID to edit: ", inp_type="int")
+        if mapping_id == -1:
+            return False
+        new_str = clih.spinput("Enter new search string: ", inp_type="text")
+        success = dbh.file_mapping.update_file_mapping_search_str(mapping_id, new_str)
+        if success:
+            print(f"Updated mapping {mapping_id} to '{new_str}'")
+        else:
+            print(f"No mapping found with ID {mapping_id}")
+        return success
+
+    def a07_delete_file_mapping(self):
+        self.a05_print_account_file_map()
+        mapping_id = clih.spinput("Enter mapping ID to delete: ", inp_type="int")
+        if mapping_id == -1:
+            return False
+        if not clih.promptYesNo(f"Confirm delete mapping {mapping_id}?"):
+            return False
+        success = dbh.file_mapping.delete_file_mapping(mapping_id)
+        if success:
+            print(f"Deleted mapping {mapping_id}")
+        else:
+            print(f"No mapping found with ID {mapping_id}")
+        return success
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################

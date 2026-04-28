@@ -160,8 +160,10 @@ def get_retirement_accounts(retirement_flag):
 def get_account_ledger_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM account")
-    return cur.fetchall()
+        cur.execute(
+            "SELECT account_id, name, institution_name, type, balance, balance_updated_date, savings_goal, retirement FROM account"
+        )
+        return cur.fetchall()
 
 
 
