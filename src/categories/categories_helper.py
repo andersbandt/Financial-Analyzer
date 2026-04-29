@@ -83,7 +83,7 @@ def category_name_to_id(category_name):
 def category_id_to_name(category_id):
     # Helper for a single value
     def _single(v):
-        if v is None:
+        if v is None or v == '':
             return "NA"
         return dbh.category.get_category_name_from_id(int(v))
 

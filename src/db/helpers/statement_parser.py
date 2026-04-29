@@ -34,6 +34,21 @@ def insert_parser_config(account_id, class_name, date_col=-1, amount_col=-1,
         )
 
 
+def update_parser_config(account_id, **kwargs):
+    """Update specific fields of a parser config by account_id."""
+    if not kwargs:
+        return
+    set_clause = ", ".join(f"{k} = ?" for k in kwargs)
+    values = list(kwargs.values()) + [account_id]
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {TABLE_NAME} SET {set_clause} WHERE account_id = ?",
+            values,
+        )
+        return cur.rowcount > 0
+
+
 def get_all_configs():
     """Return list of all parser config dicts."""
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

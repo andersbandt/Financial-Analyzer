@@ -246,6 +246,7 @@ Located in `src/cli/cli_helper.py`:
 - No API integration (Plaid, bank APIs) - all data is manually downloaded CSV/PDF
 - Some duplicate prevention logic exists but is not foolproof
 - Investment tracking is basic compared to transaction tracking
+- **CLI command REPL (future)**: Replace or augment top-level arrow-key menu with a typed command prompt (`load`, `search`, `balance`, etc.) backed by `prompt_toolkit` autocomplete. Shallow version — commands dispatch into existing submenus — is low effort. Current arrow-key menus are fine for now.
 
 ## ML Model Improvements (Future Work)
 

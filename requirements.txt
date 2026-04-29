@@ -1,4 +1,5 @@
 numpy
+questionary
 loguru
 ete3
 six

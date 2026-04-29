@@ -204,6 +204,16 @@ class TabLoadData(SubMenu):
         categories = cath.load_categories()
 
         self.statement.categorizeLedgerAutomatic(categories)
+
+        auto_categorized = [t for t in self.statement.transactions if t.note and "keyword=" in t.note]
+        if auto_categorized:
+            clip.print_variable_table(
+                ["DATE", "AMOUNT", "DESC", "CATEGORY", "NOTE"],
+                [[t.date, t.value, t.description, cath.category_id_to_name(t.category_id), t.note]
+                 for t in auto_categorized],
+                title=f"Auto-categorized ({len(auto_categorized)} transactions)",
+            )
+
         self.statement.print_statement(sort_by_category=True)
 
         # NOTE: accuracy isn't there to roll this in, or I can just make it more easy to update categories

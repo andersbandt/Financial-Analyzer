@@ -1,4 +1,5 @@
 
+import questionary
 
 
 class Action:
@@ -10,6 +11,9 @@ class Action:
         self.action()
 
 
+_QUIT = "[ Quit ]"
+
+
 class SubMenu:
     def __init__(self, title, basefilepath, action_arr):
         self.title = title
@@ -17,38 +21,21 @@ class SubMenu:
         self.action_arr = action_arr
 
     def run(self):
-        print("\n\n")
-        print("##############################")
-        print("##### " + self.title + " #####")
-        print("###############################")
+        while True:
+            choices = [a.title for a in self.action_arr] + [_QUIT]
+            selection = questionary.select(
+                self.title,
+                choices=choices,
+            ).ask()
 
-        status = True
-        while status:
-            self.print_menu_options()
-
-            # handle user input
-            usr_inp = input("Please enter your selection: ")
-
-            # if user wants to quit
-            if usr_inp == "q":
-                status = False
+            if selection is None or selection == _QUIT:
                 break
-            else:
-                try:
-                    usr_inp = int(usr_inp)
-                except ValueError:
-                    print("\n\nUh oh, was that a number ?!?")
-                    continue
 
-            # handle user action
-            if usr_inp > len(self.action_arr):
-                print("ERROR: wrong number command (too high)")
-                return
-
-            self.run_sub_action(usr_inp)
+            ind = next(i for i, a in enumerate(self.action_arr) if a.title == selection)
+            self.run_sub_action(ind + 1)
 
     def run_sub_action(self, num):
-        ind = num - 1  # take away 1 since menu starts at 1 but array starts at 0
+        ind = num - 1
         print("\n\nRUNNING: " + self.action_arr[ind].title)
         try:
             status = self.action_arr[ind].action()
@@ -56,13 +43,3 @@ class SubMenu:
             status = False
         print(f"\nCompleted executing ACTION:'{self.action_arr[ind].title}' with exit code: {status}\n")
         return status
-
-    def print_menu_options(self):
-        print("\n\n##### " + self.title + " #####")
-        i = 1
-        for action in self.action_arr:
-            print(str(i) + ": " + action.title)
-            i = i + 1
-
-        # print quit option
-        print("EXIT: press 'q' to QUIT")

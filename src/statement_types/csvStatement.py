@@ -8,6 +8,7 @@
 # import needed modules
 import csv
 import os
+from dateutil import parser as dateutil_parser
 
 # import user created modules
 import statement_types.Statement as Statement
@@ -79,11 +80,11 @@ class csvStatement(Statement.Statement):
 
                     # DATE
                     raw_date = line[self.date_col]
-                    date = (raw_date[6:10] + "-" + raw_date[0:2] + "-" + raw_date[3:5])  # year-month-date
+                    date = dateutil_parser.parse(raw_date).strftime("%Y-%m-%d")
 
                     # CATEGORY
                     if self.category_col > 0:
-                        category = line[self.category_col]
+                        category = line[self.category_col] or None
                     else:
                         category = None
 

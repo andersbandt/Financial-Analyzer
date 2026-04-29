@@ -1,6 +1,7 @@
 
 
 # import user defined modules
+import questionary
 from cli.tabs import *
 
 
@@ -57,35 +58,20 @@ class MainApplication:
         # print out menu options
         print("Attempting to start main loop of CLI interface menu")
 
+        choices = [tab.title for tab in self.tabs] + ["[ Exit ]"]
         while True:
-            error_flags = 0
             self.print_header()
+            selection = questionary.select(
+                "Select a tab:",
+                choices=choices,
+            ).ask()
 
-            i = 1
-            for tab in self.tabs:
-                print(str(i) + ": " + tab.title)
-                i = i + 1
-            print("0: EXIT PROGRAM")
-
-            # ask user for choice
-            choice = input('Enter your choice: ')
-
-            if choice == '0':
+            if selection is None or selection == "[ Exit ]":
                 print('Exiting...')
                 break
-            else:
-                try:
-                    choice_int = int(choice) # convert input to INT
-                except ValueError:
-                    print("\n\nInvalid integer string")
-                    error_flags = 1
-                if choice_int > len(self.tabs):
-                    print("\n\n!!! List choice out of range !!!")
-                    error_flags = 1
 
-                # if no errors can run SubMenu
-                if error_flags == 0:
-                    self.tabs[choice_int-1].run()
+            tab = next(t for t in self.tabs if t.title == selection)
+            tab.run()
 
 
 ###########################################################

@@ -6,6 +6,7 @@
 
 # import needed modules
 import re
+import questionary
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from datetime import datetime
@@ -96,29 +97,15 @@ def spinput(prompt_str, inp_type):
 
 # promptYesNo: function for prompting user for a YES or NO input
 def promptYesNo(prompt_str):
-    res = input(prompt_str + "\n\t(y or n): ")
-    if 'y' in res:
-        return True
-    else:
-        return False
+    return questionary.confirm(prompt_str, default=False).ask()
 
 
 # prompt_num_options: prompts an array of string options with a corresponding int response
 def prompt_num_options(prompt_str, prompt_string_arr):
-    i = 1
-    for pro in prompt_string_arr:
-        print(f"{i} - {pro}")
-        i += 1
-    res = input(prompt_str)
-    if res == 'q' or res == 'quit':
+    selection = questionary.select(prompt_str, choices=prompt_string_arr + ["[ Cancel ]"]).ask()
+    if selection is None or selection == "[ Cancel ]":
         return False
-    try:
-        if int(res) > len(prompt_string_arr):
-            print("Uh oh I think your choice was out of bounds!")
-            return False
-        return int(res)
-    except ValueError:
-        return False
+    return prompt_string_arr.index(selection) + 1
 
 
 def prompt_for_int_array():
