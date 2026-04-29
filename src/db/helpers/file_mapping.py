@@ -37,10 +37,22 @@ def get_file_mapping_ledge_data():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
         cur.execute(
-            f"SELECT * FROM {TABLE_NAME}",
+            f"SELECT fm.id, a.name, fm.file_search_str "
+            f"FROM {TABLE_NAME} fm JOIN account a ON fm.account_id = a.account_id"
         )
-        ledger_data = cur.fetchall()
-    return ledger_data
+        return cur.fetchall()
+
+
+def get_file_mapping_by_id(mapping_id):
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT fm.id, a.name, fm.file_search_str "
+            f"FROM {TABLE_NAME} fm JOIN account a ON fm.account_id = a.account_id "
+            f"WHERE fm.id = ?",
+            (mapping_id,),
+        )
+        return cur.fetchone()
 
 
 def update_file_mapping_search_str(mapping_id, search_str):

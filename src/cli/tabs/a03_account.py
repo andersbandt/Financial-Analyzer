@@ -122,7 +122,7 @@ class TabAccount(SubMenu):
     def a05_print_account_file_map(self):
         ledger_data = dbh.file_mapping.get_file_mapping_ledge_data()
         clip.print_variable_table(
-            ["ID", "Account ID", "Search String"],
+            ["ID", "Account Name", "Search String"],
             [list(row) for row in ledger_data],
         )
 
@@ -144,7 +144,11 @@ class TabAccount(SubMenu):
         mapping_id = clih.spinput("Enter mapping ID to delete: ", inp_type="int")
         if mapping_id == -1:
             return False
-        if not clih.promptYesNo(f"Confirm delete mapping {mapping_id}?"):
+        row = dbh.file_mapping.get_file_mapping_by_id(mapping_id)
+        if row is None:
+            print(f"No mapping found with ID {mapping_id}")
+            return False
+        if not clih.promptYesNo(f"Confirm delete [{row[0]}] {row[1]} -> '{row[2]}'?"):
             return False
         success = dbh.file_mapping.delete_file_mapping(mapping_id)
         if success:
