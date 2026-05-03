@@ -245,6 +245,8 @@ class TabSpendingHistory(SubMenu):
               Action("Generate sankey diagram", self.a05_make_sankey),
               Action("Review specific month transactions", self.a06_review_month),
               Action("Add note to transaction", self.a07_add_note),
+              Action("Largest transactions", self.a08_largest_transactions),
+              Action("Spending pie chart", self.a09_spending_pie),
                       ]
 
         # call parent class __init__ method
@@ -318,8 +320,10 @@ class TabSpendingHistory(SubMenu):
             return False
 
         # set up month parameters
-        months_prev = 12 # tag:HARDCODE
-        months = []
+        months_prev = clih.spinput("How many months to graph?", inp_type="int")
+        if months_prev is False:
+            print("Ok, quitting graph category")
+            return False
 
         ### METHOD 2: all sub-children categories as well
         all_levels = clih.promptYesNo("Include all subcategory levels? (No = direct children only)")
@@ -449,6 +453,21 @@ class TabSpendingHistory(SubMenu):
         tmp_ledger.set_statement_data(month_transactions)
         tmp_ledger.sort_trans_asc()
         tmp_ledger.print_statement(include_sql_key=True)
+
+        # Category summary
+        categories = cath.load_categories()
+        top_cat_str, amounts = anah.create_top_category_amounts_array(month_transactions, categories, count_NA=False)
+        top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
+        amounts = grah.format_expenses(amounts)
+        pairs = sorted(zip(top_cat_str, amounts), key=lambda x: x[1], reverse=True)
+        pairs = [(cat, amt) for cat, amt in pairs if amt != 0]
+        rows = [[cat, amt] for cat, amt in pairs]
+        clip.print_variable_table(
+            ["Category", "Amount"],
+            rows,
+            format_finance_col=1,
+            title=f"Spending by category — {year}-{month:02d}",
+        )
         return True
 
 
@@ -480,5 +499,57 @@ class TabSpendingHistory(SubMenu):
             # update note in database
             dbh.transactions.update_transaction_note_k(sql_key, note_str)
             return True
+
+
+    def a08_largest_transactions(self):
+        n = clih.spinput("How many top transactions to show?", inp_type="int")
+        if n is False:
+            return False
+        months_prev = clih.spinput("From past how many months? (0 = all time)", inp_type="int")
+        if months_prev is False:
+            return False
+
+        if months_prev == 0:
+            transactions = transr.recall_transaction_data()
+        else:
+            date_start = dateh.get_date_previous(months_prev * 30)
+            date_end = dateh.get_cur_str_date()
+            transactions = transr.recall_transaction_data(date_start, date_end)
+
+        transactions = grah.strip_non_graphical_transactions(transactions)
+        sorted_trans = sorted(transactions, key=lambda t: abs(t.value), reverse=True)
+
+        tmp_ledger = Ledger.Ledger(f"Top {n} transactions by amount")
+        tmp_ledger.set_statement_data(sorted_trans[:n])
+        tmp_ledger.print_statement(include_sql_key=True)
+        return True
+
+
+    def a09_spending_pie(self):
+        months_prev = clih.spinput("How many months back to analyze?", inp_type="int")
+        if months_prev is False:
+            return False
+
+        date_start = dateh.get_date_previous(months_prev * 30)
+        date_end = dateh.get_cur_str_date()
+        transactions = transr.recall_transaction_data(date_start, date_end)
+
+        if not transactions:
+            print("No transactions found for that period.")
+            return False
+
+        categories = cath.load_categories()
+        top_cat_str, amounts = anah.create_top_category_amounts_array(transactions, categories, count_NA=False)
+        top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
+        top_cat_str, amounts = grah.strip_zero_categories(top_cat_str, amounts)
+        amounts = grah.format_expenses(amounts)
+
+        grapa.create_pie_chart(
+            amounts,
+            top_cat_str,
+            title=f"Spending breakdown — last {months_prev} months",
+        )
+        grapa.show_plots()
+        return True
 
 
