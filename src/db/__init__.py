@@ -169,6 +169,7 @@ def populate_tables(database_directory: str):
     account_statement = """
         insert into `account` (`account_id`, `name`, `type`) values (2000000001, 'U.S. Bank', 1);
         insert into `account` (`account_id`, `name`, `type`) values (2000000002, 'WELLS CHECKING', 2);
+        insert into `account` (`account_id`, `name`, `type`) values (2000000021, 'wells_AUTOGRAPH', 3);
     """
 
     keyword_statement = """
@@ -192,18 +193,19 @@ def populate_tables(database_directory: str):
 
     statement_parser_statement = """
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000001, 'Marcus',            -1, -1, -1, -1, -1, 0, 0);
-        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000002, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
-        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000003, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
-        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000004, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000002, 'csvStatement',      0,  2,  1, -1, -1, 1, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000003, 'csvStatement',      0,  2,  1, -1, -1, 1, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000004, 'csvStatement',      0,  2,  1, -1, -1, 1, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000005, 'VanguardBrokerage', -1, -1, -1, -1, -1, 0, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000006, 'VanguardRoth',       -1, -1, -1, -1, -1, 0, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000007, 'Venmo',              -1, -1, -1, -1, -1, 0, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000008, 'Robinhood',          -1, -1, -1, -1, -1, 0, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000009, 'csvStatement',       1,  6,  2, -1, -1, 1, 1);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000012, 'csvStatement',       0,  5,  2, -1, -1, 1, 0);
-        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000016, 'csvStatement',      0,  1,  4, -1, -1, 0, 0);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000016, 'csvStatement',      0,  3,  2, -1, -1, 1, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000017, 'CitiMastercard',     1,  3,  2, -1,  4, 1, 0);
         INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000020, 'csvStatement',      0,  2,  1, -1, -1, 1, 1);
+        INSERT INTO statement_parser (account_id, class_name, date_col, amount_col, description_col, category_col, credit_col, exclude_header, inverse_amount) VALUES (2000000021, 'csvStatement',      0,  2,  1, -1, -1, 1, 0);
     """
 
     statements = [account_statement, categories_statement, keyword_statement, statement_parser_statement]

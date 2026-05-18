@@ -118,16 +118,22 @@ class Transaction:
 
         # if the category ID is blank (able to assign a new one)
         if self.category_id is None or self.category_id == 0:
-            for (category) in categories:  # iterate through all provided Category objects in array
+            best_keyword = None
+            best_category_id = None
+            desc_upper = self.description.upper()
+            for category in categories:
                 try:
                     for keyword in category.keyword:
-                        if keyword in self.description.upper():
-                            # ASSIGN CATEGORY, EDIT/CREATE NOTE, and EXIT
-                            self.category_id = category.id
-                            self.add_note(f"keyword={keyword}")
-                            return True
+                        if keyword in desc_upper:
+                            if best_keyword is None or len(keyword) > len(best_keyword):
+                                best_keyword = keyword
+                                best_category_id = category.id
                 except Exception as e:
                     print("ERROR: couldn't automatically categorize transaction:", e)
+            if best_keyword is not None:
+                self.category_id = best_category_id
+                self.add_note(f"keyword={best_keyword}")
+                return True
 
         # if there is already a category ID
         else:
