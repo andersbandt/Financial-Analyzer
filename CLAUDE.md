@@ -238,6 +238,62 @@ Located in `src/cli/cli_helper.py`:
 - `spinput(prompt, inp_type="int")`: Type-validated input
 - `get_account_id_manual()`: Interactive account selector
 
+## Dash Web Dashboard
+
+A graphical dashboard lives alongside the CLI as a second entry point.
+
+### Running the Dashboard
+```bash
+python src/dashboard.py
+# Opens at http://127.0.0.1:8050
+```
+
+The CLI (`python src/main.py`) is unchanged — use it for loading data, categorizing transactions, and account management. The dashboard is read-only visualization.
+
+### File Structure
+```
+src/
+  dashboard.py        ← entry point (db_init + app.run)
+  web/
+    __init__.py
+    app.py            ← Dash layout, callbacks, create_app()
+    charts.py         ← all Plotly figure builders + data helpers
+```
+
+### Current Charts
+- **KPI cards**: Net worth (recorded DB balances), this month's spending, period savings rate
+- **Spending pie**: Top-level category breakdown for selected period
+- **Monthly stacked bar**: Spending per category per month
+- **Month-over-month comparison**: % delta vs N-month baseline average
+- **Income vs expenses**: Grouped bar (income/expenses) + savings rate line (secondary axis)
+- **Category drill-down**: Stacked bar of any category's subcategories over time
+- **Sankey diagram**: Spending flow — top-level or hierarchical view
+- **Transaction table**: Searchable/sortable/paginated DataTable with keyword filter
+
+### Architecture Notes
+- All charts call the existing `src/analysis/` layer unchanged — no data logic in `web/`
+- `charts.py` has a per-session `_cat_name_cache` dict to avoid redundant DB lookups
+- Net worth KPI deliberately uses `dbh.balance.get_recent_balance()` directly (not `balh.get_account_balance`) to skip live investment price fetches on page load
+- `dash` added to `requirements.txt`
+
+### Dashboard TODO
+The following are good next steps for continued Dash development, roughly in priority order:
+
+**High value, straightforward:**
+- [ ] **Budget vs actual chart** — horizontal bar comparing `budget` table limits to actual spend per category; the CLI budgeting tab (`a08_budgeting.py`) is currently empty stubs, so this is net new
+- [ ] **Account balance over time** — line chart per account using `balh.model_account_balance(account_id)`; needs an account selector dropdown; port of `a08_graph_single_account_balance`
+- [ ] **Net savings line chart** — monthly `income - expenses` plotted as a cumulative or per-month line, complements the income/expenses bar
+
+**Medium effort:**
+- [ ] **Asset allocation pie** — port of `a07_asset_allocation`; calls `invh.get_all_active_ticker(live_price=True)` which is slow, so needs a loading spinner or an explicit "Refresh" button rather than auto-triggering
+- [ ] **Portfolio value over time** — port of `a04_cur_value_history`; heavy Yahoo Finance API usage, best behind a manual "Fetch" button
+- [ ] **Multi-page layout** — as the dashboard grows, split into pages using `dash.page_registry` (Dash Pages); natural split: Spending / Income & Savings / Deep Dive / Investments / Balances
+
+**Polish:**
+- [ ] Dark mode toggle
+- [ ] Persist user's dropdown selections across page refreshes via `dcc.Store`
+- [ ] Make the transaction table link back to CLI (e.g. copy sql_key for `a07_add_note`)
+
 ## Known Limitations & TODOs
 
 - Hardcoded file paths and account mappings (see tags in code)
