@@ -4,7 +4,7 @@ web/app.py — Dash layout and callbacks for the Financial Dashboard.
 Figure builders live in web/charts.py. Entry point: src/dashboard.py.
 """
 
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, dash_table
 import categories.categories_helper as cath
 from web import charts
 
@@ -176,6 +176,79 @@ def create_app() -> Dash:
             _graph("chart-sankey"),
         ]),
 
+        # ════════════════ TRANSACTION SEARCH ══════════════════════════════════
+        html.Div("Transaction Search", style=SECTION_HEADER),
+
+        html.Div(style={
+            **CARD, "display": "flex", "gap": "16px", "alignItems": "center",
+            "marginBottom": "16px", "flexWrap": "wrap",
+        }, children=[
+            html.Div([
+                html.Label("Keyword", style={**KPI_LABEL, "marginBottom": "4px", "display": "block"}),
+                dcc.Input(
+                    id="txn-keyword",
+                    type="text",
+                    placeholder="Search descriptions…",
+                    debounce=True,
+                    style={"width": "280px", "padding": "6px 10px", "borderRadius": "6px",
+                           "border": "1px solid #cdd5df", "fontSize": "14px"},
+                ),
+            ]),
+            html.Div([
+                html.Label("Period", style={**KPI_LABEL, "marginBottom": "4px", "display": "block"}),
+                _dropdown("dd-txn-period", PERIOD_OPTIONS, 3),
+            ]),
+            html.Div(id="txn-count", style={"color": "#6b7a90", "fontSize": "13px", "alignSelf": "flex-end"}),
+        ]),
+
+        html.Div(style=CARD, children=[
+            dash_table.DataTable(
+                id="txn-table",
+                columns=[
+                    {"name": "Date",        "id": "date",        "type": "text"},
+                    {"name": "Description", "id": "description", "type": "text"},
+                    {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Category",    "id": "category",    "type": "text"},
+                    {"name": "Account",     "id": "account",     "type": "text"},
+                    {"name": "Note",        "id": "note",        "type": "text"},
+                ],
+                data=[],
+                sort_action="native",
+                filter_action="native",
+                page_action="native",
+                page_size=30,
+                style_table={"overflowX": "auto"},
+                style_header={
+                    "backgroundColor": "#f0f2f5",
+                    "fontWeight": "700",
+                    "fontSize": "12px",
+                    "textTransform": "uppercase",
+                    "letterSpacing": "0.04em",
+                    "border": "none",
+                    "borderBottom": "2px solid #dde2ea",
+                },
+                style_cell={
+                    "fontSize": "13px",
+                    "padding": "8px 12px",
+                    "border": "none",
+                    "borderBottom": "1px solid #f0f2f5",
+                    "textAlign": "left",
+                    "maxWidth": "280px",
+                    "overflow": "hidden",
+                    "textOverflow": "ellipsis",
+                },
+                style_cell_conditional=[
+                    {"if": {"column_id": "amount"}, "textAlign": "right", "fontVariantNumeric": "tabular-nums"},
+                ],
+                style_data_conditional=[
+                    {"if": {"filter_query": "{amount} < 0"}, "color": "#c0392b"},
+                    {"if": {"filter_query": "{amount} > 0"}, "color": "#27ae60"},
+                    {"if": {"row_index": "odd"},  "backgroundColor": "#fafbfc"},
+                ],
+            ),
+        ]),
+
     ])
 
     # ── Callbacks ─────────────────────────────────────────────────────────────
@@ -233,5 +306,16 @@ def create_app() -> Dash:
     )
     def update_sankey(months_prev, view_mode):
         return charts.build_sankey(months_prev, view_mode)
+
+    @app.callback(
+        Output("txn-table", "data"),
+        Output("txn-count", "children"),
+        Input("dd-txn-period", "value"),
+        Input("txn-keyword",   "value"),
+    )
+    def update_txn_table(months_prev, keyword):
+        rows = charts.get_transaction_rows(months_prev, keyword or "")
+        count_label = f"{len(rows):,} transaction{'s' if len(rows) != 1 else ''}"
+        return rows, count_label
 
     return app

@@ -355,6 +355,41 @@ def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Fi
     return fig
 
 
+def get_transaction_rows(months_prev: int, keyword: str = "") -> list[dict]:
+    """
+    Return a list of row dicts for the transaction DataTable.
+
+    Filters by the last months_prev months. If keyword is non-empty, further
+    filters to rows whose description contains the keyword (case-insensitive).
+    Category and account names are resolved in bulk to keep DB round-trips low.
+    """
+    date_end = dateh.get_cur_str_date()
+    date_start = dateh.get_date_previous(months_prev * 30)
+    transactions = transr.recall_transaction_data(date_start, date_end)
+
+    kw = keyword.strip().lower()
+    if kw:
+        transactions = [t for t in transactions if kw in (t.description or "").lower()]
+
+    # Bulk-resolve category and account names
+    cat_ids  = {t.category_id for t in transactions}
+    acc_ids  = {t.account_id  for t in transactions}
+    cat_map  = {cid: cath.category_id_to_name(cid) for cid in cat_ids}
+    acc_map  = {aid: dbh.account.get_account_name_from_id(aid) for aid in acc_ids}
+
+    rows = []
+    for t in sorted(transactions, key=lambda x: x.date, reverse=True):
+        rows.append({
+            "date":        t.date,
+            "description": t.description or "",
+            "amount":      round(t.value, 2),
+            "category":    cat_map.get(t.category_id, ""),
+            "account":     acc_map.get(t.account_id, ""),
+            "note":        t.note or "",
+        })
+    return rows
+
+
 def build_sankey(months_prev: int, view_mode: str = "top_level") -> go.Figure:
     """Spending flow Sankey diagram."""
     date_end = dateh.get_cur_str_date()
