@@ -7,12 +7,15 @@ dict of scalar values for the KPI card row.
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import numpy as np
 
 import db.helpers as dbh
 import categories.categories_helper as cath
+from account import account_helper as acch
 from analysis import analyzer_helper as anah
 from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
+from analysis import balance_helper as balh
 from tools import date_helper as dateh
 
 # Categories whose transactions should be excluded from income/expense charts.
@@ -22,6 +25,10 @@ _SKIP_CATS = {"BALANCE", "SHARES", "TRANSFER", "PAYMENT", "VALUE", "INTERNAL"}
 # Simple per-session cache so repeated chart builds don't hammer the DB.
 _cat_name_cache: dict[int, str] = {}
 
+# Cached earliest dates so "all time" lookups don't re-scan the full DB every callback.
+_earliest_txn_date: str | None = None
+_earliest_balance_date: str | None = None
+
 
 def _cat_name(cat_id: int) -> str:
     if cat_id not in _cat_name_cache:
@@ -29,8 +36,80 @@ def _cat_name(cat_id: int) -> str:
     return _cat_name_cache[cat_id]
 
 
+def _earliest_transaction_date() -> str | None:
+    """YYYY-MM-DD of the oldest transaction in the DB. Cached per session."""
+    global _earliest_txn_date
+    if _earliest_txn_date is None:
+        txns = transr.recall_transaction_data()
+        if not txns:
+            return None
+        _earliest_txn_date = min(t.date for t in txns)
+    return _earliest_txn_date
+
+
+def _earliest_balance_date_str() -> str | None:
+    global _earliest_balance_date
+    if _earliest_balance_date is None:
+        rows = dbh.balance.get_balance_ledge_data()
+        if not rows:
+            return None
+        _earliest_balance_date = min(r[3] for r in rows)
+    return _earliest_balance_date
+
+
+def _resolve_months_prev(months_prev: int) -> int:
+    """
+    Convert 0 (the 'All time' sentinel) into the actual number of months
+    from today back to the earliest transaction. Returns the original value otherwise.
+    """
+    if months_prev and months_prev > 0:
+        return months_prev
+    earliest = _earliest_transaction_date()
+    if not earliest:
+        return 12  # nothing in DB — graceful default
+    yr, mo, _ = dateh.get_date_int_array()
+    eyr, emo = int(earliest[:4]), int(earliest[5:7])
+    return max((yr - eyr) * 12 + (mo - emo) + 1, 1)
+
+
+def _resolve_balance_days(days_prev: int) -> int:
+    """Convert 0 (the 'All time' sentinel) into days from today back to earliest balance snapshot."""
+    if days_prev and days_prev > 0:
+        return days_prev
+    from datetime import datetime
+    earliest = _earliest_balance_date_str()
+    if not earliest:
+        return 365
+    try:
+        delta = datetime.now() - datetime.strptime(earliest, "%Y-%m-%d")
+        return max(int(delta.days) + 1, 30)
+    except ValueError:
+        return 365
+
+
+def _period_transactions(months_prev: int):
+    """Fetch transactions for the selected period; 0 means all-time (no date filter)."""
+    if not months_prev or months_prev <= 0:
+        return transr.recall_transaction_data()
+    date_end = dateh.get_cur_str_date()
+    date_start = dateh.get_date_previous(months_prev * 30)
+    return transr.recall_transaction_data(date_start, date_end)
+
+
+def _period_label(months_prev: int) -> str:
+    """Human-readable label for a period selection (used in chart titles)."""
+    if not months_prev or months_prev <= 0:
+        return "all time"
+    if months_prev % 12 == 0 and months_prev >= 12:
+        years = months_prev // 12
+        return f"last {years} year{'s' if years != 1 else ''}"
+    return f"last {months_prev} months"
+
+
 def _month_series(months_prev: int):
-    """Return (labels, [(year, month), ...]) for the last months_prev months."""
+    """Return (labels, [(year, month), ...]) for the last months_prev months.
+    months_prev=0 resolves to the full history back to the earliest transaction."""
+    months_prev = _resolve_months_prev(months_prev)
     yr, mo, _ = dateh.get_date_int_array()
     oldest_mo = mo - months_prev + 1
     oldest_yr = yr
@@ -66,9 +145,7 @@ def _income_expense_split(transactions):
 # ─── Spending overview ────────────────────────────────────────────────────────
 
 def build_spending_pie(months_prev: int) -> go.Figure:
-    date_end = dateh.get_cur_str_date()
-    date_start = dateh.get_date_previous(months_prev * 30)
-    transactions = transr.recall_transaction_data(date_start, date_end)
+    transactions = _period_transactions(months_prev)
 
     if not transactions:
         fig = go.Figure()
@@ -91,7 +168,7 @@ def build_spending_pie(months_prev: int) -> go.Figure:
         textposition="inside",
     ))
     fig.update_layout(
-        title=f"Spending breakdown — last {months_prev} months  (${total:,.0f} total)",
+        title=f"Spending breakdown — {_period_label(months_prev)}  (${total:,.0f} total)",
         legend=dict(orientation="v", x=1.02, y=0.5),
         margin=dict(t=60, b=20, l=20, r=160),
         height=480,
@@ -124,7 +201,7 @@ def build_monthly_bar(months_prev: int) -> go.Figure:
         ))
     fig.update_layout(
         barmode="stack",
-        title=f"Monthly spending — last {months_prev} months",
+        title=f"Monthly spending — {_period_label(months_prev)}",
         yaxis=dict(tickprefix="$", tickformat=","),
         xaxis=dict(tickangle=-45),
         legend=dict(orientation="v", x=1.02, y=0.5),
@@ -149,6 +226,9 @@ def build_mom_comparison(baseline_months: int) -> go.Figure:
         fig = go.Figure()
         fig.update_layout(title="No recent transaction data found")
         return fig
+
+    # Resolve the all-time sentinel into a concrete month count ending at prev_yr/prev_mo
+    baseline_months = _resolve_months_prev(baseline_months)
 
     base_end_mo = prev_mo - 1
     base_end_yr = prev_yr
@@ -233,10 +313,8 @@ def compute_kpis(months_prev: int) -> dict:
         if t.value < 0 and _cat_name(t.category_id) not in _SKIP_CATS
     )
 
-    # Savings rate over the selected period
-    date_end = dateh.get_cur_str_date()
-    date_start = dateh.get_date_previous(months_prev * 30)
-    period_trans = transr.recall_transaction_data(date_start, date_end)
+    # Savings rate over the selected period (months_prev=0 → all time)
+    period_trans = _period_transactions(months_prev)
     income, expenses = _income_expense_split(period_trans)
     savings_rate = ((income - expenses) / income * 100) if income > 0 else 0.0
 
@@ -292,7 +370,7 @@ def build_income_vs_expenses(months_prev: int) -> go.Figure:
 
     fig.update_layout(
         barmode="group",
-        title=f"Income vs Expenses — last {months_prev} months",
+        title=f"Income vs Expenses — {_period_label(months_prev)}",
         xaxis=dict(tickangle=-45),
         margin=dict(t=60, b=80, l=60, r=60),
         height=500,
@@ -345,7 +423,7 @@ def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Fi
 
     fig.update_layout(
         barmode="stack",
-        title=f"{cat_name} — subcategory breakdown, last {months_prev} months",
+        title=f"{cat_name} — subcategory breakdown, {_period_label(months_prev)}",
         yaxis=dict(tickprefix="$", tickformat=","),
         xaxis=dict(tickangle=-45),
         legend=dict(orientation="v", x=1.02, y=0.5),
@@ -355,21 +433,50 @@ def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Fi
     return fig
 
 
-def get_transaction_rows(months_prev: int, keyword: str = "") -> list[dict]:
+def get_transaction_rows(
+    months_prev: int = 6,
+    keyword: str = "",
+    date_start: str | None = None,
+    date_end: str | None = None,
+    category_id: int | None = None,
+    include_descendants: bool = False,
+    account_id: int | None = None,
+    amount_min: float | None = None,
+    amount_max: float | None = None,
+) -> list[dict]:
     """
-    Return a list of row dicts for the transaction DataTable.
+    Multi-filter transaction search for the dashboard DataTable.
 
-    Filters by the last months_prev months. If keyword is non-empty, further
-    filters to rows whose description contains the keyword (case-insensitive).
+    Date logic: if both date_start and date_end are provided, they override
+    months_prev. Otherwise months_prev applies (0 = all time).
+    Category filter optionally expands to all descendants.
     Category and account names are resolved in bulk to keep DB round-trips low.
     """
-    date_end = dateh.get_cur_str_date()
-    date_start = dateh.get_date_previous(months_prev * 30)
-    transactions = transr.recall_transaction_data(date_start, date_end)
+    if date_start and date_end:
+        transactions = transr.recall_transaction_data(date_start, date_end)
+    else:
+        transactions = _period_transactions(months_prev)
 
-    kw = keyword.strip().lower()
+    kw = keyword.strip().lower() if keyword else ""
     if kw:
         transactions = [t for t in transactions if kw in (t.description or "").lower()]
+
+    if category_id is not None:
+        if include_descendants:
+            allowed = set(cath.get_all_category_descendants(category_id))
+            allowed.add(category_id)
+            transactions = [t for t in transactions if t.category_id in allowed]
+        else:
+            transactions = [t for t in transactions if t.category_id == category_id]
+
+    if account_id is not None:
+        transactions = [t for t in transactions if t.account_id == account_id]
+
+    if amount_min is not None:
+        transactions = [t for t in transactions if t.value >= amount_min]
+
+    if amount_max is not None:
+        transactions = [t for t in transactions if t.value <= amount_max]
 
     # Bulk-resolve category and account names
     cat_ids  = {t.category_id for t in transactions}
@@ -390,15 +497,22 @@ def get_transaction_rows(months_prev: int, keyword: str = "") -> list[dict]:
     return rows
 
 
-def build_sankey(months_prev: int, view_mode: str = "top_level") -> go.Figure:
-    """Spending flow Sankey diagram."""
-    date_end = dateh.get_cur_str_date()
-    date_start = dateh.get_date_previous(months_prev * 30)
-    transactions = transr.recall_transaction_data(date_start, date_end)
+def build_sankey(date_start: str | None, date_end: str | None,
+                 view_mode: str = "top_level") -> go.Figure:
+    """
+    Spending flow Sankey for an explicit date range.
+    If either date is None, falls back to all-time (no filter).
+    """
+    if date_start and date_end:
+        transactions = transr.recall_transaction_data(date_start, date_end)
+        range_label = f"{date_start} to {date_end}"
+    else:
+        transactions = transr.recall_transaction_data()
+        range_label = "all time"
 
     if not transactions:
         fig = go.Figure()
-        fig.update_layout(title="No transactions found for this period")
+        fig.update_layout(title=f"No transactions found ({range_label})")
         return fig
 
     if view_mode == "top_level":
@@ -420,9 +534,519 @@ def build_sankey(months_prev: int, view_mode: str = "top_level") -> go.Figure:
         link=dict(source=sources, target=targets, value=values),
     ))
     fig.update_layout(
-        title=f"Spending Flow — {view_label} ({date_start} to {date_end})",
+        title=f"Spending Flow — {view_label} ({range_label})",
         font_size=12,
         height=560,
         margin=dict(t=60, b=20, l=20, r=20),
+    )
+    return fig
+
+
+# ─── Period summary (Executive summary stats) ─────────────────────────────────
+
+def compute_period_summary(months_prev: int) -> dict:
+    """Income / expenses / delta over the selected period, skipping transfer categories.
+    months_prev=0 means all time."""
+    transactions = _period_transactions(months_prev)
+    income, expenses = _income_expense_split(transactions)
+    if months_prev and months_prev > 0:
+        date_start = dateh.get_date_previous(months_prev * 30)
+        date_end = dateh.get_cur_str_date()
+    else:
+        date_start = _earliest_transaction_date() or "—"
+        date_end = dateh.get_cur_str_date()
+    return {
+        "income": income,
+        "expenses": expenses,
+        "delta": income - expenses,
+        "txn_count": len(transactions),
+        "date_start": date_start,
+        "date_end": date_end,
+    }
+
+
+# ─── Largest transactions ─────────────────────────────────────────────────────
+
+def get_largest_transaction_rows(months_prev: int, n: int) -> list[dict]:
+    """
+    Top N transactions by absolute value within the selected period.
+    months_prev=0 means all time. Excludes BALANCE/SHARES/TRANSFER/etc.
+    """
+    transactions = _period_transactions(months_prev)
+
+    transactions = grah.strip_non_graphical_transactions(transactions)
+    transactions.sort(key=lambda t: abs(t.value), reverse=True)
+    transactions = transactions[:n]
+
+    cat_ids = {t.category_id for t in transactions}
+    acc_ids = {t.account_id  for t in transactions}
+    cat_map = {cid: cath.category_id_to_name(cid) for cid in cat_ids}
+    acc_map = {aid: dbh.account.get_account_name_from_id(aid) for aid in acc_ids}
+
+    return [{
+        "date":        t.date,
+        "description": t.description or "",
+        "amount":      round(t.value, 2),
+        "category":    cat_map.get(t.category_id, ""),
+        "account":     acc_map.get(t.account_id, ""),
+    } for t in transactions]
+
+
+# ─── Month review ─────────────────────────────────────────────────────────────
+
+def get_month_review_data(year: int, month: int) -> tuple[list[dict], list[dict]]:
+    """Return (transaction_rows, category_summary_rows) for a single month."""
+    transactions = transr.recall_transaction_month_bin(year, month)
+
+    if not transactions:
+        return [], []
+
+    cat_ids = {t.category_id for t in transactions}
+    acc_ids = {t.account_id  for t in transactions}
+    cat_map = {cid: cath.category_id_to_name(cid) for cid in cat_ids}
+    acc_map = {aid: dbh.account.get_account_name_from_id(aid) for aid in acc_ids}
+
+    txn_rows = [{
+        "date":        t.date,
+        "description": t.description or "",
+        "amount":      round(t.value, 2),
+        "category":    cat_map.get(t.category_id, ""),
+        "account":     acc_map.get(t.account_id, ""),
+        "note":        t.note or "",
+    } for t in sorted(transactions, key=lambda x: x.date)]
+
+    # Category summary — expense categories only
+    categories = cath.load_categories()
+    top_cat_str, amounts = anah.create_top_category_amounts_array(transactions, categories, count_NA=False)
+    top_cat_str, amounts = grah.strip_non_expense_categories(top_cat_str, amounts)
+    amounts = grah.format_expenses(amounts)
+
+    pairs = sorted(
+        [(c, a) for c, a in zip(top_cat_str, amounts) if a != 0],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    cat_rows = [{"category": c, "amount": round(a, 2)} for c, a in pairs]
+
+    return txn_rows, cat_rows
+
+
+# ─── Wealth & balances ────────────────────────────────────────────────────────
+
+# Buckets used by the asset allocation pie. Liabilities (credit cards) are excluded.
+_ACCOUNT_TYPE_LABEL = {
+    1: "Savings",
+    2: "Checking",
+    3: "Credit Card",
+    4: "Investment",
+}
+
+
+def _recent_balance_with_date(account_id):
+    """Latest recorded DB balance (no live price fetch). Returns (amount, date)."""
+    return dbh.balance.get_recent_balance(account_id, add_date=True)
+
+
+def get_wealth_breakdown_rows() -> list[dict]:
+    """Per-account latest recorded balance + updated date. Sorted by amount desc."""
+    rows = []
+    for acc_id in dbh.account.get_all_account_ids():
+        amount, date = _recent_balance_with_date(acc_id)
+        rows.append({
+            "account":  dbh.account.get_account_name_from_id(acc_id),
+            "type":     _ACCOUNT_TYPE_LABEL.get(dbh.account.get_account_type(acc_id), "Other"),
+            "balance":  round(amount or 0, 2),
+            "updated":  date if date and date != 0 else "—",
+        })
+    rows.sort(key=lambda r: r["balance"], reverse=True)
+    return rows
+
+
+def build_asset_allocation_pie() -> go.Figure:
+    """
+    Simple asset allocation pie bucketed by account type from recorded DB balances.
+    Investment accounts are further split into Retirement vs Taxable.
+    No live price fetches — fast and deterministic.
+    """
+    retirement_ids = set(dbh.account.get_retirement_accounts(1))
+    buckets: dict[str, float] = {}
+
+    for acc_id in dbh.account.get_all_account_ids():
+        amount, _ = _recent_balance_with_date(acc_id)
+        amount = amount or 0
+        if amount <= 0:
+            continue  # skip liabilities and empty accounts for an asset pie
+        acc_type = dbh.account.get_account_type(acc_id)
+        if acc_type in (1, 2):
+            label = "Cash"
+        elif acc_type == 4:
+            label = "Retirement" if acc_id in retirement_ids else "Taxable Investment"
+        else:
+            continue  # exclude credit cards from the asset pie
+        buckets[label] = buckets.get(label, 0) + amount
+
+    if not buckets:
+        fig = go.Figure()
+        fig.update_layout(title="No balance data available")
+        return fig
+
+    labels = list(buckets.keys())
+    values = [buckets[l] for l in labels]
+    total = sum(values)
+
+    fig = go.Figure(go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.4,
+        hovertemplate="<b>%{label}</b><br>$%{value:,.0f} (%{percent})<extra></extra>",
+        textinfo="label+percent",
+        textposition="outside",
+    ))
+    fig.update_layout(
+        title=f"Asset allocation — recorded balances  (${total:,.0f} total)",
+        showlegend=False,
+        margin=dict(t=60, b=20, l=20, r=20),
+        height=420,
+    )
+    return fig
+
+
+def _binned_account_balances(days_prev: int, N: int):
+    """
+    Returns (edge_dates, account_ids, values_matrix) where values_matrix[i]
+    is a list of N balances for account_ids[i] across the N time bins.
+    Thin wrapper over anah.gen_Bx_matrix so we can stack-plot in Plotly.
+    days_prev=0 resolves to the full history back to the earliest balance snapshot.
+    """
+    days_prev = _resolve_balance_days(days_prev)
+    spl_Bx, edge_codes = anah.gen_Bx_matrix(dateh.get_cur_date(), days_prev, N)
+    account_ids = list(spl_Bx[0].keys()) if spl_Bx else []
+    values_matrix = [[a_A[aid] for a_A in spl_Bx] for aid in account_ids]
+    return edge_codes, account_ids, values_matrix
+
+
+def build_balance_by_account(days_prev: int = 560, N: int = 5) -> go.Figure:
+    """Stacked area chart of recorded balances per account over time."""
+    resolved_days = _resolve_balance_days(days_prev)
+    edge_codes, account_ids, values_matrix = _binned_account_balances(days_prev, N)
+    if not account_ids:
+        fig = go.Figure()
+        fig.update_layout(title="No balance data available")
+        return fig
+
+    x_labels = edge_codes[1:]
+    # Sort accounts by their most recent value so the biggest stack-area is at bottom.
+    combined = sorted(
+        zip(account_ids, values_matrix),
+        key=lambda p: p[1][-1] if p[1] else 0,
+    )
+    fig = go.Figure()
+    for acc_id, vals in combined:
+        name = dbh.account.get_account_name_from_id(acc_id)
+        fig.add_trace(go.Scatter(
+            name=name,
+            x=x_labels,
+            y=vals,
+            mode="lines",
+            stackgroup="balances",
+            hovertemplate=f"<b>{name}</b><br>%{{x}}: $%{{y:,.0f}}<extra></extra>",
+        ))
+    fig.update_layout(
+        title=f"Balances per account — {N} bins over last {resolved_days}d (since {edge_codes[0]})",
+        yaxis=dict(tickprefix="$", tickformat=","),
+        margin=dict(t=60, b=40, l=60, r=160),
+        legend=dict(orientation="v", x=1.02, y=0.5),
+        height=460,
+    )
+    return fig
+
+
+def build_balance_by_type(days_prev: int = 560, N: int = 5) -> go.Figure:
+    """Stacked area chart of recorded balances aggregated by account type."""
+    resolved_days = _resolve_balance_days(days_prev)
+    edge_codes, account_ids, values_matrix = _binned_account_balances(days_prev, N)
+    if not account_ids:
+        fig = go.Figure()
+        fig.update_layout(title="No balance data available")
+        return fig
+
+    num_types = acch.get_num_acc_type()
+    type_values = [[0.0] * N for _ in range(num_types)]
+    for j, acc_id in enumerate(account_ids):
+        acc_type = dbh.account.get_account_type(acc_id)
+        if acc_type is None:
+            continue
+        for i in range(N):
+            type_values[acc_type - 1][i] += values_matrix[j][i]
+
+    type_names = [t.name.replace("_", " ").title() for t in acch.get_acc_type_arr()]
+    x_labels = edge_codes[1:]
+
+    fig = go.Figure()
+    for i, name in enumerate(type_names):
+        fig.add_trace(go.Scatter(
+            name=name,
+            x=x_labels,
+            y=type_values[i],
+            mode="lines",
+            stackgroup="types",
+            hovertemplate=f"<b>{name}</b><br>%{{x}}: $%{{y:,.0f}}<extra></extra>",
+        ))
+    fig.update_layout(
+        title=f"Balances by account type — {N} bins over last {resolved_days}d (since {edge_codes[0]})",
+        yaxis=dict(tickprefix="$", tickformat=","),
+        margin=dict(t=60, b=40, l=60, r=120),
+        legend=dict(orientation="v", x=1.02, y=0.5),
+        height=420,
+    )
+    return fig
+
+
+def build_single_account_balance(account_id: int | None) -> go.Figure:
+    """Day-by-day modeled balance for one account (falls back to raw snapshots)."""
+    if account_id is None:
+        fig = go.Figure()
+        fig.update_layout(title="Select an account above to see its balance over time", height=380)
+        return fig
+
+    name = dbh.account.get_account_name_from_id(account_id)
+    try:
+        history = balh.model_account_balance(account_id)
+    except Exception:
+        history = None
+
+    if history:
+        dates = [d for d, _ in history]
+        bals = [b for _, b in history]
+    else:
+        raw = dbh.balance.get_balance_by_account_id(account_id)
+        if not raw:
+            fig = go.Figure()
+            fig.update_layout(title=f"No balance data for {name}", height=380)
+            return fig
+        dates = [r[3] for r in raw]
+        bals = [r[2] for r in raw]
+
+    fig = go.Figure(go.Scatter(
+        x=dates, y=bals, mode="lines",
+        line=dict(color="#1a2940", width=2),
+        hovertemplate="%{x}<br>$%{y:,.2f}<extra></extra>",
+    ))
+    fig.update_layout(
+        title=f"Balance over time — {name}",
+        yaxis=dict(tickprefix="$", tickformat=","),
+        margin=dict(t=60, b=40, l=60, r=20),
+        height=420,
+    )
+    return fig
+
+
+def get_balance_ledger_rows(account_id: int | None = None) -> list[dict]:
+    """All recorded balance snapshots, optionally filtered to one account."""
+    if account_id:
+        raw = dbh.balance.get_balance_by_account_id(account_id)
+    else:
+        raw = dbh.balance.get_balance_ledge_data()
+
+    return [{
+        "sql_key": r[0],
+        "account": dbh.account.get_account_name_from_id(r[1]),
+        "balance": round(r[2], 2),
+        "date":    r[3],
+    } for r in raw]
+
+
+# ─── Retirement Monte Carlo ───────────────────────────────────────────────────
+
+def run_retirement_monte_carlo(
+    current_age: float,
+    retirement_age: float,
+    death_age: float,
+    annual_return_mean: float,
+    annual_return_stddev: float,
+    inflation_mean: float,
+    inflation_stddev: float,
+    num_simulations: int = 5000,
+) -> dict:
+    """
+    Monte Carlo retirement projection. Uses real returns (return adjusted for inflation).
+    Current balance is summed from accounts flagged retirement=1 in the DB.
+    Returns simulation arrays + percentile summary.
+    """
+    working_years = max(retirement_age - current_age, 0)
+    retired_years = max(death_age - retirement_age, 0.0001)
+
+    # Pull retirement balances from DB (recorded balances — no live fetch)
+    retirement_ids = dbh.account.get_retirement_accounts(1)
+    current_balance = sum(
+        dbh.balance.get_recent_balance(aid) or 0 for aid in retirement_ids
+    )
+
+    final_balances = []
+    monthly_withdrawals = []
+
+    working_years_int = int(working_years)
+    retired_years_int = int(retired_years)
+
+    for _ in range(num_simulations):
+        returns = np.random.normal(annual_return_mean, annual_return_stddev, working_years_int)
+        inflations = np.random.normal(inflation_mean, inflation_stddev, working_years_int)
+        real_returns = [(1 + r) / (1 + i) - 1 for r, i in zip(returns, inflations)]
+
+        bal = current_balance
+        for rr in real_returns:
+            bal *= (1 + rr)
+        final_balances.append(bal)
+
+        ret_returns = np.random.normal(annual_return_mean, annual_return_stddev, retired_years_int)
+        ret_inflations = np.random.normal(inflation_mean, inflation_stddev, retired_years_int)
+        ret_real = [(1 + r) / (1 + i) - 1 for r, i in zip(ret_returns, ret_inflations)]
+        avg_real_ret = float(np.mean(ret_real)) if ret_real else 0.0
+
+        r_m = avg_real_ret / 12
+        if r_m != 0 and retired_years_int > 0:
+            monthly = (bal * r_m) / (1 - pow(1 + r_m, -12 * retired_years_int))
+        elif retired_years_int > 0:
+            monthly = bal / (12 * retired_years_int)
+        else:
+            monthly = 0
+        monthly_withdrawals.append(monthly)
+
+    bal_pct = np.percentile(final_balances, [10, 50, 90])
+    with_pct = np.percentile(monthly_withdrawals, [10, 50, 90])
+
+    return {
+        "current_balance": current_balance,
+        "final_balances": final_balances,
+        "monthly_withdrawals": monthly_withdrawals,
+        "balance_p10": bal_pct[0],
+        "balance_p50": bal_pct[1],
+        "balance_p90": bal_pct[2],
+        "withdraw_p10": with_pct[0],
+        "withdraw_p50": with_pct[1],
+        "withdraw_p90": with_pct[2],
+    }
+
+
+# ─── Category tree ────────────────────────────────────────────────────────────
+
+def build_category_treemap() -> go.Figure:
+    """
+    Treemap of the full category hierarchy. Equal leaf sizes so the chart
+    represents structure rather than spending volume — the tooltip surfaces
+    each category's keyword count.
+    """
+    categories = cath.load_categories()
+    if not categories:
+        fig = go.Figure()
+        fig.update_layout(title="No categories defined")
+        return fig
+
+    ids, labels, parents, values, keyword_counts = [], [], [], [], []
+    id_to_name = {c.id: c.name for c in categories}
+
+    for c in categories:
+        ids.append(str(c.id))
+        labels.append(c.name)
+        # parent=1 in the schema means "top level"; map to empty string for treemap root
+        parents.append(str(c.parent) if c.parent and c.parent != 1 else "")
+        values.append(1)
+        keyword_counts.append(len(c.keyword))
+
+    fig = go.Figure(go.Treemap(
+        ids=ids,
+        labels=labels,
+        parents=parents,
+        values=values,
+        branchvalues="total",
+        textinfo="label",
+        hovertemplate=(
+            "<b>%{label}</b>"
+            "<br>category_id: %{id}"
+            "<br>parent_id: %{parent}"
+            "<br>keywords: %{customdata}"
+            "<extra></extra>"
+        ),
+        customdata=keyword_counts,
+        marker=dict(line=dict(width=1, color="#fff")),
+    ))
+    fig.update_layout(
+        title=f"Category hierarchy — {len(categories)} categories",
+        margin=dict(t=60, b=20, l=20, r=20),
+        height=560,
+    )
+    return fig
+
+
+def get_category_tree_text() -> str:
+    """
+    Hierarchical printout of every category as an indented markdown code block.
+    Format per line: '  ├── NAME  [id=X → parent=Y]  • N keywords: k1, k2, …'
+    """
+    categories = cath.load_categories()
+    if not categories:
+        return "```\n(no categories defined)\n```"
+
+    by_id: dict[int, object] = {c.id: c for c in categories}
+    children_of: dict[int, list[int]] = {}
+    for c in categories:
+        parent = c.parent if c.parent and c.parent != 1 else 0  # 0 = virtual root
+        children_of.setdefault(parent, []).append(c.id)
+
+    # Sort each level alphabetically
+    for kids in children_of.values():
+        kids.sort(key=lambda cid: by_id[cid].name)
+
+    lines: list[str] = []
+
+    def _walk(cid: int, prefix: str, is_last: bool, is_root_level: bool):
+        c = by_id[cid]
+        connector = "" if is_root_level else ("└── " if is_last else "├── ")
+        kw_preview = ", ".join(c.keyword[:4])
+        if len(c.keyword) > 4:
+            kw_preview += f", … (+{len(c.keyword) - 4} more)"
+        kw_part = f"  • {len(c.keyword)} keyword{'s' if len(c.keyword) != 1 else ''}"
+        if c.keyword:
+            kw_part += f": {kw_preview}"
+        lines.append(f"{prefix}{connector}{c.name}  [id={c.id} → parent={c.parent}]{kw_part}")
+
+        kids = children_of.get(cid, [])
+        new_prefix = prefix + ("" if is_root_level else ("    " if is_last else "│   "))
+        for i, kid in enumerate(kids):
+            _walk(kid, new_prefix, i == len(kids) - 1, is_root_level=False)
+
+    roots = children_of.get(0, [])
+    lines.append(f"ROOT (parent_id=1)  — {len(roots)} top-level categor{'y' if len(roots) == 1 else 'ies'}")
+    for i, rid in enumerate(roots):
+        _walk(rid, "", i == len(roots) - 1, is_root_level=False)
+
+    return "```\n" + "\n".join(lines) + "\n```"
+
+
+def build_retirement_histogram(sim_result: dict) -> go.Figure:
+    """Histogram of simulated retirement balances with percentile markers."""
+    balances = sim_result["final_balances"]
+    p10, p50, p90 = sim_result["balance_p10"], sim_result["balance_p50"], sim_result["balance_p90"]
+
+    fig = go.Figure(go.Histogram(
+        x=balances,
+        nbinsx=60,
+        marker_color="#4466cc",
+        hovertemplate="$%{x:,.0f}<br>%{y} simulations<extra></extra>",
+    ))
+    for pct, label, color in [(p10, "10th %ile", "#e05252"),
+                              (p50, "Median",    "#1a2940"),
+                              (p90, "90th %ile", "#52a852")]:
+        fig.add_vline(
+            x=pct, line_dash="dash", line_color=color,
+            annotation_text=f"{label}: ${pct:,.0f}",
+            annotation_position="top",
+        )
+    fig.update_layout(
+        title="Simulated retirement balance distribution",
+        xaxis=dict(title="Balance at retirement (today's $)", tickprefix="$", tickformat=","),
+        yaxis=dict(title="Simulations"),
+        margin=dict(t=80, b=60, l=60, r=20),
+        height=420,
     )
     return fig

@@ -256,43 +256,118 @@ src/
   dashboard.py        ← entry point (db_init + app.run)
   web/
     __init__.py
-    app.py            ← Dash layout, callbacks, create_app()
+    app.py            ← Dash layout, callbacks, create_app() — tab-based UI
     charts.py         ← all Plotly figure builders + data helpers
 ```
 
+### UI Structure (Tabs)
+The dashboard is organized into 7 tabs via `dcc.Tabs`:
+
+1. **Overview** — Period selector + KPI cards (net worth, this month's spend, savings rate) + period summary KPIs (income/expenses/Δ/count) + spending pie + monthly stacked bar
+2. **Spending** — Month-over-month vs baseline, category drill-down, Sankey flow (with its own `dcc.DatePickerRange` + quick-set dropdown)
+3. **Income & Savings** — Period selector + income vs expenses grouped bar with savings rate line
+4. **Balances** — Asset allocation pie + wealth breakdown table, balance over time (by-account + by-type, with its own days/bins controls), single account day-by-day, recorded balance ledger
+5. **Retirement** — Monte Carlo with 7 number-input fields (current age, retirement age, death age, return mean/stddev, inflation mean/stddev) + "Run simulation" button (uses `State`)
+6. **Categories** — Plotly treemap of the category hierarchy + indented text printout listing every category with its `id → parent_id` mapping and keyword list
+7. **Transactions** — Multi-filter search (keyword + date range + category +/- descendants + account + amount min/max), largest transactions, month review
+
+Each tab's content is built by a `_*_tab()` helper function inside `app.py` to keep the layout block readable. **There is no global period selector** — each tab/section owns its own period or date controls. This is intentional so that switching tabs doesn't unexpectedly change the scope of the chart in front of you.
+
+### Standardized Period Options
+All period dropdowns share a single `PERIOD_OPTIONS` list:
+`3 months / 6 months / 12 months / 24 months / 5 years / All time`
+
+The value `0` is the "All time" sentinel. In `charts.py`, `_resolve_months_prev(0)` walks back to the earliest transaction date (cached per session via `_earliest_transaction_date()`); `_period_transactions(0)` calls `recall_transaction_data()` with no date filter. The balance chart uses `BALANCE_DAYS_OPTIONS` (`180d / 1yr / 2yr / 5yr / All time`) for the same reason — `_resolve_balance_days(0)` walks back to the earliest balance snapshot.
+
+### Transaction Search Filters
+The Transactions tab's search supports the same filter dimensions as the CLI's `search_05_multi_filter()` in `analysis.transaction_helper`:
+- Description keyword (case-insensitive substring)
+- Period dropdown (`PERIOD_OPTIONS`)
+- Specific date range (`dcc.DatePickerRange`) — when both dates are set, overrides the period dropdown
+- Category dropdown + "include descendants" checklist (uses `cath.get_all_category_descendants`)
+- Account dropdown
+- Amount min/max number inputs
+
+`charts.get_transaction_rows()` accepts every filter as a keyword arg and applies them progressively. The result count and active-filter summary is shown below the controls.
+
+### Sankey Date Selector
+The Sankey diagram is the one chart that's date-anchored rather than period-anchored. Controls:
+- `dcc.DatePickerRange` — explicit start and end dates (defaults to last 12 months on page load)
+- Quick-set dropdown — picks a relative window (3mo / 6mo / 12mo / 24mo / 5y / YTD / All time) and updates the date pickers via a `sankey_quickset` callback
+- Top-level vs Hierarchical view radio
+
+`charts.build_sankey(date_start, date_end, view_mode)` takes the dates directly. If either is None, falls back to all-time.
+
 ### Current Charts
 - **KPI cards**: Net worth (recorded DB balances), this month's spending, period savings rate
+- **Period summary KPIs**: Income, expenses, net delta, and transaction count for selected period
 - **Spending pie**: Top-level category breakdown for selected period
 - **Monthly stacked bar**: Spending per category per month
 - **Month-over-month comparison**: % delta vs N-month baseline average
 - **Income vs expenses**: Grouped bar (income/expenses) + savings rate line (secondary axis)
+- **Asset allocation pie**: Simple bucketed view (Cash / Retirement / Taxable Investment) from recorded DB balances
+- **Wealth breakdown table**: Per-account balance + type + last-updated date (no live price fetch)
+- **Balance over time — by account**: Stacked area of per-account balances over N time bins
+- **Balance over time — by type**: Stacked area aggregated by account type (Saving / Checking / Credit / Investment)
+- **Single account balance**: Day-by-day modeled balance for one selected account (falls back to raw snapshots)
+- **Balance ledger table**: All recorded balance snapshots (filterable to one account via the dropdown)
+- **Retirement Monte Carlo**: Histogram of simulated retirement balances with number-input fields for age, return mean/stddev, inflation mean/stddev, plus p10/p50/p90 KPI cards for projected balance & monthly withdrawal
 - **Category drill-down**: Stacked bar of any category's subcategories over time
-- **Sankey diagram**: Spending flow — top-level or hierarchical view
-- **Transaction table**: Searchable/sortable/paginated DataTable with keyword filter
+- **Category treemap + tree printout**: Hierarchical view of every category with id → parent_id mapping and keyword counts
+- **Sankey diagram**: Spending flow — top-level or hierarchical view, with explicit `dcc.DatePickerRange` + quick-set dropdown
+- **Multi-filter transaction search**: keyword + period + date range + category (+ descendants) + account + amount min/max
+- **Largest transactions table**: Top N by absolute value within a configurable window (or all time)
+- **Month review**: Year/month picker with a transactions table + category-spending summary side-by-side
 
 ### Architecture Notes
 - All charts call the existing `src/analysis/` layer unchanged — no data logic in `web/`
-- `charts.py` has a per-session `_cat_name_cache` dict to avoid redundant DB lookups
+- `charts.py` has a per-session `_cat_name_cache` dict, plus `_earliest_txn_date` and `_earliest_balance_date` caches so "All time" lookups don't re-scan the full DB every callback
+- Every chart builder that takes a `months_prev` accepts `0` as the "all time" sentinel via `_period_transactions(0)` / `_resolve_months_prev(0)` / `_period_label(0)`
 - Net worth KPI deliberately uses `dbh.balance.get_recent_balance()` directly (not `balh.get_account_balance`) to skip live investment price fetches on page load
+- Asset allocation pie + wealth breakdown table follow the same pattern — recorded balances only, no live fetches
+- Retirement Monte Carlo lives behind an explicit "Run simulation" button (uses `State`, not `Input`, for the number-input field values) so users can tune parameters without retriggering 5k+ simulations on every keystroke
+- Tabs are rendered eagerly (content lives inside each `dcc.Tab`'s children rather than swapped in via callback) — this means callbacks for all tabs fire on initial page load, which is fine for our DB-backed read-only use case
 - `dash` added to `requirements.txt`
 
 ### Dashboard TODO
 The following are good next steps for continued Dash development, roughly in priority order:
 
 **High value, straightforward:**
-- [ ] **Budget vs actual chart** — horizontal bar comparing `budget` table limits to actual spend per category; the CLI budgeting tab (`a08_budgeting.py`) is currently empty stubs, so this is net new
-- [ ] **Account balance over time** — line chart per account using `balh.model_account_balance(account_id)`; needs an account selector dropdown; port of `a08_graph_single_account_balance`
 - [ ] **Net savings line chart** — monthly `income - expenses` plotted as a cumulative or per-month line, complements the income/expenses bar
+- [ ] **Investments summary table** — per-account current value (port of `a01_check_investments`), with live-price toggle behind a "Refresh" button
+- [ ] **Investment transactions table** — port of `a02_print_db_inv`; columns TICKER / SHARES / STRIKE / GAIN% / CAGR%, filter by type (BUY/SELL/DIV)
+- [ ] **Expand local-DB balance-over-time (account-level)** — build on the existing `build_balance_by_account` / `build_balance_by_type` charts using only recorded DB snapshots (no Yahoo). Ideas: multi-select account picker so the user can compare 2-3 accounts on one chart; day-by-day interpolation between sparse snapshots for investment accounts (currently the `model_account_balance` path only works for accounts with transactions); a "portfolio-only" toggle that filters to type=4 accounts and stacks them.
 
 **Medium effort:**
-- [ ] **Asset allocation pie** — port of `a07_asset_allocation`; calls `invh.get_all_active_ticker(live_price=True)` which is slow, so needs a loading spinner or an explicit "Refresh" button rather than auto-triggering
-- [ ] **Portfolio value over time** — port of `a04_cur_value_history`; heavy Yahoo Finance API usage, best behind a manual "Fetch" button
-- [ ] **Multi-page layout** — as the dashboard grows, split into pages using `dash.page_registry` (Dash Pages); natural split: Spending / Income & Savings / Deep Dive / Investments / Balances
+- [ ] **Live asset allocation pie** — extend the existing simple asset allocation pie with `invh.get_all_active_ticker(live_price=True)` breakdown by EQUITY / ETF / BOND / MONEYMARKET, behind an explicit "Refresh" button
+- [ ] **Ticker detail page** — drilldown for a single ticker: metadata, price history, position history
+- [ ] **Multi-page layout** — current tabs (`dcc.Tabs`) all live on one URL; moving to `dash.page_registry` (Dash Pages) would give each tab its own URL for deep-linking and lazy loading. Lower priority since tabs already solve the navigation problem.
 
 **Polish:**
 - [ ] Dark mode toggle
 - [ ] Persist user's dropdown selections across page refreshes via `dcc.Store`
 - [ ] Make the transaction table link back to CLI (e.g. copy sql_key for `a07_add_note`)
+- [ ] Calendar heatmap of daily spending (GitHub-style grid)
+- [ ] Top merchants chart (group by extracted merchant name)
+- [ ] Year-over-year comparison (pick two date ranges, view deltas side-by-side)
+
+**Shipped recently:**
+- [x] **Categories tab** — Plotly treemap + indented text printout of the full category hierarchy with id → parent_id mappings
+- [x] **Multi-filter transaction search** — keyword + date range + category (+descendants) + account + amount min/max (port of CLI `search_05_multi_filter`)
+- [x] **Sankey date selector** — `dcc.DatePickerRange` + quick-set dropdown replaces the period-driven Sankey
+- [x] **Retirement: sliders → number inputs** — 7 `dcc.Input(type="number")` fields, no more silly slider ranges
+- [x] **Per-tab period selectors** — removed the global "Period" dropdown; each tab/section now owns its own period or date controls
+- [x] **Tabbed UI** — 7 tabs (Overview / Spending / Income & Savings / Balances / Retirement / Categories / Transactions), replacing the long-scroll layout
+- [x] **Standardized period dropdowns** — every period selector uses the shared `PERIOD_OPTIONS` list (`3mo / 6mo / 12mo / 24mo / 5yr / All time`); charts that need monthly bins resolve "all time" to the earliest transaction date dynamically
+- [x] Period summary KPIs (income/expenses/delta/count)
+- [x] Largest transactions table
+- [x] Month review (year/month picker + category summary + transactions)
+- [x] Wealth breakdown table
+- [x] Multi-account balance over time (per account + by type stacked area)
+- [x] Single-account balance line chart
+- [x] Raw balance ledger table
+- [x] Simple asset allocation pie (Cash / Retirement / Taxable Investment from DB balances)
+- [x] Retirement Monte Carlo (initially sliders; later switched to number inputs)
 
 ## Known Limitations & TODOs
 
