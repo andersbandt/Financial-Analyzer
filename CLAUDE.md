@@ -340,6 +340,7 @@ The following are good next steps for continued Dash development, roughly in pri
 
 **Medium effort:**
 - [ ] **Live asset allocation pie** — extend the existing simple asset allocation pie with `invh.get_all_active_ticker(live_price=True)` breakdown by EQUITY / ETF / BOND / MONEYMARKET, behind an explicit "Refresh" button
+- [ ] **International vs US diversification** — chart or KPI breakdown showing what % of equity holdings are US-domestic vs international (e.g. VXUS, international ETFs/mutual funds); could use ticker metadata or a manual tag per ticker to classify domestic/international
 - [ ] **Ticker detail page** — drilldown for a single ticker: metadata, price history, position history
 - [ ] **Multi-page layout** — current tabs (`dcc.Tabs`) all live on one URL; moving to `dash.page_registry` (Dash Pages) would give each tab its own URL for deep-linking and lazy loading. Lower priority since tabs already solve the navigation problem.
 

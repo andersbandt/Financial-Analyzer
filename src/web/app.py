@@ -8,7 +8,7 @@ Balances / Retirement / Transactions). The Period dropdown above the tabs
 drives most charts; some tabs have their own local controls.
 """
 
-from dash import Dash, html, dcc, Input, Output, State, dash_table
+from dash import Dash, html, dcc, Input, Output, State, dash_table, ALL, ctx, no_update
 import plotly.graph_objects as go
 
 import categories.categories_helper as cath
@@ -434,6 +434,66 @@ def _categories_tab():
     ])
 
 
+def _build_ticker_type_grid():
+    """
+    Build a CSS-grid layout of ticker → dcc.Dropdown pairs for the type manager.
+    Uses individual dcc.Dropdown components (not DataTable) so changes are reliably
+    captured via pattern-matching State in the save callback.
+    """
+    rows = charts.get_ticker_type_rows()
+    type_options = [{"label": t, "value": t} for t in charts.VALID_ASSET_TYPES]
+
+    row_divs = []
+    for i, row in enumerate(rows):
+        ticker = row["ticker"]
+        current_type = row["asset_type"] or "UNKNOWN"
+        bg = "#fff8ed" if current_type == "UNKNOWN" else ("#fafbfc" if i % 2 == 1 else "#fff")
+        row_divs.append(html.Div(
+            style={
+                "display": "grid",
+                "gridTemplateColumns": "120px 1fr",
+                "alignItems": "center",
+                "gap": "8px",
+                "padding": "4px 8px",
+                "background": bg,
+                "borderBottom": "1px solid #f0f2f5",
+            },
+            children=[
+                html.Span(ticker, style={"fontSize": "13px", "fontWeight": "600",
+                                         "color": "#1a2940"}),
+                dcc.Dropdown(
+                    id={"type": "ticker-type", "ticker": ticker},
+                    options=type_options,
+                    value=current_type,
+                    clearable=False,
+                    style={"fontSize": "13px"},
+                ),
+            ],
+        ))
+
+    header = html.Div(
+        style={
+            "display": "grid",
+            "gridTemplateColumns": "120px 1fr",
+            "gap": "8px",
+            "padding": "4px 8px",
+            "background": "#f8f9fb",
+            "borderBottom": "2px solid #dde2ea",
+            "fontWeight": "600",
+            "fontSize": "12px",
+            "color": "#6b7a90",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.05em",
+        },
+        children=[html.Span("Ticker"), html.Span("Asset Type")],
+    )
+    return html.Div(
+        style={"maxHeight": "320px", "overflowY": "auto", "border": "1px solid #e8ebf0",
+               "borderRadius": "6px"},
+        children=[header] + row_divs,
+    )
+
+
 def _investments_tab():
     btn_style = {
         "padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
@@ -472,31 +532,7 @@ def _investments_tab():
                "immediately reflected in the allocation charts above.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         html.Div(style={**CARD, "marginBottom": "20px"}, children=[
-            dash_table.DataTable(
-                id="inv-type-table",
-                columns=[
-                    {"name": "Ticker",     "id": "ticker",     "editable": False},
-                    {"name": "Asset Type", "id": "asset_type", "editable": True,
-                     "presentation": "dropdown"},
-                ],
-                dropdown={
-                    "asset_type": {
-                        "options": [{"label": t, "value": t} for t in charts.VALID_ASSET_TYPES]
-                    }
-                },
-                data=charts.get_ticker_type_rows(),
-                editable=True,
-                style_cell={"fontSize": "13px", "padding": "6px 12px"},
-                style_header={"fontWeight": "600", "background": "#f8f9fb",
-                               "borderBottom": "2px solid #dde2ea"},
-                style_data={"border": "1px solid #f0f2f5"},
-                style_data_conditional=[
-                    {"if": {"filter_query": '{asset_type} = "UNKNOWN"'},
-                     "backgroundColor": "#fff8ed", "color": "#b45309"},
-                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                ],
-                style_table={"maxHeight": "320px", "overflowY": "auto"},
-            ),
+            _build_ticker_type_grid(),
             html.Div(style={"display": "flex", "gap": "12px", "alignItems": "center",
                             "marginTop": "12px"}, children=[
                 html.Button("Save Types", id="inv-type-save-btn", n_clicks=0,
@@ -863,6 +899,8 @@ def create_app() -> Dash:
     # ── Layout ────────────────────────────────────────────────────────────────
     app.layout = html.Div(style=PAGE, children=[
 
+        dcc.Location(id="url", refresh=False),
+
         html.H1("Financial Dashboard", style={
             "margin": "0 0 4px 0", "fontSize": "28px", "fontWeight": "700", "color": "#1a2940",
         }),
@@ -907,6 +945,31 @@ def create_app() -> Dash:
     ])
 
     # ── Callbacks ─────────────────────────────────────────────────────────────
+
+    _VALID_TABS = {
+        "overview", "spending", "income", "balances", "retirement",
+        "investments", "categories", "transactions",
+    }
+
+    # Bidirectional sync: tab click ↔ URL hash so the browser tab/back-button works.
+    # One combined callback avoids the circular-dependency problem: we use ctx.triggered_id
+    # and no_update to ensure each side only updates the other, never itself.
+    @app.callback(
+        Output("main-tabs", "value"),
+        Output("url", "hash"),
+        Input("url", "hash"),
+        Input("main-tabs", "value"),
+    )
+    def sync_tab_url(url_hash, tab_value):
+        trigger = ctx.triggered_id
+        if trigger == "main-tabs":
+            # User clicked a tab → push new hash, don't change tab value
+            return no_update, f"#{tab_value}"
+        else:
+            # Page load or browser navigation → read hash, don't change URL
+            slug = (url_hash or "").lstrip("#")
+            resolved = slug if slug in _VALID_TABS else "overview"
+            return resolved, no_update
 
     @app.callback(
         Output("kpi-net-worth",    "children"),
@@ -1196,27 +1259,34 @@ def create_app() -> Dash:
     # ── Save ticker type changes ──────────────────────────────────────────────
     @app.callback(
         Output("inv-type-status",  "children"),
-        Output("inv-type-table",   "data"),
         Output("inv-alloc-pie",    "figure", allow_duplicate=True),
         Output("inv-equity-pie",   "figure", allow_duplicate=True),
         Output("inv-ticker-pie",   "figure", allow_duplicate=True),
         Input("inv-type-save-btn", "n_clicks"),
-        State("inv-type-table",    "data"),
+        State({"type": "ticker-type", "ticker": ALL}, "value"),
+        State({"type": "ticker-type", "ticker": ALL}, "id"),
         prevent_initial_call=True,
     )
-    def save_ticker_types(n_clicks, table_data):
+    def save_ticker_types(n_clicks, type_values, type_ids):
         saved = 0
-        for row in (table_data or []):
-            ticker    = (row.get("ticker") or "").strip().upper()
-            new_type  = (row.get("asset_type") or "").strip().upper()
-            if ticker and new_type and new_type != "UNKNOWN":
+        errors = []
+        for dropdown_id, new_type in zip(type_ids, type_values):
+            ticker   = (dropdown_id.get("ticker") or "").strip().upper()
+            new_type = (new_type or "").strip().upper()
+            if not ticker or not new_type:
+                continue
+            try:
                 dbh.ticker_metadata.upsert_ticker_asset_type(ticker, new_type)
                 saved += 1
+            except Exception as e:
+                errors.append(f"{ticker}: {e}")
         invh.refresh_asset_type_cache()
         rows = charts.get_investment_position_rows(live_price=False)
+        status = f"Saved {saved} ticker type{'s' if saved != 1 else ''}."
+        if errors:
+            status += f" ({len(errors)} error(s))"
         return (
-            f"Saved {saved} ticker type{'s' if saved != 1 else ''}.",
-            charts.get_ticker_type_rows(),
+            status,
             charts.build_investment_allocation_pie(rows),
             charts.build_equity_detail_pie(rows),
             charts.build_equity_ticker_pie(rows),

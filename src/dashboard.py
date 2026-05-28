@@ -40,5 +40,5 @@ if __name__ == "__main__":
 
     from web.app import create_app
     app = create_app()
-    print("\n  Financial Dashboard → http://127.0.0.1:8050\n")
+    print("\n  Financial Dashboard -> http://127.0.0.1:8050\n")
     app.run(debug=False, host="127.0.0.1", port=8050)

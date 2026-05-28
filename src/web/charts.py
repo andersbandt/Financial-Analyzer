@@ -840,14 +840,23 @@ def build_investment_allocation_pie(positions: list[dict]) -> go.Figure:
     """
     buckets: dict[str, float] = {}
 
-    # Investment positions (populated when cached or live prices exist)
+    # Investment positions — use market_value when available, cost basis as fallback
+    using_cost_basis = False
     for row in positions:
-        mv = row.get("market_value") or 0
-        if mv <= 0:
-            continue
         raw_type = (row.get("type") or "").upper()
+        mv = row.get("market_value") or 0
+        if mv > 0:
+            value = mv
+        else:
+            avg_cost = row.get("avg_cost") or 0
+            shares   = row.get("shares") or 0
+            value = avg_cost * shares
+            if value > 0:
+                using_cost_basis = True
+        if value <= 0:
+            continue
         label = _ALLOC_GROUP.get(raw_type, "Other")
-        buckets[label] = buckets.get(label, 0) + mv
+        buckets[label] = buckets.get(label, 0) + value
 
     # Always include savings (type=1) and checking (type=2) as Cash
     for acc_id in dbh.account.get_all_account_ids():
@@ -863,7 +872,7 @@ def build_investment_allocation_pie(positions: list[dict]) -> go.Figure:
     values = [buckets[l] for l in labels]
     total = sum(values)
 
-    inv_note = "" if any(r.get("market_value") for r in positions) else " (investments need Refresh)"
+    inv_note = " (cost basis)" if using_cost_basis else ""
 
     fig = go.Figure(go.Pie(
         labels=labels,

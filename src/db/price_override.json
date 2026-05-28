@@ -1,1 +1,29 @@
-{}
+{
+  "VBTLX": {
+    "price": 9.63
+  },
+  "VMFXX": {
+    "price": 1.0
+  },
+  "VIMFX": {
+    "price": 112.83
+  },
+  "BTC-USD": {
+    "price": 73656.15
+  },
+  "TLXNX": {
+    "price": 18.43
+  },
+  "FDRXX": {
+    "price": 1.0
+  },
+  "FXAIX": {
+    "price": 261.65
+  },
+  "PRWAX": {
+    "price": 78.82
+  },
+  "VFIAX": {
+    "price": 695.12
+  }
+}
