@@ -341,7 +341,13 @@ def build_income_vs_expenses(months_prev: int) -> go.Figure:
         income, expenses = _income_expense_split(transactions)
         income_arr.append(income)
         expense_arr.append(expenses)
-        rate_arr.append(((income - expenses) / income * 100) if income > 0 else 0.0)
+        # Use None (line gap) when income is 0 or negligible so a single
+        # low-income month doesn't blow out the secondary-axis scale.
+        if income <= 0:
+            rate_arr.append(None)
+        else:
+            rate = (income - expenses) / income * 100
+            rate_arr.append(max(-200.0, min(100.0, rate)))
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -379,7 +385,8 @@ def build_income_vs_expenses(months_prev: int) -> go.Figure:
         legend=dict(orientation="h", x=0, y=1.08),
     )
     fig.update_yaxes(tickprefix="$", tickformat=",", secondary_y=False)
-    fig.update_yaxes(ticksuffix="%", title_text="Savings Rate", secondary_y=True)
+    fig.update_yaxes(ticksuffix="%", title_text="Savings Rate",
+                     range=[-200, 100], secondary_y=True)
     return fig
 
 
