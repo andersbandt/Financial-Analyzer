@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Financial-Analyzer is a CLI-based personal finance management application built with Python. It loads transaction data from CSV/PDF financial statements, categorizes transactions automatically via keywords or ML, and provides analysis tools for spending history, budgeting, and investment tracking.
+Financial-Analyzer is a personal finance management application with two entry points: a CLI for data loading/categorization and a Dash web dashboard for visualization. It loads transaction data from CSV/PDF financial statements, categorizes transactions automatically via keywords or ML, and provides analysis tools for spending history, budgeting, and investment tracking.
 
 ## Environment Setup
 
@@ -31,6 +31,14 @@ python src/main.py
 The application will:
 - Initialize the SQLite database if it doesn't exist (creates tables, adds seed data)
 - Launch the main menu with 9 tabs for different functionality
+
+### Start the Dashboard
+```bash
+python src/dashboard.py
+# Opens at http://127.0.0.1:8050
+```
+
+The CLI is unchanged — use it for loading data, categorizing transactions, and account management. The dashboard is read-only visualization.
 
 ### Running Tests
 ```bash
@@ -61,17 +69,17 @@ Look for `# tag:hardcode` or `# tag:HARDCODE` comments throughout the codebase t
 
 ```
 Financial Statements (CSV/PDF)
-    ↓
+    |
 Statement Classes (parse raw data)
-    ↓
+    |
 Transaction Objects
-    ↓
+    |
 Ledger (collection of transactions)
-    ↓
+    |
 Categorization (automatic via keywords/ML or manual)
-    ↓
+    |
 SQLite Database (persistence)
-    ↓
+    |
 Analysis & Visualization
 ```
 
@@ -104,18 +112,22 @@ SQLite database defined in `src/db/__init__.py` and documented in `src/db/README
 **Core Tables:**
 - `transactions`: All financial transactions (date, account_id, category_id, amount, description, note)
 - `account`: Account metadata (name, institution, type, balance, retirement status)
+  - Account types: 1=Saving, 2=Checking, 3=Credit, 4=Investment
 - `category`: Hierarchical categories (category_id, parent_id, name)
 - `keywords`: Category keywords for auto-classification
 - `budget`: Category spending/savings limits
 - `balance`: Historical account balance snapshots
-- `investment`: Investment-specific transactions (ticker, shares, value)
+- `investment`: Investment-specific transactions (ticker, shares, value, trans_type)
+- `ticker_metadata`: Ticker asset type cache (ticker, asset_type, name, last_updated)
+  - asset_type values: EQUITY, ETF, MUTUALFUND, BOND, MONEYMARKET, CRYPTOCURRENCY, UNKNOWN
+  - Updated via CLI Investments tab or dashboard Ticker Type Manager
 
 **Helper Tables:**
 - `file_mapping`: Maps file search strings to account_ids for automatic file-to-account matching
 - `file_history`: Tracks loaded statement files to prevent duplicates
 - `goals`: Account-specific savings goals
 
-Access via helper modules in `src/db/helpers/` (transactions.py, account.py, category.py, etc.)
+Access via helper modules in `src/db/helpers/` (transactions.py, account.py, category.py, investments.py, ticker_metadata.py, etc.)
 
 ### CLI Structure
 
@@ -188,6 +200,30 @@ Three categorization methods (in `Ledger.categorizeStatementAutomatic()`, `categ
 - Category analysis respects parent-child relationships (defined in `category.parent_id`)
 - Investment data pulls from separate `investment` table, not `transactions`
 
+### Investment Helper (`src/analysis/investment_helper.py`)
+
+Key concepts for working with investment data:
+
+**Price resolution order** (both `InvestmentTransaction.__init__` and `get_ticker_price()`):
+1. Manual override (`src/db/price_override.json`) — user-set, highest priority
+2. In-memory price cache (`_PRICE_CACHE`) — populated from `price_cache.json` on first use
+3. Live API fetch (Finnhub → yfinance → yahoo_fin → yfinance history) — only when `live_price=True`
+
+**Asset type resolution order** (`InvestmentTransaction.__init__` with `live_price=False`):
+1. `_ASSET_TYPE_CACHE` (in-memory, cleared by `refresh_asset_type_cache()`)
+2. `dbh.ticker_metadata.get_ticker_asset_type(ticker)` (DB)
+3. Falls back to `"UNKNOWN"`
+
+**Key functions:**
+- `get_all_active_ticker(live_price=False)` — returns net-positive-share positions as `InvestmentTransaction` objects
+- `refresh_asset_type_cache()` — clears `_ASSET_TYPE_CACHE` so next call re-reads from DB
+- `set_manual_price_override(ticker, price)` — writes to `price_override.json`
+- `get_ticker_cost_basis(account_id, ticker)` in `db/helpers/investments.py` — returns `(avg_cost_per_share, first_buy_date)` from BUY transactions
+
+**Caching files** (in `src/db/`, gitignored):
+- `price_cache.json` — persists fetched prices between restarts; format `{ticker: {price, date}}`
+- `price_override.json` — manual price overrides; format `{ticker: {price}}`
+
 ### Logging
 
 Uses `loguru` library with colored module-based logging:
@@ -229,6 +265,10 @@ dbh.account.get_all_accounts()
 # Categories
 dbh.category.get_category_name_from_id(category_id)
 cath.category_id_to_name(category_id)  # From categories_helper
+
+# Investments
+dbh.ticker_metadata.upsert_ticker_asset_type(ticker, asset_type)  # safe insert-or-update
+dbh.investments.get_ticker_cost_basis(account_id, ticker)  # returns (avg_cost, first_buy_date)
 ```
 
 ### CLI Interaction Helpers
@@ -240,44 +280,56 @@ Located in `src/cli/cli_helper.py`:
 
 ## Dash Web Dashboard
 
-A graphical dashboard lives alongside the CLI as a second entry point.
-
-### Running the Dashboard
-```bash
-python src/dashboard.py
-# Opens at http://127.0.0.1:8050
-```
-
-The CLI (`python src/main.py`) is unchanged — use it for loading data, categorizing transactions, and account management. The dashboard is read-only visualization.
-
 ### File Structure
 ```
 src/
-  dashboard.py        ← entry point (db_init + app.run)
+  dashboard.py        <- entry point (db_init + app.run)
   web/
     __init__.py
-    app.py            ← Dash layout, callbacks, create_app() — tab-based UI
-    charts.py         ← all Plotly figure builders + data helpers
+    app.py            <- Dash layout, callbacks, create_app() -- tab-based UI
+    charts.py         <- all Plotly figure builders + data helpers
 ```
 
 ### UI Structure (Tabs)
-The dashboard is organized into 7 tabs via `dcc.Tabs`:
+The dashboard is organized into 8 tabs via `dcc.Tabs`. Each tab has a persistent URL (`/#tabname`) — navigating to `http://127.0.0.1:8050/#investments` opens directly to the Investments tab and the selection survives page refresh.
 
-1. **Overview** — Period selector + KPI cards (net worth, this month's spend, savings rate) + period summary KPIs (income/expenses/Δ/count) + spending pie + monthly stacked bar
+1. **Overview** — Period selector + KPI cards (net worth, this month's spend, savings rate) + period summary KPIs (income/expenses/delta/count) + spending pie + monthly stacked bar
 2. **Spending** — Month-over-month vs baseline, category drill-down, Sankey flow (with its own `dcc.DatePickerRange` + quick-set dropdown)
-3. **Income & Savings** — Period selector + income vs expenses grouped bar with savings rate line
-4. **Balances** — Asset allocation pie + wealth breakdown table, balance over time (by-account + by-type, with its own days/bins controls), single account day-by-day, recorded balance ledger
+3. **Income & Savings** — Period selector + income vs expenses grouped bar with savings rate line + net savings bars with cumulative line
+4. **Balances** — Simple asset allocation pie + wealth breakdown table, balance over time (by-account + by-type, with its own days/bins controls), single account day-by-day, recorded balance ledger
 5. **Retirement** — Monte Carlo with 7 number-input fields (current age, retirement age, death age, return mean/stddev, inflation mean/stddev) + "Run simulation" button (uses `State`)
-6. **Categories** — Plotly treemap of the category hierarchy + indented text printout listing every category with its `id → parent_id` mapping and keyword list
-7. **Transactions** — Multi-filter search (keyword + date range + category +/- descendants + account + amount min/max), largest transactions, month review
+6. **Investments** — Three allocation pies (high-level, equity breakdown, per-ticker) + Ticker Type Manager + Manual Price Overrides + Portfolio Positions table + Investment Transactions table
+7. **Categories** — Plotly treemap of the category hierarchy + indented text printout listing every category with its `id → parent_id` mapping and keyword list
+8. **Transactions** — Multi-filter search (keyword + date range + category +/- descendants + account + amount min/max), largest transactions, month review
 
-Each tab's content is built by a `_*_tab()` helper function inside `app.py` to keep the layout block readable. **There is no global period selector** — each tab/section owns its own period or date controls. This is intentional so that switching tabs doesn't unexpectedly change the scope of the chart in front of you.
+Each tab's content is built by a `_*_tab()` helper function inside `app.py`. **There is no global period selector** — each tab/section owns its own period or date controls.
+
+### Investments Tab Details
+
+The Investments tab has several distinct sections:
+
+**Asset Allocation Pies** (three charts):
+- *High-level*: Stocks / Bonds / Cash / Crypto. Cash always includes savings+checking DB balances. Investment positions use `market_value` when available (live or cached price), falling back to `avg_cost * shares` so all positions show even without a price refresh.
+- *Equity breakdown*: Splits equity-type holdings into Individual Stocks / ETFs / Mutual Funds. Same market_value → cost-basis fallback.
+- *Per-ticker*: One slice per ticker with a distinct qualitative color palette. Same fallback logic.
+
+**Ticker Type Manager**:
+- Grid of `dcc.Dropdown` components (one per ticker) — **NOT** a DataTable. This is intentional: Dash 4's DataTable `presentation: "dropdown"` cells do not reliably update the `data` prop on selection.
+- Save callback uses `State({"type": "ticker-type", "ticker": ALL}, "value")` pattern-matching to collect all dropdown values.
+- On save: calls `dbh.ticker_metadata.upsert_ticker_asset_type()` for each ticker, then calls `invh.refresh_asset_type_cache()` and rebuilds the three allocation pies.
+- UNKNOWN rows are highlighted with an amber background.
+
+**Manual Price Overrides**: Ticker + price inputs; saved to `src/db/price_override.json`. Override takes highest priority in price resolution.
+
+**Portfolio Positions table**: Columns include Avg Cost, Current Price, Market Value, Gain%, CAGR, Price Source. Gain% and CAGR are computed from `dbh.investments.get_ticker_cost_basis()` and the first buy date. `price_source` shows whether price came from live API, cache, override, or cost basis fallback.
+
+**Investment Transactions table**: All raw investment records, filterable by type (BUY / SELL / DIV checklist).
 
 ### Standardized Period Options
 All period dropdowns share a single `PERIOD_OPTIONS` list:
 `3 months / 6 months / 12 months / 24 months / 5 years / All time`
 
-The value `0` is the "All time" sentinel. In `charts.py`, `_resolve_months_prev(0)` walks back to the earliest transaction date (cached per session via `_earliest_transaction_date()`); `_period_transactions(0)` calls `recall_transaction_data()` with no date filter. The balance chart uses `BALANCE_DAYS_OPTIONS` (`180d / 1yr / 2yr / 5yr / All time`) for the same reason — `_resolve_balance_days(0)` walks back to the earliest balance snapshot.
+The value `0` is the "All time" sentinel. In `charts.py`, `_resolve_months_prev(0)` walks back to the earliest transaction date (cached per session via `_earliest_transaction_date()`); `_period_transactions(0)` calls `recall_transaction_data()` with no date filter. The balance chart uses `BALANCE_DAYS_OPTIONS` (`180d / 1yr / 2yr / 5yr / All time`) for the same reason.
 
 ### Transaction Search Filters
 The Transactions tab's search supports the same filter dimensions as the CLI's `search_05_multi_filter()` in `analysis.transaction_helper`:
@@ -288,15 +340,13 @@ The Transactions tab's search supports the same filter dimensions as the CLI's `
 - Account dropdown
 - Amount min/max number inputs
 
-`charts.get_transaction_rows()` accepts every filter as a keyword arg and applies them progressively. The result count and active-filter summary is shown below the controls.
+`charts.get_transaction_rows()` accepts every filter as a keyword arg and applies them progressively.
 
 ### Sankey Date Selector
-The Sankey diagram is the one chart that's date-anchored rather than period-anchored. Controls:
+The Sankey diagram is date-anchored rather than period-anchored:
 - `dcc.DatePickerRange` — explicit start and end dates (defaults to last 12 months on page load)
 - Quick-set dropdown — picks a relative window (3mo / 6mo / 12mo / 24mo / 5y / YTD / All time) and updates the date pickers via a `sankey_quickset` callback
 - Top-level vs Hierarchical view radio
-
-`charts.build_sankey(date_start, date_end, view_mode)` takes the dates directly. If either is None, falls back to all-time.
 
 ### Current Charts
 - **KPI cards**: Net worth (recorded DB balances), this month's spending, period savings rate
@@ -305,84 +355,85 @@ The Sankey diagram is the one chart that's date-anchored rather than period-anch
 - **Monthly stacked bar**: Spending per category per month
 - **Month-over-month comparison**: % delta vs N-month baseline average
 - **Income vs expenses**: Grouped bar (income/expenses) + savings rate line (secondary axis)
-- **Asset allocation pie**: Simple bucketed view (Cash / Retirement / Taxable Investment) from recorded DB balances
+- **Net savings**: Monthly net bars + cumulative savings line (secondary axis)
+- **Asset allocation pie (Balances tab)**: Simple bucketed view (Cash / Retirement / Taxable Investment) from recorded DB balances — no live price fetch
+- **Investment allocation pies (Investments tab)**: Three charts — high-level (Stocks/Bonds/Cash/Crypto), equity type breakdown (Individual Stocks/ETFs/Mutual Funds), per-ticker; all use market_value with cost-basis fallback
 - **Wealth breakdown table**: Per-account balance + type + last-updated date (no live price fetch)
 - **Balance over time — by account**: Stacked area of per-account balances over N time bins
 - **Balance over time — by type**: Stacked area aggregated by account type (Saving / Checking / Credit / Investment)
 - **Single account balance**: Day-by-day modeled balance for one selected account (falls back to raw snapshots)
 - **Balance ledger table**: All recorded balance snapshots (filterable to one account via the dropdown)
-- **Retirement Monte Carlo**: Histogram of simulated retirement balances with number-input fields for age, return mean/stddev, inflation mean/stddev, plus p10/p50/p90 KPI cards for projected balance & monthly withdrawal
+- **Retirement Monte Carlo**: Histogram of simulated retirement balances with p10/p50/p90 KPI cards
 - **Category drill-down**: Stacked bar of any category's subcategories over time
 - **Category treemap + tree printout**: Hierarchical view of every category with id → parent_id mapping and keyword counts
-- **Sankey diagram**: Spending flow — top-level or hierarchical view, with explicit `dcc.DatePickerRange` + quick-set dropdown
+- **Sankey diagram**: Spending flow — top-level or hierarchical view
 - **Multi-filter transaction search**: keyword + period + date range + category (+ descendants) + account + amount min/max
-- **Largest transactions table**: Top N by absolute value within a configurable window (or all time)
+- **Portfolio positions table**: Active holdings with avg cost, gain%, CAGR, price source
+- **Investment transactions table**: Raw investment records with BUY/SELL/DIV filter
+- **Largest transactions table**: Top N by absolute value within a configurable window
 - **Month review**: Year/month picker with a transactions table + category-spending summary side-by-side
 
 ### Architecture Notes
 - All charts call the existing `src/analysis/` layer unchanged — no data logic in `web/`
 - `charts.py` has a per-session `_cat_name_cache` dict, plus `_earliest_txn_date` and `_earliest_balance_date` caches so "All time" lookups don't re-scan the full DB every callback
-- Every chart builder that takes a `months_prev` accepts `0` as the "all time" sentinel via `_period_transactions(0)` / `_resolve_months_prev(0)` / `_period_label(0)`
-- Net worth KPI deliberately uses `dbh.balance.get_recent_balance()` directly (not `balh.get_account_balance`) to skip live investment price fetches on page load
-- Asset allocation pie + wealth breakdown table follow the same pattern — recorded balances only, no live fetches
-- Retirement Monte Carlo lives behind an explicit "Run simulation" button (uses `State`, not `Input`, for the number-input field values) so users can tune parameters without retriggering 5k+ simulations on every keystroke
-- Tabs are rendered eagerly (content lives inside each `dcc.Tab`'s children rather than swapped in via callback) — this means callbacks for all tabs fire on initial page load, which is fine for our DB-backed read-only use case
+- Every chart builder that takes a `months_prev` accepts `0` as the "all time" sentinel
+- Net worth KPI and Balances-tab allocation pie deliberately use `dbh.balance.get_recent_balance()` directly (not `balh.get_account_balance`) to skip live investment price fetches on page load
+- Retirement Monte Carlo lives behind an explicit "Run simulation" button (uses `State`, not `Input`) so users can tune parameters without retriggering 5k+ simulations on every keystroke
+- Tabs are rendered eagerly (content lives inside each `dcc.Tab`'s children) — all tab callbacks fire on initial page load, which is acceptable for this read-only DB-backed app
+- URL routing: `dcc.Location` + a single `sync_tab_url` callback keeps `main-tabs.value` and `url.hash` in sync. Uses `ctx.triggered_id` + `no_update` to prevent circular callbacks
 - `dash` added to `requirements.txt`
 
-### Dashboard TODO
-The following are good next steps for continued Dash development, roughly in priority order:
+### Dash 4 Gotchas
+Running Dash 4.0.0 — several breaking changes from 2.x to be aware of:
 
-**High value, straightforward:**
-- [x] **Net savings line chart** — monthly `income - expenses` bars + cumulative line (secondary axis), in Income & Savings tab
-- [x] **Investments summary table** — per-account/ticker positions in new Investments tab; live prices behind "Refresh (Live Prices)" button (cached per session)
-- [x] **Investment transactions table** — in Investments tab; columns DATE / ACCOUNT / TICKER / TYPE / SHARES / STRIKE / VALUE / NOTE; filter by BUY/SELL/DIV checklist
-- [x] **Expand local-DB balance-over-time (account-level)** — added multi-select account filter and "Investment accounts only" toggle to the Balances tab's by-account chart
+- **Duplicate outputs require `allow_duplicate=True`**: If two callbacks write to the same `Output`, Dash 4 will silently drop ALL callbacks (not just the duplicate) unless you add `allow_duplicate=True` to the `Output(...)` calls on the secondary callback. This is a silent failure that's very hard to debug.
+- **DataTable `presentation: "dropdown"` broken in Dash 4**: Selecting from a dropdown cell does not update the `data` prop. Do not use this pattern. Use individual `dcc.Dropdown` components with pattern-matching IDs (`{"type": "...", "key": value}`) and `State(..., ALL, ...)` in callbacks instead.
+- **`dash_table` is now `dash.dash_table`**: No separate package — import `dash_table` from `dash` directly: `from dash import dash_table`.
+
+### Dashboard TODO
+Roughly in priority order:
 
 **Medium effort:**
-- [ ] **Live asset allocation pie** — extend the existing simple asset allocation pie with `invh.get_all_active_ticker(live_price=True)` breakdown by EQUITY / ETF / BOND / MONEYMARKET, behind an explicit "Refresh" button
-- [ ] **International vs US diversification** — chart or KPI breakdown showing what % of equity holdings are US-domestic vs international (e.g. VXUS, international ETFs/mutual funds); could use ticker metadata or a manual tag per ticker to classify domestic/international
-- [ ] **Ticker detail page** — drilldown for a single ticker: metadata, price history, position history
-- [ ] **Multi-page layout** — current tabs (`dcc.Tabs`) all live on one URL; moving to `dash.page_registry` (Dash Pages) would give each tab its own URL for deep-linking and lazy loading. Lower priority since tabs already solve the navigation problem.
+- [ ] **International vs US diversification** — chart or KPI showing % of equity holdings that are US-domestic vs international (e.g. VXUS); would need a domestic/international tag per ticker in `ticker_metadata` or a manual classification
+- [ ] **Ticker detail page** — drilldown for a single ticker: metadata, price history, position history over time
+- [ ] **Live asset allocation with Refresh** — hook the Investments tab allocation pies to a "Refresh (Live Prices)" button so clicking Refresh updates the pies with live data (currently they always use cached/cost-basis)
 
 **Polish:**
 - [ ] Dark mode toggle
-- [ ] Persist user's dropdown selections across page refreshes via `dcc.Store`
+- [ ] Persist period/dropdown selections across page refreshes via `dcc.Store` (tab selection is already persisted via URL hash; this is for per-tab controls like the period dropdown)
 - [ ] Make the transaction table link back to CLI (e.g. copy sql_key for `a07_add_note`)
 - [ ] Calendar heatmap of daily spending (GitHub-style grid)
 - [ ] Top merchants chart (group by extracted merchant name)
 - [ ] Year-over-year comparison (pick two date ranges, view deltas side-by-side)
 
-**Shipped recently:**
+**Shipped (recent sessions):**
+- [x] **URL tab routing** — `dcc.Location` + `sync_tab_url` callback; each tab has a hash URL (`/#investments` etc.) that persists on refresh and works with browser back/forward
+- [x] **Ticker Type Manager** — per-ticker `dcc.Dropdown` grid (replaced broken DataTable dropdown); Save button uses pattern-matching `ALL` callback to reliably persist types to `ticker_metadata`
+- [x] **Asset allocation consistency** — all three investment pies now use the same valuation logic (market_value when available, avg_cost * shares fallback), so totals match across charts
+- [x] **Investment allocation pies** — three charts in Investments tab: high-level (Stocks/Bonds/Cash/Crypto), equity type breakdown, per-ticker with distinct colors
+- [x] **Gain% and CAGR columns** — computed from `get_ticker_cost_basis()` (actual buy history), not from the position's recorded value
+- [x] **Manual price overrides** — `price_override.json` + UI in Investments tab; overrides take priority over cached/live prices
+- [x] **Session price caching** — `price_cache.json` persists fetched prices across restarts; page load shows cached prices without a Refresh click
 - [x] **Net savings line chart** — monthly net bars + cumulative line in Income & Savings tab
-- [x] **Investments tab** — positions table (live prices behind Refresh button) + all transactions with BUY/SELL/DIV type filter
-- [x] **Balance tab account filter** — multi-select account picker + "Investment accounts only" toggle for the by-account stacked area chart
-- [x] **Categories tab** — Plotly treemap + indented text printout of the full category hierarchy with id → parent_id mappings
-- [x] **Multi-filter transaction search** — keyword + date range + category (+descendants) + account + amount min/max (port of CLI `search_05_multi_filter`)
-- [x] **Sankey date selector** — `dcc.DatePickerRange` + quick-set dropdown replaces the period-driven Sankey
-- [x] **Retirement: sliders → number inputs** — 7 `dcc.Input(type="number")` fields, no more silly slider ranges
-- [x] **Per-tab period selectors** — removed the global "Period" dropdown; each tab/section now owns its own period or date controls
-- [x] **Tabbed UI** — 7 tabs (Overview / Spending / Income & Savings / Balances / Retirement / Categories / Transactions), replacing the long-scroll layout
-- [x] **Standardized period dropdowns** — every period selector uses the shared `PERIOD_OPTIONS` list (`3mo / 6mo / 12mo / 24mo / 5yr / All time`); charts that need monthly bins resolve "all time" to the earliest transaction date dynamically
-- [x] Period summary KPIs (income/expenses/delta/count)
-- [x] Largest transactions table
-- [x] Month review (year/month picker + category summary + transactions)
-- [x] Wealth breakdown table
-- [x] Multi-account balance over time (per account + by type stacked area)
-- [x] Single-account balance line chart
-- [x] Raw balance ledger table
-- [x] Simple asset allocation pie (Cash / Retirement / Taxable Investment from DB balances)
-- [x] Retirement Monte Carlo (initially sliders; later switched to number inputs)
+- [x] **Investments tab** — positions table + all transactions with BUY/SELL/DIV type filter
+- [x] **Balance tab account filter** — multi-select account picker + "Investment accounts only" toggle
+- [x] **Categories tab** — Plotly treemap + indented text printout of category hierarchy
+- [x] **Multi-filter transaction search** — port of CLI `search_05_multi_filter`
+- [x] **Sankey date selector** — `dcc.DatePickerRange` + quick-set dropdown
+- [x] **Per-tab period selectors** — removed global "Period" dropdown
+- [x] **Retirement: sliders → number inputs**
+- [x] **Tabbed UI** — 8 tabs replacing long-scroll layout
+- [x] **Standardized period dropdowns** — shared `PERIOD_OPTIONS` list
 
 ## Known Limitations & TODOs
 
-- **Categories tab broken**: The category tree text printout (`get_category_tree_text` in `web/charts.py`) and likely the treemap still crash or render incorrectly. Root cause is the category hierarchy data has edge cases (e.g. `id=0` "NA" placeholder, self-referential `parent_id`) that break the tree-walking logic. Needs a more robust hierarchy builder.
-- Hardcoded file paths and account mappings (see tags in code)
-- ML categorization model not actively used (commented out in some flows)
-- Test coverage is minimal
-- No API integration (Plaid, bank APIs) - all data is manually downloaded CSV/PDF
-- Some duplicate prevention logic exists but is not foolproof
-- Investment tracking is basic compared to transaction tracking
-- **CLI command REPL (future)**: Replace or augment top-level arrow-key menu with a typed command prompt (`load`, `search`, `balance`, etc.) backed by `prompt_toolkit` autocomplete. Shallow version — commands dispatch into existing submenus — is low effort. Current arrow-key menus are fine for now.
+- **Categories tab partially broken**: The category tree text printout (`get_category_tree_text` in `web/charts.py`) can still render incorrectly for some edge cases. The `id=0` "NA" placeholder category (with `parent_id=0`, self-referential) is now filtered out before tree-walking, which fixed the RecursionError, but the overall hierarchy rendering may still have issues with other edge cases.
+- **Hardcoded file paths and account mappings**: See `# tag:hardcode` comments throughout; notably in `db/__init__.py`, `cli/cli_main.py`, `tools/load_helper.py`, and `analysis/investment_helper.py`
+- **ML categorization model not actively used**: Commented out in some flows; ~70% accuracy on 60-class classification
+- **Test coverage is minimal**: `tests/tester.py` is primarily for experimentation
+- **No API integration**: All data is manually downloaded CSV/PDF (no Plaid, no bank APIs)
+- **Duplicate prevention not foolproof**: Some duplicate transactions may slip through
+- **CLI command REPL (future)**: Replace or augment top-level arrow-key menu with a typed command prompt (`load`, `search`, `balance`, etc.) backed by `prompt_toolkit` autocomplete
 
 ## ML Model Improvements (Future Work)
 
@@ -411,7 +462,6 @@ Current ML model (`src/analysis.py` + `src/analysis/transaction_classifier.py`) 
 **4. Alternative Models**
 - Try Random Forest or XGBoost (often better than LogisticRegression for tabular data)
 - Consider ensemble methods combining multiple models
-- Experiment with deep learning (transformers) if dataset grows significantly
 
 **5. Feature Engineering**
 - Extract merchant names from descriptions (regex patterns)
@@ -422,5 +472,3 @@ Current ML model (`src/analysis.py` + `src/analysis/transaction_classifier.py`) 
 - Text: TF-IDF on transaction descriptions (trigrams, 3000 features)
 - Numeric: value, AccountType, Month, Day, DayOfWeek, IsWeekend, AmountBucket
 - Class balancing enabled (`class_weight='balanced'`)
-
-See `/tmp/claude.../scratchpad/ML_IMPROVEMENTS_SUMMARY.md` for detailed recent improvements.
