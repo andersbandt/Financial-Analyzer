@@ -427,7 +427,7 @@ Roughly in priority order:
 
 ## Known Limitations & TODOs
 
-- **Categories tab partially broken**: The category tree text printout (`get_category_tree_text` in `web/charts.py`) can still render incorrectly for some edge cases. The `id=0` "NA" placeholder category (with `parent_id=0`, self-referential) is now filtered out before tree-walking, which fixed the RecursionError, but the overall hierarchy rendering may still have issues with other edge cases.
+- **Categories tab full tree printout is dense**: The treemap and category hierarchy work correctly. The `id=0` "NA" placeholder fix (filtered before tree-walking) resolved the prior RecursionError. The full tree text printout is functional but visually information-dense — cosmetic cleanup is a nice-to-have, not a bug.
 - **Hardcoded file paths and account mappings**: See `# tag:hardcode` comments throughout; notably in `db/__init__.py`, `cli/cli_main.py`, `tools/load_helper.py`, and `analysis/investment_helper.py`
 - **ML categorization model not actively used**: Commented out in some flows; ~70% accuracy on 60-class classification
 - **Test coverage is minimal**: `tests/tester.py` is primarily for experimentation
