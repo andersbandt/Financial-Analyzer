@@ -173,27 +173,6 @@ def _labeled(label_text, control):
 
 # ─── Tab content builders ─────────────────────────────────────────────────────
 
-def _overview_tab():
-    return html.Div(style=TAB_CONTENT_STYLE, children=[
-        _control_bar(
-            _labeled("Period", _dropdown("dd-overview-period", PERIOD_OPTIONS, 6, width="180px")),
-        ),
-        html.Div(style=ROW, children=[
-            _kpi_card("kpi-net-worth",    "Net Worth (recorded balances)"),
-            _kpi_card("kpi-monthly-spend","This Month's Spending", sub=""),
-            _kpi_card("kpi-savings-rate", "Savings Rate (period)"),
-        ]),
-        html.Div(style=ROW, children=[
-            _kpi_card("kpi-period-income",   "Income (period)"),
-            _kpi_card("kpi-period-expenses", "Expenses (period)"),
-            _kpi_card("kpi-period-delta",    "Net Δ (income − expenses)"),
-            _kpi_card("kpi-period-txns",     "Transaction Count"),
-        ]),
-        html.Div(style=ROW, children=[
-            _graph("chart-pie"),
-            _graph("chart-monthly-bar", flex="2 1 0"),
-        ]),
-    ])
 
 
 def _spending_tab(category_options):
@@ -202,6 +181,17 @@ def _spending_tab(category_options):
     sankey_start = dateh.get_date_previous(365)
 
     return html.Div(style=TAB_CONTENT_STYLE, children=[
+
+        # ── Spending summary ─────────────────────────────────────────────────
+        _control_bar(
+            _labeled("Period", _dropdown("dd-spending-period", PERIOD_OPTIONS, 6, width="180px")),
+        ),
+        html.Div(style=ROW, children=[
+            _kpi_card("kpi-monthly-spend", "This Month's Spending", sub=""),
+            _graph("chart-pie"),
+            _graph("chart-monthly-bar", flex="2 1 0"),
+        ]),
+
         # Month-over-month vs baseline
         html.Div("Month-over-month vs baseline average", style=SECTION_HEADER),
         _control_bar(
@@ -262,6 +252,13 @@ def _income_tab():
         _control_bar(
             _labeled("Period", _dropdown("dd-income-period", PERIOD_OPTIONS, 12, width="180px")),
         ),
+        html.Div(style=ROW, children=[
+            _kpi_card("kpi-savings-rate",    "Savings Rate"),
+            _kpi_card("kpi-period-income",   "Income"),
+            _kpi_card("kpi-period-expenses", "Expenses"),
+            _kpi_card("kpi-period-delta",    "Net (income − expenses)"),
+            _kpi_card("kpi-period-txns",     "Transaction Count"),
+        ]),
         html.Div(style=ROW, children=[_graph("chart-income-expenses")]),
         html.Div("Net savings per month", style=SECTION_HEADER),
         html.Div(style=ROW, children=[_graph("chart-net-savings")]),
@@ -270,6 +267,9 @@ def _income_tab():
 
 def _wealth_tab(account_options):
     return html.Div(style=TAB_CONTENT_STYLE, children=[
+        html.Div(style=ROW, children=[
+            _kpi_card("kpi-net-worth", "Net Worth (recorded balances)"),
+        ]),
         # Asset allocation + wealth breakdown
         html.Div("Asset allocation & current balances", style=SECTION_HEADER),
         html.Div(style=ROW, children=[
@@ -955,12 +955,9 @@ def create_app() -> Dash:
 
         # ── Tabs ──────────────────────────────────────────────────────────────
         dcc.Tabs(
-            id="main-tabs", value="overview",
+            id="main-tabs", value="spending",
             parent_style=TABS_PARENT_STYLE,
             children=[
-                dcc.Tab(label="Overview", value="overview",
-                        style=TAB_STYLE, selected_style=TAB_SELECTED_STYLE,
-                        children=[_overview_tab()]),
                 dcc.Tab(label="Spending", value="spending",
                         style=TAB_STYLE, selected_style=TAB_SELECTED_STYLE,
                         children=[_spending_tab(category_options)]),
@@ -991,7 +988,7 @@ def create_app() -> Dash:
     # ── Callbacks ─────────────────────────────────────────────────────────────
 
     _VALID_TABS = {
-        "overview", "spending", "income", "balances", "retirement",
+        "spending", "income", "balances", "retirement",
         "investments", "categories", "transactions",
     }
 
@@ -1012,32 +1009,35 @@ def create_app() -> Dash:
         else:
             # Page load or browser navigation → read hash, don't change URL
             slug = (url_hash or "").lstrip("#")
-            resolved = slug if slug in _VALID_TABS else "overview"
+            resolved = slug if slug in _VALID_TABS else "spending"
             return resolved, no_update
 
+    # Net Worth: static, triggered by tab load (no period dependency)
     @app.callback(
-        Output("kpi-net-worth",    "children"),
-        Output("kpi-monthly-spend","children"),
-        Output("kpi-monthly-spend-sub", "children"),
-        Output("kpi-savings-rate", "children"),
-        Input("dd-overview-period", "value"),
+        Output("kpi-net-worth", "children"),
+        Input("main-tabs",      "value"),
     )
-    def update_kpis(months_prev):
+    def update_net_worth(_tab):
+        kpis = charts.compute_kpis(0)
+        return f"${kpis['net_worth']:,.0f}"
+
+    # Spending KPIs + charts — driven by the Spending tab's own period selector
+    @app.callback(
+        Output("kpi-monthly-spend",     "children"),
+        Output("kpi-monthly-spend-sub", "children"),
+        Output("chart-pie",             "figure"),
+        Output("chart-monthly-bar",     "figure"),
+        Input("dd-spending-period",     "value"),
+    )
+    def update_spending(months_prev):
         kpis = charts.compute_kpis(months_prev)
+        pie  = charts.build_spending_pie(months_prev)
+        bar  = charts.build_monthly_bar(months_prev)
         return (
-            f"${kpis['net_worth']:,.0f}",
             f"${kpis['monthly_spend']:,.0f}",
             kpis["period_label"],
-            f"{kpis['savings_rate']:.1f}%",
+            pie, bar,
         )
-
-    @app.callback(
-        Output("chart-pie",        "figure"),
-        Output("chart-monthly-bar","figure"),
-        Input("dd-overview-period", "value"),
-    )
-    def update_spending_charts(months_prev):
-        return charts.build_spending_pie(months_prev), charts.build_monthly_bar(months_prev)
 
     @app.callback(
         Output("chart-mom", "figure"),
@@ -1137,21 +1137,24 @@ def create_app() -> Dash:
                        f"  ·  filters: {' · '.join(active) if active else '(none)'}")
         return rows, count_label
 
-    # ── Period summary KPIs (income / expenses / delta / count) ──────────────
+    # ── Income & Savings KPIs — driven by dd-income-period ───────────────────
     @app.callback(
-        Output("kpi-period-income",   "children"),
-        Output("kpi-period-expenses", "children"),
-        Output("kpi-period-delta",    "children"),
-        Output("kpi-period-txns",     "children"),
+        Output("kpi-savings-rate",        "children"),
+        Output("kpi-period-income",       "children"),
+        Output("kpi-period-expenses",     "children"),
+        Output("kpi-period-delta",        "children"),
+        Output("kpi-period-txns",         "children"),
         Output("kpi-period-income-sub",   "children"),
         Output("kpi-period-expenses-sub", "children"),
         Output("kpi-period-delta-sub",    "children"),
-        Input("dd-overview-period", "value"),
+        Input("dd-income-period", "value"),
     )
-    def update_period_summary(months_prev):
-        s = charts.compute_period_summary(months_prev)
-        rng = f"{s['date_start']} → {s['date_end']}"
+    def update_income_kpis(months_prev):
+        kpis = charts.compute_kpis(months_prev)
+        s    = charts.compute_period_summary(months_prev)
+        rng  = f"{s['date_start']} -> {s['date_end']}"
         return (
+            f"{kpis['savings_rate']:.1f}%",
             f"${s['income']:,.0f}",
             f"${s['expenses']:,.0f}",
             f"${s['delta']:,.0f}",
