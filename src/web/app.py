@@ -261,6 +261,8 @@ def _income_tab():
             _labeled("Period", _dropdown("dd-income-period", PERIOD_OPTIONS, 12, width="180px")),
         ),
         html.Div(style=ROW, children=[_graph("chart-income-expenses")]),
+        html.Div("Net savings per month", style=SECTION_HEADER),
+        html.Div(style=ROW, children=[_graph("chart-net-savings")]),
     ])
 
 
@@ -300,6 +302,26 @@ def _wealth_tab(account_options):
                 {"label": "8",  "value": 8},
                 {"label": "12", "value": 12},
             ], 5)),
+            _labeled("Account filter",
+                dcc.Dropdown(
+                    id="dd-balance-account-filter",
+                    options=account_options,
+                    value=None,
+                    multi=True,
+                    placeholder="All accounts…",
+                    clearable=True,
+                    style={"width": "360px", "minWidth": "200px"},
+                ),
+            ),
+            _labeled("",
+                dcc.Checklist(
+                    id="chk-balance-portfolio-only",
+                    options=[{"label": "  Investment accounts only", "value": "portfolio"}],
+                    value=[],
+                    inputStyle={"marginRight": "6px"},
+                    labelStyle={"fontSize": "14px"},
+                ),
+            ),
         ),
         html.Div(style=ROW, children=[_graph("chart-balance-by-account")]),
         html.Div(style=ROW, children=[_graph("chart-balance-by-type")]),
@@ -404,6 +426,118 @@ def _categories_tab():
                     "whiteSpace": "pre",
                     "overflowX": "auto",
                 },
+            ),
+        ]),
+    ])
+
+
+def _investments_tab():
+    btn_style = {
+        "padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+        "background": "#1a2940", "color": "#fff", "border": "none",
+        "borderRadius": "6px", "cursor": "pointer",
+    }
+    return html.Div(style=TAB_CONTENT_STYLE, children=[
+
+        # ── Portfolio positions ───────────────────────────────────────────────
+        html.Div("Portfolio Positions", style=SECTION_HEADER),
+        html.P("Active holdings (net shares > 0). Click Refresh to fetch live prices "
+               "— prices are cached for the session so repeat clicks are instant.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "16px"}, children=[
+            html.Div(style={"display": "flex", "gap": "16px", "alignItems": "center",
+                            "marginBottom": "12px"}, children=[
+                html.Button("Refresh (Live Prices)", id="inv-refresh-btn", n_clicks=0,
+                            style=btn_style),
+                html.Span(id="inv-refresh-status",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
+            dash_table.DataTable(
+                id="inv-positions-table",
+                columns=[
+                    {"name": "Account",       "id": "account",       "type": "text"},
+                    {"name": "Ticker",        "id": "ticker",        "type": "text"},
+                    {"name": "Type",          "id": "type",          "type": "text"},
+                    {"name": "Shares",        "id": "shares",        "type": "numeric",
+                     "format": {"specifier": ".4f"}},
+                    {"name": "Current Price", "id": "current_price", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Market Value",  "id": "market_value",  "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Gain %",        "id": "gain_pct",      "type": "numeric",
+                     "format": {"specifier": ".2f"}},
+                ],
+                data=[],
+                style_cell_conditional=[
+                    {"if": {"column_id": "current_price"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "market_value"},  "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "gain_pct"},      "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                ],
+                style_data_conditional=[
+                    {"if": {"filter_query": "{gain_pct} > 0",  "column_id": "gain_pct"},
+                     "color": "#27ae60"},
+                    {"if": {"filter_query": "{gain_pct} < 0",  "column_id": "gain_pct"},
+                     "color": "#c0392b"},
+                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                ],
+                **_TABLE_STYLE,
+            ),
+        ]),
+
+        # ── Investment transactions ───────────────────────────────────────────
+        html.Div("Investment Transactions", style=SECTION_HEADER),
+        _control_bar(
+            _labeled("Type filter",
+                dcc.Checklist(
+                    id="inv-type-filter",
+                    options=[
+                        {"label": "  BUY",  "value": "BUY"},
+                        {"label": "  SELL", "value": "SELL"},
+                        {"label": "  DIV",  "value": "DIV"},
+                    ],
+                    value=["BUY", "SELL", "DIV"],
+                    inline=True,
+                    inputStyle={"marginRight": "6px"},
+                    labelStyle={"marginRight": "20px", "fontSize": "14px"},
+                ),
+            ),
+        ),
+        html.Div(style=CARD, children=[
+            dash_table.DataTable(
+                id="inv-transactions-table",
+                columns=[
+                    {"name": "Date",         "id": "date",         "type": "text"},
+                    {"name": "Account",      "id": "account",      "type": "text"},
+                    {"name": "Ticker",       "id": "ticker",       "type": "text"},
+                    {"name": "Type",         "id": "trans_type",   "type": "text"},
+                    {"name": "Shares",       "id": "shares",       "type": "numeric",
+                     "format": {"specifier": ".4f"}},
+                    {"name": "Strike ($)",   "id": "strike_price", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Value ($)",    "id": "value",        "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Note",         "id": "note",         "type": "text"},
+                ],
+                data=[],
+                style_cell_conditional=[
+                    {"if": {"column_id": "strike_price"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "value"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                ],
+                style_data_conditional=[
+                    {"if": {"filter_query": '{trans_type} = "BUY"',  "column_id": "trans_type"},
+                     "color": "#27ae60"},
+                    {"if": {"filter_query": '{trans_type} = "SELL"', "column_id": "trans_type"},
+                     "color": "#c0392b"},
+                    {"if": {"filter_query": '{trans_type} = "DIV"',  "column_id": "trans_type"},
+                     "color": "#4466cc"},
+                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                ],
+                **{**_TABLE_STYLE, "page_size": 25},
             ),
         ]),
     ])
@@ -619,6 +753,9 @@ def create_app() -> Dash:
                 dcc.Tab(label="Retirement", value="retirement",
                         style=TAB_STYLE, selected_style=TAB_SELECTED_STYLE,
                         children=[_retirement_tab()]),
+                dcc.Tab(label="Investments", value="investments",
+                        style=TAB_STYLE, selected_style=TAB_SELECTED_STYLE,
+                        children=[_investments_tab()]),
                 dcc.Tab(label="Categories", value="categories",
                         style=TAB_STYLE, selected_style=TAB_SELECTED_STYLE,
                         children=[_categories_tab()]),
@@ -666,10 +803,11 @@ def create_app() -> Dash:
 
     @app.callback(
         Output("chart-income-expenses", "figure"),
+        Output("chart-net-savings",     "figure"),
         Input("dd-income-period", "value"),
     )
     def update_income_expenses(months_prev):
-        return charts.build_income_vs_expenses(months_prev)
+        return charts.build_income_vs_expenses(months_prev), charts.build_net_savings(months_prev)
 
     @app.callback(
         Output("chart-drilldown", "figure"),
@@ -799,12 +937,17 @@ def create_app() -> Dash:
     @app.callback(
         Output("chart-balance-by-account", "figure"),
         Output("chart-balance-by-type",    "figure"),
-        Input("dd-balance-days", "value"),
-        Input("dd-balance-bins", "value"),
+        Input("dd-balance-days",            "value"),
+        Input("dd-balance-bins",            "value"),
+        Input("dd-balance-account-filter",  "value"),
+        Input("chk-balance-portfolio-only", "value"),
     )
-    def update_balance_over_time(days_prev, bins):
+    def update_balance_over_time(days_prev, bins, account_ids_filter, portfolio_chk):
+        portfolio_only = bool(portfolio_chk and "portfolio" in portfolio_chk)
         return (
-            charts.build_balance_by_account(days_prev, bins),
+            charts.build_balance_by_account(days_prev, bins,
+                                            account_ids_filter=account_ids_filter or None,
+                                            portfolio_only=portfolio_only),
             charts.build_balance_by_type(days_prev, bins),
         )
 
@@ -883,6 +1026,32 @@ def create_app() -> Dash:
             fig,
             f"Ran {int(num_sims):,} simulations ({ret_age - cur_age:.0f} working yrs, {death_age - ret_age:.0f} retired yrs)",
         )
+
+    # ── Investment positions (live prices behind Refresh button) ─────────────
+    @app.callback(
+        Output("inv-positions-table",  "data"),
+        Output("inv-refresh-status",   "children"),
+        Input("inv-refresh-btn",       "n_clicks"),
+        Input("main-tabs",             "value"),
+    )
+    def update_inv_positions(n_clicks, _tab):
+        live = bool(n_clicks and n_clicks > 0)
+        rows = charts.get_investment_position_rows(live_price=live)
+        n = len(rows)
+        if live:
+            status = f"{n} position{'s' if n != 1 else ''} — live prices loaded. Click Refresh to update."
+        else:
+            status = f"{n} position{'s' if n != 1 else ''} — click 'Refresh (Live Prices)' to fetch current values."
+        return rows, status
+
+    # ── Investment transactions (type filter) ─────────────────────────────────
+    @app.callback(
+        Output("inv-transactions-table", "data"),
+        Input("inv-type-filter",         "value"),
+        Input("main-tabs",               "value"),
+    )
+    def update_inv_transactions(trans_types, _tab):
+        return charts.get_investment_transaction_rows(trans_types=trans_types or None)
 
     # ── Largest transactions ─────────────────────────────────────────────────
     @app.callback(

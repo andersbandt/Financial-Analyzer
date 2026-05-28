@@ -333,10 +333,10 @@ The Sankey diagram is the one chart that's date-anchored rather than period-anch
 The following are good next steps for continued Dash development, roughly in priority order:
 
 **High value, straightforward:**
-- [ ] **Net savings line chart** — monthly `income - expenses` plotted as a cumulative or per-month line, complements the income/expenses bar
-- [ ] **Investments summary table** — per-account current value (port of `a01_check_investments`), with live-price toggle behind a "Refresh" button
-- [ ] **Investment transactions table** — port of `a02_print_db_inv`; columns TICKER / SHARES / STRIKE / GAIN% / CAGR%, filter by type (BUY/SELL/DIV)
-- [ ] **Expand local-DB balance-over-time (account-level)** — build on the existing `build_balance_by_account` / `build_balance_by_type` charts using only recorded DB snapshots (no Yahoo). Ideas: multi-select account picker so the user can compare 2-3 accounts on one chart; day-by-day interpolation between sparse snapshots for investment accounts (currently the `model_account_balance` path only works for accounts with transactions); a "portfolio-only" toggle that filters to type=4 accounts and stacks them.
+- [x] **Net savings line chart** — monthly `income - expenses` bars + cumulative line (secondary axis), in Income & Savings tab
+- [x] **Investments summary table** — per-account/ticker positions in new Investments tab; live prices behind "Refresh (Live Prices)" button (cached per session)
+- [x] **Investment transactions table** — in Investments tab; columns DATE / ACCOUNT / TICKER / TYPE / SHARES / STRIKE / VALUE / NOTE; filter by BUY/SELL/DIV checklist
+- [x] **Expand local-DB balance-over-time (account-level)** — added multi-select account filter and "Investment accounts only" toggle to the Balances tab's by-account chart
 
 **Medium effort:**
 - [ ] **Live asset allocation pie** — extend the existing simple asset allocation pie with `invh.get_all_active_ticker(live_price=True)` breakdown by EQUITY / ETF / BOND / MONEYMARKET, behind an explicit "Refresh" button
@@ -352,6 +352,9 @@ The following are good next steps for continued Dash development, roughly in pri
 - [ ] Year-over-year comparison (pick two date ranges, view deltas side-by-side)
 
 **Shipped recently:**
+- [x] **Net savings line chart** — monthly net bars + cumulative line in Income & Savings tab
+- [x] **Investments tab** — positions table (live prices behind Refresh button) + all transactions with BUY/SELL/DIV type filter
+- [x] **Balance tab account filter** — multi-select account picker + "Investment accounts only" toggle for the by-account stacked area chart
 - [x] **Categories tab** — Plotly treemap + indented text printout of the full category hierarchy with id → parent_id mappings
 - [x] **Multi-filter transaction search** — keyword + date range + category (+descendants) + account + amount min/max (port of CLI `search_05_multi_filter`)
 - [x] **Sankey date selector** — `dcc.DatePickerRange` + quick-set dropdown replaces the period-driven Sankey

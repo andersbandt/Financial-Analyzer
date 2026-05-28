@@ -13,6 +13,7 @@ import db.helpers as dbh
 import categories.categories_helper as cath
 from account import account_helper as acch
 from analysis import analyzer_helper as anah
+from analysis import investment_helper as invh
 from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
 from analysis import balance_helper as balh
@@ -381,6 +382,55 @@ def build_income_vs_expenses(months_prev: int) -> go.Figure:
     return fig
 
 
+def build_net_savings(months_prev: int) -> go.Figure:
+    """
+    Per-month net savings (income − expenses) as green/red bars, with a
+    cumulative running-total line on the secondary axis.
+    """
+    labels, pairs = _month_series(months_prev)
+
+    net_arr, cumulative = [], []
+    running = 0.0
+    for y, m in pairs:
+        transactions = transr.recall_transaction_month_bin(y, m)
+        income, expenses = _income_expense_split(transactions)
+        net = income - expenses
+        net_arr.append(net)
+        running += net
+        cumulative.append(running)
+
+    colors = ["#52a852" if n >= 0 else "#e05252" for n in net_arr]
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Bar(
+        name="Monthly Net",
+        x=labels,
+        y=net_arr,
+        marker_color=colors,
+        hovertemplate="<b>Monthly Net</b><br>%{x}: $%{y:,.0f}<extra></extra>",
+    ), secondary_y=False)
+    fig.add_trace(go.Scatter(
+        name="Cumulative",
+        x=labels,
+        y=cumulative,
+        mode="lines+markers",
+        line=dict(color="#4466cc", width=2),
+        marker=dict(size=5),
+        hovertemplate="<b>Cumulative</b><br>%{x}: $%{y:,.0f}<extra></extra>",
+    ), secondary_y=True)
+
+    fig.update_layout(
+        title=f"Net savings per month — {_period_label(months_prev)}",
+        xaxis=dict(tickangle=-45),
+        margin=dict(t=60, b=80, l=60, r=60),
+        height=460,
+        legend=dict(orientation="h", x=0, y=1.08),
+    )
+    fig.update_yaxes(tickprefix="$", tickformat=",", title_text="Monthly Net", secondary_y=False)
+    fig.update_yaxes(tickprefix="$", tickformat=",", title_text="Cumulative Savings", secondary_y=True)
+    return fig
+
+
 # ─── Deep dive ────────────────────────────────────────────────────────────────
 
 def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Figure:
@@ -631,6 +681,64 @@ def get_month_review_data(year: int, month: int) -> tuple[list[dict], list[dict]
     return txn_rows, cat_rows
 
 
+# ─── Investments ─────────────────────────────────────────────────────────────
+
+def get_investment_position_rows(live_price: bool = False) -> list[dict]:
+    """
+    Active investment positions (net shares > 0 per ticker per account).
+    With live_price=False (default), returns DB-only data instantly.
+    With live_price=True, fetches current prices (cached per session after first call).
+    """
+    positions = invh.get_all_active_ticker(live_price=live_price)
+    rows = []
+    for pos in positions:
+        acc_name = dbh.account.get_account_name_from_id(pos.account_id)
+        cur_price = round(pos.price, 2) if live_price and pos.price > 0 else None
+        mkt_val   = round(float(pos.shares) * pos.price, 2) if live_price and pos.price > 0 else None
+        gain_pct  = round(pos.get_gain(), 2) if live_price and pos.price > 0 and pos.strike_price > 0 else None
+        rows.append({
+            "account":       acc_name,
+            "ticker":        pos.ticker,
+            "type":          pos.type or "—",
+            "shares":        round(float(pos.shares), 4),
+            "current_price": cur_price,
+            "market_value":  mkt_val,
+            "gain_pct":      gain_pct,
+        })
+    rows.sort(key=lambda r: (r["account"], r["ticker"]))
+    return rows
+
+
+def get_investment_transaction_rows(trans_types: list | None = None) -> list[dict]:
+    """
+    All raw investment transactions from the DB, optionally filtered by trans_type
+    (e.g. ['BUY', 'SELL', 'DIV']). Returns rows sorted newest-first.
+    DB schema: id, date, account_id, ticker, shares, trans_type, value, description, note, date_added
+    """
+    ledger_data = dbh.investments.get_investment_ledge_data()
+    rows = []
+    for row in ledger_data:
+        sql_key, date, account_id, _cat_id, ticker, shares, trans_type, value, description, note, *_ = row
+        if trans_types is not None and trans_type not in trans_types:
+            continue
+        shares_f = float(shares) if shares else 0.0
+        value_f  = float(value)  if value  else 0.0
+        strike   = round(value_f / shares_f, 2) if shares_f and shares_f != 0 else 0.0
+        rows.append({
+            "sql_key":      sql_key,
+            "date":         date,
+            "account":      dbh.account.get_account_name_from_id(account_id),
+            "ticker":       ticker,
+            "trans_type":   trans_type,
+            "shares":       round(shares_f, 4),
+            "strike_price": strike,
+            "value":        round(value_f, 2),
+            "note":         note or "",
+        })
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return rows
+
+
 # ─── Wealth & balances ────────────────────────────────────────────────────────
 
 # Buckets used by the asset allocation pie. Liabilities (credit cards) are excluded.
@@ -725,8 +833,14 @@ def _binned_account_balances(days_prev: int, N: int):
     return edge_codes, account_ids, values_matrix
 
 
-def build_balance_by_account(days_prev: int = 560, N: int = 5) -> go.Figure:
-    """Stacked area chart of recorded balances per account over time."""
+def build_balance_by_account(days_prev: int = 560, N: int = 5,
+                              account_ids_filter: list | None = None,
+                              portfolio_only: bool = False) -> go.Figure:
+    """
+    Stacked area chart of recorded balances per account over time.
+    account_ids_filter: if provided, only include these account IDs.
+    portfolio_only: if True, restrict to investment accounts (type=4).
+    """
     resolved_days = _resolve_balance_days(days_prev)
     edge_codes, account_ids, values_matrix = _binned_account_balances(days_prev, N)
     if not account_ids:
@@ -734,12 +848,22 @@ def build_balance_by_account(days_prev: int = 560, N: int = 5) -> go.Figure:
         fig.update_layout(title="No balance data available")
         return fig
 
+    combined = list(zip(account_ids, values_matrix))
+    if portfolio_only:
+        combined = [(aid, v) for aid, v in combined if dbh.account.get_account_type(aid) == 4]
+    if account_ids_filter:
+        aid_set = set(account_ids_filter)
+        combined = [(aid, v) for aid, v in combined if aid in aid_set]
+
+    if not combined:
+        fig = go.Figure()
+        fig.update_layout(title="No accounts match the selected filters")
+        return fig
+
+    # Sort by most recent value so the biggest stack-area is at bottom.
+    combined = sorted(combined, key=lambda p: p[1][-1] if p[1] else 0)
+
     x_labels = edge_codes[1:]
-    # Sort accounts by their most recent value so the biggest stack-area is at bottom.
-    combined = sorted(
-        zip(account_ids, values_matrix),
-        key=lambda p: p[1][-1] if p[1] else 0,
-    )
     fig = go.Figure()
     for acc_id, vals in combined:
         name = dbh.account.get_account_name_from_id(acc_id)
@@ -958,7 +1082,7 @@ def build_category_treemap() -> go.Figure:
         labels=labels,
         parents=parents,
         values=values,
-        branchvalues="total",
+        branchvalues="remainder",
         textinfo="label",
         hovertemplate=(
             "<b>%{label}</b>"
