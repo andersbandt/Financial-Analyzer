@@ -145,6 +145,16 @@ def update_parent(category_id, new_parent_id) -> bool:
     return True
 
 
+def update_category_name(category_id, new_name: str) -> bool:
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE category SET name=? WHERE category_id=?",
+            (new_name, category_id),
+        )
+    return True
+
+
 
 
 

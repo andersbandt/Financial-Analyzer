@@ -136,6 +136,12 @@ _AMOUNT_DATA_CONDITIONAL = [
     {"if": {"row_index": "odd"},  "backgroundColor": "#fafbfc"},
 ]
 
+_BTN_STYLE = {
+    "padding": "7px 14px", "fontSize": "13px", "fontWeight": "600",
+    "background": "#1a2940", "color": "#fff", "border": "none",
+    "borderRadius": "6px", "cursor": "pointer",
+}
+
 
 # ─── Small component helpers ──────────────────────────────────────────────────
 
@@ -205,6 +211,15 @@ def _spending_tab(category_options):
             _labeled("Category", _dropdown("dd-category", category_options, None, width="260px",
                                            placeholder="Select a category…")),
             _labeled("Window", _dropdown("dd-drilldown-months", PERIOD_OPTIONS, 12)),
+            _labeled("",
+                dcc.Checklist(
+                    id="chk-drilldown-trendline",
+                    options=[{"label": "  Show trendline", "value": "trend"}],
+                    value=[],
+                    inputStyle={"marginRight": "6px"},
+                    labelStyle={"fontSize": "14px"},
+                ),
+            ),
         ),
         html.Div(style=ROW, children=[_graph("chart-drilldown")]),
 
@@ -408,16 +423,133 @@ def _retirement_tab():
 
 
 def _categories_tab():
+    _input_style = {
+        "flex": "1", "padding": "7px 10px", "borderRadius": "6px",
+        "border": "1px solid #cdd5df", "fontSize": "14px",
+    }
     return html.Div(style=TAB_CONTENT_STYLE, children=[
+
+        # ── Category editor ───────────────────────────────────────────────────
+        html.Div("Category Editor", style=SECTION_HEADER),
+        dcc.Store(id="cat-selected-id", data=None),
+
+        html.Div(style={"display": "flex", "gap": "20px", "marginBottom": "20px",
+                        "alignItems": "flex-start"}, children=[
+
+            # Left: sortable/filterable list of all categories
+            html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
+                html.Div("All Categories", style={**KPI_LABEL, "marginBottom": "8px"}),
+                dash_table.DataTable(
+                    id="cat-categories-table",
+                    columns=[
+                        {"name": "ID",       "id": "id",            "type": "numeric"},
+                        {"name": "Name",     "id": "name",          "type": "text"},
+                        {"name": "Parent",   "id": "parent_name",   "type": "text"},
+                        {"name": "Keywords", "id": "keyword_count", "type": "numeric"},
+                    ],
+                    data=[],
+                    row_selectable="single",
+                    selected_rows=[],
+                    sort_action="native",
+                    filter_action="native",
+                    filter_options={"case": "insensitive"},
+                    page_action="native",
+                    page_size=20,
+                    style_table={"overflowX": "auto"},
+                    style_header=_TABLE_STYLE["style_header"],
+                    style_cell=_TABLE_STYLE["style_cell"],
+                    style_data_conditional=[
+                        {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                        {"if": {"state": "selected"},
+                         "backgroundColor": "#e8f0fe", "border": "1px solid #4a80e8"},
+                    ],
+                ),
+            ]),
+
+            # Right: edit panel
+            html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
+                html.Div(id="cat-edit-heading",
+                         style={"fontSize": "15px", "fontWeight": "700", "color": "#1a2940",
+                                "marginBottom": "16px"},
+                         children="Select a category to edit"),
+
+                # Name
+                html.Div(style={"marginBottom": "16px"}, children=[
+                    html.Label("Name", style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
+                    html.Div(style={"display": "flex", "gap": "8px", "alignItems": "center"}, children=[
+                        dcc.Input(id="cat-edit-name", type="text", debounce=False,
+                                  placeholder="Category name", style=_input_style),
+                        html.Button("Save", id="cat-save-name-btn", n_clicks=0, style=_BTN_STYLE),
+                    ]),
+                    html.Span(id="cat-name-status",
+                              style={"fontSize": "12px", "color": "#6b7a90", "marginTop": "4px",
+                                     "display": "block"}),
+                ]),
+
+                # Parent
+                html.Div(style={"marginBottom": "16px"}, children=[
+                    html.Label("Parent Category",
+                               style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
+                    html.Div(style={"display": "flex", "gap": "8px", "alignItems": "center"}, children=[
+                        dcc.Dropdown(id="cat-edit-parent",
+                                     options=[], value=None, clearable=False,
+                                     placeholder="Select parent…",
+                                     style={"flex": "1", "fontSize": "14px"}),
+                        html.Button("Save", id="cat-save-parent-btn", n_clicks=0, style=_BTN_STYLE),
+                    ]),
+                    html.Span(id="cat-parent-status",
+                              style={"fontSize": "12px", "color": "#6b7a90", "marginTop": "4px",
+                                     "display": "block"}),
+                ]),
+
+                # Keywords
+                html.Div(children=[
+                    html.Label("Keywords",
+                               style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
+                    dash_table.DataTable(
+                        id="cat-keywords-table",
+                        columns=[{"name": "Keyword", "id": "keyword", "type": "text"}],
+                        data=[],
+                        row_selectable="multi",
+                        selected_rows=[],
+                        page_action="none",
+                        sort_action="none",
+                        style_table={"overflowX": "auto", "maxHeight": "200px",
+                                     "overflowY": "auto"},
+                        style_header=_TABLE_STYLE["style_header"],
+                        style_cell=_TABLE_STYLE["style_cell"],
+                        style_data_conditional=[
+                            {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                            {"if": {"state": "selected"},
+                             "backgroundColor": "#fde8e8", "border": "1px solid #e05252"},
+                        ],
+                    ),
+                    html.Div(style={"display": "flex", "gap": "8px", "marginTop": "8px",
+                                    "alignItems": "center", "flexWrap": "wrap"}, children=[
+                        html.Button("Delete Selected", id="cat-delete-kw-btn", n_clicks=0,
+                                    style={**_BTN_STYLE, "background": "#c0392b"}),
+                        dcc.Input(id="cat-new-kw", type="text", debounce=False,
+                                  placeholder="New keyword (UPPERCASE)",
+                                  style={**_input_style, "flex": "1", "minWidth": "120px"}),
+                        html.Button("Add", id="cat-add-kw-btn", n_clicks=0,
+                                    style={**_BTN_STYLE, "background": "#27ae60"}),
+                    ]),
+                    html.Span(id="cat-kw-status",
+                              style={"fontSize": "12px", "color": "#6b7a90", "marginTop": "4px",
+                                     "display": "block"}),
+                ]),
+            ]),
+        ]),
+
+        # ── Treemap ───────────────────────────────────────────────────────────
         html.Div("Category hierarchy (treemap)", style=SECTION_HEADER),
         html.P("Each tile is a category; nested tiles are children. "
-               "Hover for the id → parent_id mapping and keyword count.",
+               "Hover for the id -> parent_id mapping and keyword count.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         html.Div(style=ROW, children=[_graph("chart-category-treemap")]),
 
         html.Div("Full tree printout", style=SECTION_HEADER),
-        html.P("Indented hierarchy of every category with its database id, parent_id, and keyword list. "
-               "Useful as a printable reference.",
+        html.P("Indented hierarchy showing each category, its database id, parent_id, and keywords.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         html.Div(style={**CARD, "marginBottom": "16px"}, children=[
             dcc.Markdown(
@@ -1055,12 +1187,14 @@ def create_app() -> Dash:
         return charts.build_income_vs_expenses(months_prev), charts.build_net_savings(months_prev)
 
     @app.callback(
-        Output("chart-drilldown", "figure"),
-        Input("dd-category",       "value"),
-        Input("dd-drilldown-months","value"),
+        Output("chart-drilldown",        "figure"),
+        Input("dd-category",             "value"),
+        Input("dd-drilldown-months",     "value"),
+        Input("chk-drilldown-trendline", "value"),
     )
-    def update_drilldown(category_id, months_prev):
-        return charts.build_category_drilldown(category_id, months_prev)
+    def update_drilldown(category_id, months_prev, trendline_chk):
+        show_trend = bool(trendline_chk and "trend" in trendline_chk)
+        return charts.build_category_drilldown(category_id, months_prev, show_trendline=show_trend)
 
     # ── Sankey: quick-period selector updates the date pickers ───────────────
     @app.callback(
@@ -1180,6 +1314,122 @@ def create_app() -> Dash:
     )
     def update_categories(_tab):
         return charts.build_category_treemap(), charts.get_category_tree_text()
+
+    # ── Category editor: load table ───────────────────────────────────────────
+    @app.callback(
+        Output("cat-categories-table", "data"),
+        Input("main-tabs", "value"),
+    )
+    def load_cat_table(_tab):
+        return charts.get_category_editor_rows()
+
+    # ── Category editor: populate edit panel when a row is selected ───────────
+    @app.callback(
+        Output("cat-selected-id",    "data"),
+        Output("cat-edit-heading",   "children"),
+        Output("cat-edit-name",      "value"),
+        Output("cat-edit-parent",    "options"),
+        Output("cat-edit-parent",    "value"),
+        Input("cat-categories-table", "selected_rows"),
+        State("cat-categories-table", "data"),
+    )
+    def load_cat_editor(selected_rows, data):
+        if not selected_rows or not data:
+            return None, "Select a category to edit", "", [], None
+        row = data[selected_rows[0]]
+        cat_id   = row["id"]
+        cat_name = row["name"]
+        parent_id = row.get("parent_id")
+        all_rows = charts.get_category_editor_rows()
+        parent_options = [{"label": "Root (level 1)", "value": 1}] + [
+            {"label": f"{r['name']} (id={r['id']})", "value": r["id"]}
+            for r in all_rows if r["id"] != cat_id
+        ]
+        return cat_id, f"Editing: {cat_name}", cat_name, parent_options, parent_id
+
+    # ── Category editor: load keywords when selection changes ─────────────────
+    @app.callback(
+        Output("cat-keywords-table",    "data"),
+        Output("cat-keywords-table",    "selected_rows"),
+        Input("cat-selected-id",        "data"),
+    )
+    def load_cat_keywords(cat_id):
+        return charts.get_keywords_for_category(cat_id), []
+
+    # ── Category editor: save name ────────────────────────────────────────────
+    @app.callback(
+        Output("cat-name-status",       "children"),
+        Output("cat-edit-heading",      "children",  allow_duplicate=True),
+        Output("cat-categories-table",  "data",      allow_duplicate=True),
+        Input("cat-save-name-btn",      "n_clicks"),
+        State("cat-edit-name",          "value"),
+        State("cat-selected-id",        "data"),
+        prevent_initial_call=True,
+    )
+    def save_cat_name(n_clicks, new_name, cat_id):
+        if cat_id is None or not new_name or not new_name.strip():
+            return "Nothing to save.", no_update, no_update
+        new_name = new_name.strip()
+        dbh.category.update_category_name(cat_id, new_name)
+        return f"Renamed to '{new_name}'.", f"Editing: {new_name}", charts.get_category_editor_rows()
+
+    # ── Category editor: save parent ──────────────────────────────────────────
+    @app.callback(
+        Output("cat-parent-status",     "children"),
+        Output("cat-categories-table",  "data",      allow_duplicate=True),
+        Input("cat-save-parent-btn",    "n_clicks"),
+        State("cat-edit-parent",        "value"),
+        State("cat-selected-id",        "data"),
+        prevent_initial_call=True,
+    )
+    def save_cat_parent(n_clicks, new_parent_id, cat_id):
+        if cat_id is None or new_parent_id is None:
+            return "Nothing to save.", no_update
+        if new_parent_id == cat_id:
+            return "Cannot set a category as its own parent.", no_update
+        dbh.category.update_parent(cat_id, new_parent_id)
+        return f"Parent updated (id={new_parent_id}).", charts.get_category_editor_rows()
+
+    # ── Category editor: keyword add / delete ─────────────────────────────────
+    @app.callback(
+        Output("cat-keywords-table",    "data",          allow_duplicate=True),
+        Output("cat-keywords-table",    "selected_rows", allow_duplicate=True),
+        Output("cat-kw-status",         "children"),
+        Output("cat-new-kw",            "value"),
+        Output("cat-categories-table",  "data",          allow_duplicate=True),
+        Input("cat-add-kw-btn",         "n_clicks"),
+        Input("cat-delete-kw-btn",      "n_clicks"),
+        State("cat-new-kw",             "value"),
+        State("cat-keywords-table",     "selected_rows"),
+        State("cat-keywords-table",     "data"),
+        State("cat-selected-id",        "data"),
+        prevent_initial_call=True,
+    )
+    def keyword_actions(add_clicks, del_clicks, new_kw, selected_rows, kw_data, cat_id):
+        trigger = ctx.triggered_id
+        if cat_id is None:
+            return no_update, no_update, "No category selected.", no_update, no_update
+
+        if trigger == "cat-add-kw-btn":
+            if not new_kw or not new_kw.strip():
+                return no_update, no_update, "Enter a keyword first.", no_update, no_update
+            kw = new_kw.strip().upper()
+            dbh.keywords.insert_keyword(kw, cat_id)
+            kw_rows  = charts.get_keywords_for_category(cat_id)
+            cat_rows = charts.get_category_editor_rows()
+            return kw_rows, [], f"Added '{kw}'.", "", cat_rows
+
+        if trigger == "cat-delete-kw-btn":
+            if not selected_rows:
+                return no_update, no_update, "Select keywords to delete.", no_update, no_update
+            for idx in selected_rows:
+                dbh.keywords.delete_keyword(kw_data[idx]["kw_id"])
+            n = len(selected_rows)
+            kw_rows  = charts.get_keywords_for_category(cat_id)
+            cat_rows = charts.get_category_editor_rows()
+            return kw_rows, [], f"Deleted {n} keyword{'s' if n != 1 else ''}.", no_update, cat_rows
+
+        return no_update, no_update, no_update, no_update, no_update
 
     # ── Balance over time (by account + by type) ─────────────────────────────
     @app.callback(

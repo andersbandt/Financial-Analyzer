@@ -441,7 +441,11 @@ def build_net_savings(months_prev: int) -> go.Figure:
 
 # ─── Deep dive ────────────────────────────────────────────────────────────────
 
-def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Figure:
+def build_category_drilldown(
+    category_id: int | None,
+    months_prev: int,
+    show_trendline: bool = False,
+) -> go.Figure:
     """Stacked bar of a category's descendants over the last months_prev months."""
     if category_id is None:
         fig = go.Figure()
@@ -454,19 +458,19 @@ def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Fi
     sub_ids = cath.get_all_category_descendants(category_id)
     sub_ids.append(category_id)
 
+    # Resolve 0 ("all time") once so both _month_series and month_bin_transaction_total agree
+    resolved_months = _resolve_months_prev(months_prev)
     labels, _ = _month_series(months_prev)
     traces = []
 
     for sc_id in sub_ids:
         name = cath.category_id_to_name(sc_id)
         transactions = transr.recall_transaction_category(sc_id)
-        _, mts = anah.month_bin_transaction_total(transactions, months_prev)
-        # month_bin_transaction_total sums raw values; expenses are negative — flip
+        _, mts = anah.month_bin_transaction_total(transactions, resolved_months)
         mts_abs = [abs(v) for v in mts]
         if any(v > 0 for v in mts_abs):
             traces.append((sum(mts_abs), name, mts_abs))
 
-    # Sort largest total to bottom of stack
     traces.sort(key=lambda x: x[0])
 
     cat_name = cath.category_id_to_name(category_id)
@@ -477,6 +481,23 @@ def build_category_drilldown(category_id: int | None, months_prev: int) -> go.Fi
             x=labels,
             y=mts_abs,
             hovertemplate=f"<b>{name}</b><br>%{{x}}: $%{{y:,.0f}}<extra></extra>",
+        ))
+
+    if show_trendline and traces:
+        n = len(labels)
+        totals = [sum(t[2][i] for t in traces) for i in range(n)]
+        window = max(3, n // 12) if n > 12 else 3
+        smoothed = []
+        for i in range(n):
+            start = max(0, i - window + 1)
+            smoothed.append(sum(totals[start:i + 1]) / (i - start + 1))
+        fig.add_trace(go.Scatter(
+            name=f"Trend ({window}mo avg)",
+            x=labels,
+            y=smoothed,
+            mode="lines",
+            line=dict(color="#1a2940", width=2.5, dash="dot"),
+            hovertemplate="Trend: $%{y:,.0f}<extra></extra>",
         ))
 
     fig.update_layout(
@@ -1479,6 +1500,44 @@ def get_category_tree_text() -> str:
         _walk(rid, "", i == len(roots) - 1, is_root_level=False)
 
     return "```\n" + "\n".join(lines) + "\n```"
+
+
+def get_category_editor_rows() -> list[dict]:
+    """Flat rows for the category editor DataTable (id, name, parent_name, keyword_count)."""
+    rows_raw = dbh.category.get_category_ledger_data()
+    id_to_name = {row[0]: row[2] for row in rows_raw}
+    all_kw = dbh.keywords.get_keyword_ledger_data()
+    kw_count: dict[int, int] = {}
+    for kw_row in all_kw:
+        cid = kw_row[1]
+        kw_count[cid] = kw_count.get(cid, 0) + 1
+
+    result = []
+    for row in rows_raw:
+        cat_id, parent_id, name = row[0], row[1], row[2]
+        if cat_id == 0:
+            continue
+        parent_name = "Root" if parent_id == 1 else id_to_name.get(parent_id, f"id={parent_id}")
+        result.append({
+            "id": cat_id,
+            "name": name,
+            "parent_id": parent_id,
+            "parent_name": parent_name,
+            "keyword_count": kw_count.get(cat_id, 0),
+        })
+    result.sort(key=lambda x: x["name"])
+    return result
+
+
+def get_keywords_for_category(category_id: int) -> list[dict]:
+    """Returns [{keyword, kw_id}] rows for the keyword editor DataTable."""
+    if category_id is None:
+        return []
+    rows = dbh.keywords.get_keyword_for_category_id(category_id)
+    return sorted(
+        [{"keyword": row[2], "kw_id": row[0]} for row in rows],
+        key=lambda r: r["keyword"],
+    )
 
 
 def build_retirement_histogram(sim_result: dict) -> go.Figure:
