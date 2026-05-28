@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 
 import categories.categories_helper as cath
 import db.helpers as dbh
+from analysis import investment_helper as invh
 from tools import date_helper as dateh
 from web import charts
 
@@ -99,6 +100,7 @@ TAB_CONTENT_STYLE = {"paddingTop": "8px"}
 _TABLE_STYLE = dict(
     sort_action="native",
     filter_action="native",
+    filter_options={"case": "insensitive"},
     page_action="native",
     page_size=15,
     style_table={"overflowX": "auto"},
@@ -301,6 +303,7 @@ def _wealth_tab(account_options):
                 {"label": "5",  "value": 5},
                 {"label": "8",  "value": 8},
                 {"label": "12", "value": 12},
+                {"label": "24", "value": 24},
             ], 5)),
             _labeled("Account filter",
                 dcc.Dropdown(
@@ -439,6 +442,72 @@ def _investments_tab():
     }
     return html.Div(style=TAB_CONTENT_STYLE, children=[
 
+        # ── Asset allocation pies ────────────────────────────────────────────
+        html.Div("Asset Allocation", style=SECTION_HEADER),
+        html.P("Breakdown by market value. Click 'Refresh (Live Prices)' below to populate.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        # Row 1: high-level allocation + equity type breakdown
+        html.Div(style={"display": "flex", "gap": "20px", "marginBottom": "20px"}, children=[
+            html.Div(style={**CARD, "flex": "1", "minWidth": "0"}, children=[
+                dcc.Graph(id="inv-alloc-pie",
+                          figure=charts.build_investment_allocation_pie([]),
+                          config={"displayModeBar": False}),
+            ]),
+            html.Div(style={**CARD, "flex": "1", "minWidth": "0"}, children=[
+                dcc.Graph(id="inv-equity-pie",
+                          figure=charts.build_equity_detail_pie([]),
+                          config={"displayModeBar": False}),
+            ]),
+        ]),
+        # Row 2: per-ticker breakdown (wider, taller)
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            dcc.Graph(id="inv-ticker-pie",
+                      figure=charts.build_equity_ticker_pie([]),
+                      config={"displayModeBar": False}),
+        ]),
+
+        # ── Ticker type manager ───────────────────────────────────────────────
+        html.Div("Ticker Type Manager", style=SECTION_HEADER),
+        html.P("Set the asset type for each holding. Changes are saved to the database and "
+               "immediately reflected in the allocation charts above.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            dash_table.DataTable(
+                id="inv-type-table",
+                columns=[
+                    {"name": "Ticker",     "id": "ticker",     "editable": False},
+                    {"name": "Asset Type", "id": "asset_type", "editable": True,
+                     "presentation": "dropdown"},
+                ],
+                dropdown={
+                    "asset_type": {
+                        "options": [{"label": t, "value": t} for t in charts.VALID_ASSET_TYPES]
+                    }
+                },
+                data=charts.get_ticker_type_rows(),
+                editable=True,
+                style_cell={"fontSize": "13px", "padding": "6px 12px"},
+                style_header={"fontWeight": "600", "background": "#f8f9fb",
+                               "borderBottom": "2px solid #dde2ea"},
+                style_data={"border": "1px solid #f0f2f5"},
+                style_data_conditional=[
+                    {"if": {"filter_query": '{asset_type} = "UNKNOWN"'},
+                     "backgroundColor": "#fff8ed", "color": "#b45309"},
+                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                ],
+                style_table={"maxHeight": "320px", "overflowY": "auto"},
+            ),
+            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "center",
+                            "marginTop": "12px"}, children=[
+                html.Button("Save Types", id="inv-type-save-btn", n_clicks=0,
+                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#1a2940", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer"}),
+                html.Span(id="inv-type-status",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
+        ]),
+
         # ── Portfolio positions ───────────────────────────────────────────────
         html.Div("Portfolio Positions", style=SECTION_HEADER),
         html.P("Active holdings (net shares > 0). Click Refresh to fetch live prices "
@@ -460,30 +529,99 @@ def _investments_tab():
                     {"name": "Type",          "id": "type",          "type": "text"},
                     {"name": "Shares",        "id": "shares",        "type": "numeric",
                      "format": {"specifier": ".4f"}},
+                    {"name": "Avg Cost ($)",  "id": "avg_cost",      "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
                     {"name": "Current Price", "id": "current_price", "type": "numeric",
                      "format": {"specifier": ",.2f"}},
                     {"name": "Market Value",  "id": "market_value",  "type": "numeric",
                      "format": {"specifier": ",.2f"}},
                     {"name": "Gain %",        "id": "gain_pct",      "type": "numeric",
                      "format": {"specifier": ".2f"}},
+                    {"name": "CAGR %",        "id": "cagr",          "type": "numeric",
+                     "format": {"specifier": ".2f"}},
+                    {"name": "Price Source",  "id": "price_source",  "type": "text"},
                 ],
                 data=[],
                 style_cell_conditional=[
                     {"if": {"column_id": "current_price"}, "textAlign": "right",
                      "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "avg_cost"},      "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
                     {"if": {"column_id": "market_value"},  "textAlign": "right",
                      "fontVariantNumeric": "tabular-nums"},
                     {"if": {"column_id": "gain_pct"},      "textAlign": "right",
                      "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "cagr"},          "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "price_source"},  "textAlign": "center",
+                     "fontSize": "11px", "color": "#9aa5b4"},
                 ],
                 style_data_conditional=[
                     {"if": {"filter_query": "{gain_pct} > 0",  "column_id": "gain_pct"},
                      "color": "#27ae60"},
                     {"if": {"filter_query": "{gain_pct} < 0",  "column_id": "gain_pct"},
                      "color": "#c0392b"},
+                    {"if": {"filter_query": "{cagr} > 0",     "column_id": "cagr"},
+                     "color": "#27ae60"},
+                    {"if": {"filter_query": "{cagr} < 0",     "column_id": "cagr"},
+                     "color": "#c0392b"},
+                    {"if": {"filter_query": '{price_source} = "override"'},
+                     "backgroundColor": "#fffbeb"},
                     {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
                 ],
                 **_TABLE_STYLE,
+            ),
+        ]),
+
+        # ── Manual price overrides ────────────────────────────────────────────
+        html.Div("Manual Price Overrides", style=SECTION_HEADER),
+        html.P("Set a manual price for any ticker (useful for mutual funds or when API data is unavailable). "
+               "Override rows are highlighted in yellow in the positions table. "
+               "Leave price blank to clear an override.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            html.Div(style={"display": "flex", "gap": "10px", "alignItems": "flex-end",
+                            "marginBottom": "14px", "flexWrap": "wrap"}, children=[
+                html.Div(children=[
+                    html.Label("Ticker", style={"fontSize": "12px", "color": "#6b7a90",
+                                                "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-override-ticker", type="text", placeholder="e.g. FXAIX",
+                              debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "110px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px",
+                                     "textTransform": "uppercase"}),
+                ]),
+                html.Div(children=[
+                    html.Label("Price ($)", style={"fontSize": "12px", "color": "#6b7a90",
+                                                   "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-override-price", type="number", placeholder="e.g. 123.45",
+                              min=0, debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "120px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
+                ]),
+                html.Button("Save Override", id="inv-override-save-btn", n_clicks=0,
+                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#1a2940", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer",
+                                   "alignSelf": "flex-end"}),
+                html.Span(id="inv-override-status",
+                          style={"color": "#6b7a90", "fontSize": "13px", "alignSelf": "flex-end"}),
+            ]),
+            html.Div("Active overrides:", style={"fontSize": "12px", "color": "#6b7a90",
+                                                  "marginBottom": "6px"}),
+            dash_table.DataTable(
+                id="inv-overrides-table",
+                columns=[
+                    {"name": "Ticker",          "id": "ticker",       "type": "text"},
+                    {"name": "Manual Price ($)", "id": "manual_price", "type": "numeric",
+                     "format": {"specifier": ",.4f"}},
+                ],
+                data=charts.get_price_override_rows(),
+                style_cell={"fontSize": "13px", "padding": "6px 10px"},
+                style_header={"fontWeight": "600", "background": "#f8f9fb",
+                               "borderBottom": "2px solid #dde2ea"},
+                style_data={"border": "1px solid #f0f2f5"},
+                style_table={"maxHeight": "200px", "overflowY": "auto"},
             ),
         ]),
 
@@ -1031,18 +1169,78 @@ def create_app() -> Dash:
     @app.callback(
         Output("inv-positions-table",  "data"),
         Output("inv-refresh-status",   "children"),
+        Output("inv-alloc-pie",        "figure"),
+        Output("inv-equity-pie",       "figure"),
+        Output("inv-ticker-pie",       "figure"),
         Input("inv-refresh-btn",       "n_clicks"),
+        Input("inv-override-save-btn", "n_clicks"),
         Input("main-tabs",             "value"),
     )
-    def update_inv_positions(n_clicks, _tab):
-        live = bool(n_clicks and n_clicks > 0)
+    def update_inv_positions(refresh_clicks, _override_clicks, _tab):
+        live = bool(refresh_clicks and refresh_clicks > 0)
         rows = charts.get_investment_position_rows(live_price=live)
         n = len(rows)
+        priced = sum(1 for r in rows if r.get("current_price") is not None)
+        missing = n - priced
         if live:
-            status = f"{n} position{'s' if n != 1 else ''} — live prices loaded. Click Refresh to update."
+            status = f"{n} position{'s' if n != 1 else ''} — live prices loaded ({missing} unavailable)."
         else:
-            status = f"{n} position{'s' if n != 1 else ''} — click 'Refresh (Live Prices)' to fetch current values."
-        return rows, status
+            status = (f"{n} position{'s' if n != 1 else ''} — {priced} prices from cache"
+                      + (f", {missing} need Refresh" if missing else "")
+                      + ". Click 'Refresh (Live Prices)' to update.")
+        alloc_fig  = charts.build_investment_allocation_pie(rows)
+        equity_fig = charts.build_equity_detail_pie(rows)
+        ticker_fig = charts.build_equity_ticker_pie(rows)
+        return rows, status, alloc_fig, equity_fig, ticker_fig
+
+    # ── Save ticker type changes ──────────────────────────────────────────────
+    @app.callback(
+        Output("inv-type-status",  "children"),
+        Output("inv-type-table",   "data"),
+        Output("inv-alloc-pie",    "figure", allow_duplicate=True),
+        Output("inv-equity-pie",   "figure", allow_duplicate=True),
+        Output("inv-ticker-pie",   "figure", allow_duplicate=True),
+        Input("inv-type-save-btn", "n_clicks"),
+        State("inv-type-table",    "data"),
+        prevent_initial_call=True,
+    )
+    def save_ticker_types(n_clicks, table_data):
+        saved = 0
+        for row in (table_data or []):
+            ticker    = (row.get("ticker") or "").strip().upper()
+            new_type  = (row.get("asset_type") or "").strip().upper()
+            if ticker and new_type and new_type != "UNKNOWN":
+                dbh.ticker_metadata.upsert_ticker_asset_type(ticker, new_type)
+                saved += 1
+        invh.refresh_asset_type_cache()
+        rows = charts.get_investment_position_rows(live_price=False)
+        return (
+            f"Saved {saved} ticker type{'s' if saved != 1 else ''}.",
+            charts.get_ticker_type_rows(),
+            charts.build_investment_allocation_pie(rows),
+            charts.build_equity_detail_pie(rows),
+            charts.build_equity_ticker_pie(rows),
+        )
+
+    # ── Save manual price override ────────────────────────────────────────────
+    @app.callback(
+        Output("inv-override-status",  "children"),
+        Output("inv-overrides-table",  "data"),
+        Output("inv-override-ticker",  "value"),
+        Output("inv-override-price",   "value"),
+        Input("inv-override-save-btn", "n_clicks"),
+        State("inv-override-ticker",   "value"),
+        State("inv-override-price",    "value"),
+        prevent_initial_call=True,
+    )
+    def save_price_override(n_clicks, ticker, price):
+        if not ticker:
+            return "Enter a ticker symbol.", charts.get_price_override_rows(), ticker, price
+        t = ticker.strip().upper()
+        p = float(price) if price is not None and price != "" else None
+        invh.set_manual_price_override(t, p)
+        msg = f"Override {'set' if p else 'cleared'}: {t}" + (f" = ${p:,.4f}" if p else "")
+        return msg, charts.get_price_override_rows(), "", None
 
     # ── Investment transactions (type filter) ─────────────────────────────────
     @app.callback(

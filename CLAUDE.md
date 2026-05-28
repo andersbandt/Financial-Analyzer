@@ -374,6 +374,7 @@ The following are good next steps for continued Dash development, roughly in pri
 
 ## Known Limitations & TODOs
 
+- **Categories tab broken**: The category tree text printout (`get_category_tree_text` in `web/charts.py`) and likely the treemap still crash or render incorrectly. Root cause is the category hierarchy data has edge cases (e.g. `id=0` "NA" placeholder, self-referential `parent_id`) that break the tree-walking logic. Needs a more robust hierarchy builder.
 - Hardcoded file paths and account mappings (see tags in code)
 - ML categorization model not actively used (commented out in some flows)
 - Test coverage is minimal

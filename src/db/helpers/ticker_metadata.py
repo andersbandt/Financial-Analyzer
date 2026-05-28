@@ -87,6 +87,25 @@ def get_all_tickers():
     return [row[0] for row in data]
 
 
+def upsert_ticker_asset_type(ticker: str, asset_type: str):
+    """
+    Set the asset type for a ticker. Inserts the row if it doesn't exist yet;
+    updates only the asset_type column if it does (preserves name).
+    """
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO ticker_metadata (ticker, asset_type, last_updated)
+               VALUES (?, ?, ?)
+               ON CONFLICT(ticker) DO UPDATE SET
+                   asset_type    = excluded.asset_type,
+                   last_updated  = excluded.last_updated""",
+            (ticker, asset_type, now),
+        )
+        conn.commit()
+
+
 def delete_ticker_metadata(ticker):
     """Delete metadata for a ticker."""
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

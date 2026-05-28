@@ -8,6 +8,7 @@ dict of scalar values for the KPI card row.
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
+import datetime as _dt
 
 import db.helpers as dbh
 import categories.categories_helper as cath
@@ -686,26 +687,81 @@ def get_month_review_data(year: int, month: int) -> tuple[list[dict], list[dict]
 def get_investment_position_rows(live_price: bool = False) -> list[dict]:
     """
     Active investment positions (net shares > 0 per ticker per account).
-    With live_price=False (default), returns DB-only data instantly.
-    With live_price=True, fetches current prices (cached per session after first call).
+    Always uses file-cached prices if available; live_price=True re-fetches from APIs.
     """
     positions = invh.get_all_active_ticker(live_price=live_price)
+    overrides = invh.get_all_manual_price_overrides()
+    today = _dt.date.today()
     rows = []
     for pos in positions:
         acc_name = dbh.account.get_account_name_from_id(pos.account_id)
-        cur_price = round(pos.price, 2) if live_price and pos.price > 0 else None
-        mkt_val   = round(float(pos.shares) * pos.price, 2) if live_price and pos.price > 0 else None
-        gain_pct  = round(pos.get_gain(), 2) if live_price and pos.price > 0 and pos.strike_price > 0 else None
+        shares_f = float(pos.shares)
+
+        cur_price = round(pos.price, 2) if pos.price > 0 else None
+        mkt_val   = round(shares_f * pos.price, 2) if pos.price > 0 else None
+
+        # Gain% and CAGR use actual avg-cost basis from buy transactions
+        avg_cost, first_buy = dbh.investments.get_ticker_cost_basis(pos.account_id, pos.ticker)
+
+        gain_pct = None
+        if cur_price and avg_cost > 0:
+            gain_pct = round((cur_price / avg_cost - 1) * 100, 2)
+
+        cagr = None
+        if cur_price and avg_cost > 0 and first_buy:
+            try:
+                years = (_dt.date.fromisoformat(first_buy[:10]) - today).days / -365.25
+                if years >= 0.083:  # at least 1 month
+                    cagr = round(((cur_price / avg_cost) ** (1.0 / years) - 1) * 100, 2)
+            except Exception:
+                pass
+
+        if pos.ticker in overrides:
+            price_source = "override"
+        elif pos.price == 0:
+            price_source = "unknown"
+        elif live_price:
+            price_source = "live"
+        else:
+            price_source = "cached"
+
         rows.append({
             "account":       acc_name,
             "ticker":        pos.ticker,
             "type":          pos.type or "—",
-            "shares":        round(float(pos.shares), 4),
+            "shares":        round(shares_f, 4),
+            "avg_cost":      round(avg_cost, 2) if avg_cost else None,
             "current_price": cur_price,
             "market_value":  mkt_val,
             "gain_pct":      gain_pct,
+            "cagr":          cagr,
+            "price_source":  price_source,
         })
     rows.sort(key=lambda r: (r["account"], r["ticker"]))
+    return rows
+
+
+VALID_ASSET_TYPES = ["EQUITY", "ETF", "MUTUALFUND", "BOND", "MONEYMARKET", "CRYPTOCURRENCY", "UNKNOWN"]
+
+
+def get_ticker_type_rows() -> list[dict]:
+    """
+    All active holdings with their current asset type, for the type editor.
+    Includes tickers not yet in ticker_metadata (shown as UNKNOWN).
+    """
+    positions = invh.get_all_active_ticker(live_price=False)
+    seen: dict[str, str] = {}
+    for pos in positions:
+        t = pos.ticker
+        if t not in seen:
+            seen[t] = pos.type or "UNKNOWN"
+    return [{"ticker": t, "asset_type": seen[t]} for t in sorted(seen)]
+
+
+def get_price_override_rows() -> list[dict]:
+    """Rows for the manual price override editor table."""
+    overrides = invh.get_all_manual_price_overrides()
+    rows = [{"ticker": t, "manual_price": p} for t, p in sorted(overrides.items())]
     return rows
 
 
@@ -737,6 +793,229 @@ def get_investment_transaction_rows(trans_types: list | None = None) -> list[dic
         })
     rows.sort(key=lambda r: r["date"], reverse=True)
     return rows
+
+
+# Maps yfinance/Finnhub quoteType strings to high-level allocation buckets.
+_ALLOC_GROUP = {
+    "EQUITY":         "Stocks",
+    "ETF":            "Stocks",
+    "MUTUALFUND":     "Stocks",
+    "BOND":           "Bonds",
+    "FIXEDINCOME":    "Bonds",
+    "CRYPTOCURRENCY": "Crypto",
+    "MONEYMARKET":    "Cash",
+}
+_ALLOC_COLORS = {
+    "Stocks": "#2563eb",
+    "Bonds":  "#f59e0b",
+    "Cash":   "#6b7280",
+    "Crypto": "#8b5cf6",
+    "Other":  "#94a3b8",
+}
+# Distinct colors for per-type equity breakdown
+_EQUITY_TYPE_COLORS = {
+    "EQUITY":     "#2563eb",
+    "ETF":        "#16a34a",
+    "MUTUALFUND": "#0891b2",
+}
+
+
+def _no_data_fig(title: str, height: int = 380) -> go.Figure:
+    fig = go.Figure()
+    fig.update_layout(
+        title=title,
+        height=height,
+        margin=dict(t=60, b=20, l=20, r=20),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+    return fig
+
+
+def build_investment_allocation_pie(positions: list[dict]) -> go.Figure:
+    """
+    High-level asset allocation pie: Stocks, Bonds, Cash, Crypto.
+    Cash always includes savings/checking DB balances.
+    Investment positions use market_value when available (cached or live prices).
+    """
+    buckets: dict[str, float] = {}
+
+    # Investment positions (populated when cached or live prices exist)
+    for row in positions:
+        mv = row.get("market_value") or 0
+        if mv <= 0:
+            continue
+        raw_type = (row.get("type") or "").upper()
+        label = _ALLOC_GROUP.get(raw_type, "Other")
+        buckets[label] = buckets.get(label, 0) + mv
+
+    # Always include savings (type=1) and checking (type=2) as Cash
+    for acc_id in dbh.account.get_all_account_ids():
+        if dbh.account.get_account_type(acc_id) in (1, 2):
+            amount, _ = dbh.balance.get_recent_balance(acc_id, add_date=True)
+            if amount and amount > 0:
+                buckets["Cash"] = buckets.get("Cash", 0) + amount
+
+    if not buckets:
+        return _no_data_fig("Asset Allocation — no data available")
+
+    labels = list(buckets.keys())
+    values = [buckets[l] for l in labels]
+    total = sum(values)
+
+    inv_note = "" if any(r.get("market_value") for r in positions) else " (investments need Refresh)"
+
+    fig = go.Figure(go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.4,
+        marker_colors=[_ALLOC_COLORS.get(l, "#94a3b8") for l in labels],
+        hovertemplate="<b>%{label}</b><br>$%{value:,.0f} (%{percent})<extra></extra>",
+        textinfo="label+percent",
+        textposition="outside",
+    ))
+    fig.update_layout(
+        title=f"Asset Allocation — ${total:,.0f} total{inv_note}",
+        showlegend=False,
+        margin=dict(t=60, b=40, l=20, r=20),
+        height=380,
+    )
+    return fig
+
+
+_EQUITY_TYPE_LABELS = {
+    "EQUITY":     "Individual Stocks",
+    "ETF":        "ETFs",
+    "MUTUALFUND": "Mutual Funds",
+}
+
+# Qualitative palette with enough distinct colors for per-ticker charts.
+_QUAL_PALETTE = [
+    "#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261",
+    "#6a4c93", "#06d6a0", "#f72585", "#4cc9f0", "#ffd166",
+    "#118ab2", "#8338ec", "#fb5607", "#3a86ff", "#a2d729",
+    "#264653", "#ef476f", "#ffbe0b", "#073b4c", "#a8dadc",
+]
+
+
+def build_equity_detail_pie(positions: list[dict]) -> go.Figure:
+    """
+    Breakdown of equity-type holdings into Individual Stocks, ETFs, and Mutual
+    Funds. Uses market_value when available, cost basis (avg_cost × shares) as
+    fallback — so all positions appear even before a price Refresh.
+    """
+    _EQUITY_TYPES = {"EQUITY", "ETF", "MUTUALFUND"}
+    buckets: dict[str, float] = {}
+    using_cost_basis = False
+
+    for row in positions:
+        raw_type = (row.get("type") or "").upper()
+        if raw_type not in _EQUITY_TYPES:
+            continue
+        mv = row.get("market_value") or 0
+        if mv > 0:
+            value = mv
+        else:
+            # Fall back to cost basis so the chart always has data
+            avg_cost = row.get("avg_cost") or 0
+            shares   = row.get("shares") or 0
+            value = avg_cost * shares
+            if value > 0:
+                using_cost_basis = True
+        if value <= 0:
+            continue
+        label = _EQUITY_TYPE_LABELS[raw_type]
+        buckets[label] = buckets.get(label, 0) + value
+
+    if not buckets:
+        return _no_data_fig("No equity positions available")
+
+    labels = list(buckets.keys())
+    values = [buckets[l] for l in labels]
+    total  = sum(values)
+    colors = [_EQUITY_TYPE_COLORS.get(
+        next(k for k, v in _EQUITY_TYPE_LABELS.items() if v == l), "#94a3b8"
+    ) for l in labels]
+
+    basis_note = " (cost basis)" if using_cost_basis else ""
+    fig = go.Figure(go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.4,
+        marker_colors=colors,
+        hovertemplate="<b>%{label}</b><br>$%{value:,.0f} (%{percent})<extra></extra>",
+        textinfo="label+percent",
+        textposition="outside",
+    ))
+    fig.update_layout(
+        title=f"Equity Breakdown — ${total:,.0f}{basis_note}",
+        showlegend=False,
+        margin=dict(t=60, b=40, l=20, r=20),
+        height=380,
+    )
+    return fig
+
+
+def build_equity_ticker_pie(positions: list[dict]) -> go.Figure:
+    """
+    Per-ticker breakdown of equity-type holdings. Each slice is one ticker,
+    colored with a distinct qualitative palette. Uses market_value when
+    available, cost basis fallback otherwise.
+    """
+    _EQUITY_TYPES = {"EQUITY", "ETF", "MUTUALFUND"}
+    ticker_vals: dict[str, float] = {}
+    ticker_types: dict[str, str] = {}
+    using_cost_basis = False
+
+    for row in positions:
+        raw_type = (row.get("type") or "").upper()
+        if raw_type not in _EQUITY_TYPES:
+            continue
+        ticker = row["ticker"]
+        mv = row.get("market_value") or 0
+        if mv > 0:
+            value = mv
+        else:
+            avg_cost = row.get("avg_cost") or 0
+            shares   = row.get("shares") or 0
+            value = avg_cost * shares
+            if value > 0:
+                using_cost_basis = True
+        if value <= 0:
+            continue
+        ticker_vals[ticker]  = ticker_vals.get(ticker, 0) + value
+        ticker_types[ticker] = _EQUITY_TYPE_LABELS.get(raw_type, raw_type)
+
+    if not ticker_vals:
+        return _no_data_fig("No equity positions available")
+
+    # Sort largest to smallest for a cleaner chart
+    sorted_tickers = sorted(ticker_vals, key=lambda t: ticker_vals[t], reverse=True)
+    labels     = sorted_tickers
+    values     = [ticker_vals[t] for t in sorted_tickers]
+    type_names = [ticker_types[t] for t in sorted_tickers]
+    colors     = [_QUAL_PALETTE[i % len(_QUAL_PALETTE)] for i in range(len(sorted_tickers))]
+    total      = sum(values)
+
+    basis_note = " (cost basis)" if using_cost_basis else ""
+    fig = go.Figure(go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.35,
+        marker_colors=colors,
+        customdata=type_names,
+        hovertemplate="<b>%{label}</b> (%{customdata})<br>$%{value:,.0f} (%{percent})<extra></extra>",
+        textinfo="label+percent",
+        textposition="outside",
+        textfont_size=11,
+    ))
+    fig.update_layout(
+        title=f"Holdings by Ticker — ${total:,.0f}{basis_note}",
+        showlegend=False,
+        margin=dict(t=60, b=40, l=60, r=60),
+        height=460,
+    )
+    return fig
 
 
 # ─── Wealth & balances ────────────────────────────────────────────────────────
@@ -1066,6 +1345,7 @@ def build_category_treemap() -> go.Figure:
         fig.update_layout(title="No categories defined")
         return fig
 
+    categories = [c for c in categories if c.id != 0]
     ids, labels, parents, values, keyword_counts = [], [], [], [], []
     id_to_name = {c.id: c.name for c in categories}
 
@@ -1111,6 +1391,9 @@ def get_category_tree_text() -> str:
     if not categories:
         return "```\n(no categories defined)\n```"
 
+    # id=0 is a special NA placeholder; exclude it to avoid a self-referential cycle
+    # (its parent_id=0 is falsy, so it would map to the virtual-root key 0 and recurse forever).
+    categories = [c for c in categories if c.id != 0]
     by_id: dict[int, object] = {c.id: c for c in categories}
     children_of: dict[int, list[int]] = {}
     for c in categories:

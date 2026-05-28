@@ -32,12 +32,17 @@ FINNHUB_API_KEY = "d632gspr01qnpqnvib80d632gspr01qnpqnvib8g"  # tag:hardcode
 
 # Persistent price cache file (gitignored) - survives program restarts
 PRICE_CACHE_FILE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "db", "price_cache.json"))
+PRICE_OVERRIDE_FILE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "db", "price_override.json"))
 
 # Price cache: {ticker: price} - populated from file on first use, then kept in memory
 _PRICE_CACHE = {}
 
 # Price cache dates: {ticker: "YYYY-MM-DD"} - tracks when each price was last fetched live
 _PRICE_CACHE_DATES = {}
+
+# Manual price overrides: {ticker: price} - user-set prices that take priority over everything
+_PRICE_OVERRIDE = {}
+_price_override_loaded = False
 
 # Whether the file cache has been loaded into memory yet (lazy load on first use)
 _price_cache_file_loaded = False
@@ -99,10 +104,18 @@ class InvestmentTransaction(Transaction):
             self.update_price()
             self.value = self.price * self.shares
         else:
-            # Use cached data or placeholder when not fetching live prices
-            self.type = _ASSET_TYPE_CACHE.get(ticker, "UNKNOWN")
-            self.price = self.strike_price  # Use historical strike price
-            # self.value keeps the value passed to constructor
+            # Use DB + file cache; no network calls
+            self.type = (
+                _ASSET_TYPE_CACHE.get(ticker)
+                or dbh.ticker_metadata.get_ticker_asset_type(ticker)
+                or "UNKNOWN"
+            )
+            _ensure_price_cache_loaded()
+            _ensure_overrides_loaded()
+            cached = _PRICE_OVERRIDE.get(ticker) or _PRICE_CACHE.get(ticker, 0)
+            self.price = float(cached) if cached and cached > 0 else max(float(self.strike_price), 0)
+            if self.price > 0:
+                self.value = self.price * float(self.shares)
 
     def update_price(self):
         """Update the current price for this ticker (uses caching)."""
@@ -216,6 +229,55 @@ def _save_price_cache_to_file():
         print(f"⚠️  Could not save price cache file: {e}")
 
 
+def _ensure_overrides_loaded():
+    """Lazily load manual price overrides from file into memory."""
+    global _price_override_loaded
+    if _price_override_loaded:
+        return
+    _price_override_loaded = True
+    if not os.path.exists(PRICE_OVERRIDE_FILE):
+        return
+    try:
+        with open(PRICE_OVERRIDE_FILE, 'r') as f:
+            data = json.load(f)
+        for ticker, entry in data.items():
+            if isinstance(entry, dict):
+                _PRICE_OVERRIDE[ticker] = entry.get('price', 0)
+            else:
+                _PRICE_OVERRIDE[ticker] = float(entry)
+    except Exception as e:
+        print(f"⚠️  Could not load price override file: {e}")
+
+
+def set_manual_price_override(ticker: str, price: float | None):
+    """Set (or clear if price is None/0) a manual price override for a ticker."""
+    global _price_override_loaded
+    _ensure_overrides_loaded()
+    ticker = ticker.upper()
+    if price and price > 0:
+        _PRICE_OVERRIDE[ticker] = float(price)
+    else:
+        _PRICE_OVERRIDE.pop(ticker, None)
+    try:
+        data = {t: {"price": p} for t, p in _PRICE_OVERRIDE.items()}
+        with open(PRICE_OVERRIDE_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️  Could not save price override file: {e}")
+
+
+def refresh_asset_type_cache():
+    """Clear the in-memory asset type cache so DB values are re-read on next access."""
+    global _ASSET_TYPE_CACHE
+    _ASSET_TYPE_CACHE = {}
+
+
+def get_all_manual_price_overrides() -> dict:
+    """Return a copy of the current manual price overrides dict {ticker: price}."""
+    _ensure_overrides_loaded()
+    return dict(_PRICE_OVERRIDE)
+
+
 def clear_price_cache():
     """Clear the price cache. Useful for forcing fresh data."""
     global _PRICE_CACHE, _PRICE_CACHE_DATES
@@ -264,8 +326,13 @@ def get_ticker_price(ticker, use_cache=True, max_retries=2):
     Returns:
         float: Current price, or 0 if unable to fetch
     """
-    # Load file-persisted cache into memory on first call
+    # Load file-persisted cache and overrides into memory on first call
     _ensure_price_cache_loaded()
+    _ensure_overrides_loaded()
+
+    # Manual override takes highest priority
+    if ticker in _PRICE_OVERRIDE and _PRICE_OVERRIDE[ticker] > 0:
+        return _PRICE_OVERRIDE[ticker]
 
     # Check cache (memory + previously loaded from file)
     if use_cache and ticker in _PRICE_CACHE:
