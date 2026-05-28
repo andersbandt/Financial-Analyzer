@@ -9,6 +9,8 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 import datetime as _dt
+import re
+import html as _html
 
 import db.helpers as dbh
 import categories.categories_helper as cath
@@ -142,6 +144,114 @@ def _income_expense_split(transactions):
         else:
             expenses += abs(t.value)
     return income, expenses
+
+
+# ─── Merchant extraction ──────────────────────────────────────────────────────
+
+_MERCH_SKIP_RE     = re.compile(r'^(ONLINE (TRANSFER|PAYMENT)|INTEREST PAYMENT|GE3|WIRE TRANSFER)', re.I)
+_MERCH_VENMO_RE    = re.compile(r'^VENMO', re.I)
+_MERCH_AMAZON_RE   = re.compile(r'^(AMZN|AMAZON|AMAZON\.COM)', re.I)
+_MERCH_PAYPAL_RE   = re.compile(r'^PAYPAL INST XFER \d+\s+', re.I)
+_MERCH_PURCHASE_RE = re.compile(r'^(PURCHASE|RECURRING PAYMENT) AUTHORIZED ON \d{1,2}/\d{1,2}\s+', re.I)
+_MERCH_PROC_RE     = re.compile(r'^[A-Z]{2,6}\*', re.I)   # payment processor prefix e.g. BPS*, CKO*, PL*
+
+
+def _extract_merchant(desc: str) -> str | None:
+    if not desc:
+        return None
+    desc = _html.unescape(desc)
+    if _MERCH_SKIP_RE.match(desc) or '<->' in desc:
+        return None
+    if _MERCH_VENMO_RE.match(desc):
+        return "Venmo"
+    if _MERCH_AMAZON_RE.match(desc):
+        return "Amazon"
+
+    m = _MERCH_PAYPAL_RE.match(desc)
+    if m:
+        rest = desc[m.end():]
+        words = rest.split()
+        return words[0].title() if words else "PayPal"
+
+    m = _MERCH_PURCHASE_RE.match(desc)
+    if m:
+        desc = desc[m.end():]
+
+    # Strip payment processor prefixes: BPS*, CKO*, SQ *, etc.
+    desc = re.sub(r'^SQ \*', '', desc, flags=re.I).strip()
+    desc = _MERCH_PROC_RE.sub('', desc).strip()
+
+    # Strip asterisks used as separators (e.g. "PROGRESSIVE *INSURANCE")
+    desc = re.sub(r'\s+\*', ' ', desc).strip()
+
+    # Strip trailing transaction ref codes
+    desc = re.sub(r'\s+[PS]\d{9,}.*$', '', desc).strip()
+    desc = re.sub(r'\s+CARD \d{4}$', '', desc, flags=re.I).strip()
+
+    # Strip trailing URLs/domains
+    desc = re.sub(r'\s+\S+\.(com|net|org|co)\S*$', '', desc, flags=re.I).strip()
+
+    # Strip trailing country / state codes
+    desc = re.sub(r'\s+USA\s*$', '', desc, flags=re.I).strip()
+    desc = re.sub(r'(\s+\S+){1,2}\s+[A-Z]{2}\s*$', '', desc).strip()
+    desc = re.sub(r'\s+[A-Z]{2}\s*$', '', desc).strip()
+
+    # Strip trailing single-letter location codes (e.g. trailing "B" in "BILT REWARDS B")
+    desc = re.sub(r'\s+[A-Z]\s*$', '', desc).strip()
+
+    # Strip store number suffixes: #2105, - 9006
+    desc = re.sub(r'\s*[#\-]\s*\d+\s*$', '', desc).strip()
+
+    # Take up to 3 words; skip a 3rd word that starts with a digit (street numbers, codes)
+    raw_words = desc.split()
+    words = raw_words[:2]
+    if len(raw_words) > 2 and not re.match(r'\d', raw_words[2]):
+        words.append(raw_words[2])
+    # Drop a trailing word that is purely numeric (e.g. "WAL-MART 3404")
+    if len(words) >= 2 and re.fullmatch(r'\d+', words[-1]):
+        words.pop()
+    merchant = ' '.join(words).rstrip('*-,.').strip()
+    return merchant if len(merchant) >= 2 else None
+
+
+def build_top_merchants_chart(months_prev: int, top_n: int = 20) -> go.Figure:
+    transactions = _period_transactions(months_prev)
+
+    totals: dict[str, float] = {}
+    for t in transactions:
+        if t.value >= 0:
+            continue
+        if _cat_name(t.category_id) in _SKIP_CATS:
+            continue
+        name = _extract_merchant(t.description or "")
+        if not name:
+            continue
+        totals[name] = totals.get(name, 0) + abs(t.value)
+
+    if not totals:
+        fig = go.Figure()
+        fig.update_layout(title=f"Top merchants — {_period_label(months_prev)} (no data)")
+        return fig
+
+    ranked = sorted(totals.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    merchants = [r[0] for r in ranked]
+    amounts   = [r[1] for r in ranked]
+
+    fig = go.Figure(go.Bar(
+        x=amounts[::-1],
+        y=merchants[::-1],
+        orientation="h",
+        marker_color="#2563eb",
+        hovertemplate="<b>%{y}</b><br>$%{x:,.0f}<extra></extra>",
+    ))
+    fig.update_layout(
+        title=f"Top {len(ranked)} merchants — {_period_label(months_prev)}",
+        xaxis=dict(title="Total ($)", tickprefix="$", tickformat=","),
+        yaxis=dict(automargin=True),
+        margin=dict(t=60, b=60, l=180, r=20),
+        height=max(400, len(ranked) * 28 + 100),
+    )
+    return fig
 
 
 # ─── Spending overview ────────────────────────────────────────────────────────
@@ -772,15 +882,18 @@ def get_investment_position_rows(live_price: bool = False) -> list[dict]:
 VALID_ASSET_TYPES = ["EQUITY", "ETF", "MUTUALFUND", "BOND", "MONEYMARKET", "CRYPTOCURRENCY", "UNKNOWN"]
 
 
-def get_account_summary_rows(positions: list[dict]) -> list[dict]:
+def get_account_summary_rows(positions: list[dict], account_filter: str | None = None) -> list[dict]:
     """
     Build per-account holdings summary from already-computed position rows.
-    Returns a flat list that includes one row per holding plus a subtotal row
-    per account (marked with _is_total=True for conditional styling).
+    Returns a flat list with one row per holding plus a subtotal row per account
+    (marked with _is_total=True for conditional styling).
+    Pass account_filter to restrict to a single account name.
     """
     from collections import defaultdict
     accounts: dict[str, list[dict]] = defaultdict(list)
     for row in positions:
+        if account_filter and row["account"] != account_filter:
+            continue
         accounts[row["account"]].append(row)
 
     result = []
@@ -791,17 +904,21 @@ def get_account_summary_rows(positions: list[dict]) -> list[dict]:
             result.append({
                 "account":       r["account"],
                 "ticker":        r["ticker"],
+                "type":          r.get("type") or "—",
                 "shares":        r["shares"],
                 "current_price": r["current_price"],
                 "market_value":  r["market_value"],
+                "gain_pct":      r.get("gain_pct"),
                 "_is_total":     False,
             })
         result.append({
             "account":       acc_name,
             "ticker":        f"TOTAL ({len(holdings)} holding{'s' if len(holdings) != 1 else ''})",
+            "type":          None,
             "shares":        None,
             "current_price": None,
             "market_value":  round(acc_total, 2) if acc_total else None,
+            "gain_pct":      None,
             "_is_total":     True,
         })
     return result

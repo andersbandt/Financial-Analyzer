@@ -223,6 +223,13 @@ def _spending_tab(category_options):
         ),
         html.Div(style=ROW, children=[_graph("chart-drilldown")]),
 
+        # Top merchants
+        html.Div("Top merchants by spending", style=SECTION_HEADER),
+        _control_bar(
+            _labeled("Period", _dropdown("dd-merchants-period", PERIOD_OPTIONS, 12, width="180px")),
+        ),
+        html.Div(style=ROW, children=[_graph("chart-top-merchants")]),
+
         # Sankey — with explicit date range
         html.Div("Spending flow (Sankey)", style=SECTION_HEADER),
         _control_bar(
@@ -636,20 +643,30 @@ def _investments_tab():
 
         # ── Account holdings summary ─────────────────────────────────────────
         html.Div("Account Holdings Summary", style=SECTION_HEADER),
-        html.P("Active positions grouped by account. Prices from cache — click 'Refresh (Live Prices)' to update.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        _control_bar(
+            _labeled("Account", _dropdown(
+                "inv-account-filter",
+                [{"label": "All accounts", "value": "all"}],
+                "all", width="260px",
+            )),
+            html.P("Prices from cache — click 'Refresh (Live Prices)' below to update.",
+                   style={"color": "#6b7a90", "fontSize": "13px", "margin": "0"}),
+        ),
         html.Div(style={**CARD, "marginBottom": "20px"}, children=[
             dash_table.DataTable(
                 id="inv-account-summary-table",
                 columns=[
-                    {"name": "Account",       "id": "account",       "type": "text"},
-                    {"name": "Ticker",        "id": "ticker",        "type": "text"},
-                    {"name": "Shares",        "id": "shares",        "type": "numeric",
+                    {"name": "Account",    "id": "account",       "type": "text"},
+                    {"name": "Ticker",     "id": "ticker",        "type": "text"},
+                    {"name": "Type",       "id": "type",          "type": "text"},
+                    {"name": "Shares",     "id": "shares",        "type": "numeric",
                      "format": {"specifier": ".4f"}},
-                    {"name": "Price ($)",     "id": "current_price", "type": "numeric",
+                    {"name": "Price ($)",  "id": "current_price", "type": "numeric",
                      "format": {"specifier": ",.2f"}},
-                    {"name": "Value ($)",     "id": "market_value",  "type": "numeric",
+                    {"name": "Value ($)",  "id": "market_value",  "type": "numeric",
                      "format": {"specifier": ",.2f"}},
+                    {"name": "Gain %",     "id": "gain_pct",      "type": "numeric",
+                     "format": {"specifier": ".2f"}},
                 ],
                 data=[],
                 style_cell={"fontSize": "13px", "padding": "6px 12px",
@@ -659,17 +676,28 @@ def _investments_tab():
                                "color": "#6b7a90", "textTransform": "uppercase",
                                "letterSpacing": "0.04em"},
                 style_data={"border": "1px solid #f0f2f5"},
+                style_cell_conditional=[
+                    {"if": {"column_id": "current_price"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "market_value"},  "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "gain_pct"},      "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "shares"},        "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                ],
                 style_data_conditional=[
-                    # Bold subtotal rows
                     {"if": {"filter_query": "{_is_total} = true"},
                      "fontWeight": "700", "backgroundColor": "#f0f4ff",
                      "borderTop": "2px solid #c7d2fe"},
                     {"if": {"row_index": "odd", "filter_query": "{_is_total} = false"},
                      "backgroundColor": "#fafbfc"},
-                    # Mute the repeated account name on holding rows
                     {"if": {"column_id": "account", "filter_query": "{_is_total} = false"},
                      "color": "#9aa5b4"},
-                    # Hide the internal _is_total column value
+                    {"if": {"filter_query": "{gain_pct} > 0", "column_id": "gain_pct"},
+                     "color": "#16a34a"},
+                    {"if": {"filter_query": "{gain_pct} < 0", "column_id": "gain_pct"},
+                     "color": "#c0392b"},
                     {"if": {"column_id": "_is_total"}, "display": "none"},
                 ],
                 style_table={"overflowX": "auto"},
@@ -680,7 +708,7 @@ def _investments_tab():
 
         # ── Asset allocation pies ────────────────────────────────────────────
         html.Div("Asset Allocation", style=SECTION_HEADER),
-        html.P("Breakdown by market value. Click 'Refresh (Live Prices)' below to populate.",
+        html.P("Breakdown by market value using cached prices. Click 'Refresh (Live Prices)' in the Portfolio Positions section to fetch live prices.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         # Row 1: high-level allocation + equity type breakdown
         html.Div(style={"display": "flex", "gap": "20px", "marginBottom": "20px"}, children=[
@@ -1196,6 +1224,13 @@ def create_app() -> Dash:
         show_trend = bool(trendline_chk and "trend" in trendline_chk)
         return charts.build_category_drilldown(category_id, months_prev, show_trendline=show_trend)
 
+    @app.callback(
+        Output("chart-top-merchants",  "figure"),
+        Input("dd-merchants-period",   "value"),
+    )
+    def update_top_merchants(months_prev):
+        return charts.build_top_merchants_chart(months_prev)
+
     # ── Sankey: quick-period selector updates the date pickers ───────────────
     @app.callback(
         Output("sankey-date-range", "start_date"),
@@ -1533,11 +1568,13 @@ def create_app() -> Dash:
         Output("inv-alloc-pie",             "figure"),
         Output("inv-equity-pie",            "figure"),
         Output("inv-ticker-pie",            "figure"),
+        Output("inv-account-filter",        "options"),
         Input("inv-refresh-btn",            "n_clicks"),
         Input("inv-override-save-btn",      "n_clicks"),
         Input("main-tabs",                  "value"),
+        State("inv-account-filter",         "value"),
     )
-    def update_inv_positions(refresh_clicks, _override_clicks, _tab):
+    def update_inv_positions(refresh_clicks, _override_clicks, _tab, account_filter):
         live = bool(refresh_clicks and refresh_clicks > 0)
         rows = charts.get_investment_position_rows(live_price=live)
         n = len(rows)
@@ -1549,11 +1586,26 @@ def create_app() -> Dash:
             status = (f"{n} position{'s' if n != 1 else ''} — {priced} prices from cache"
                       + (f", {missing} need Refresh" if missing else "")
                       + ". Click 'Refresh (Live Prices)' to update.")
-        summary_rows = charts.get_account_summary_rows(rows)
+        account_names = sorted({r["account"] for r in rows})
+        filter_options = [{"label": "All accounts", "value": "all"}] + [
+            {"label": name, "value": name} for name in account_names
+        ]
+        acct = None if (not account_filter or account_filter == "all") else account_filter
+        summary_rows = charts.get_account_summary_rows(rows, account_filter=acct)
         alloc_fig    = charts.build_investment_allocation_pie(rows)
         equity_fig   = charts.build_equity_detail_pie(rows)
         ticker_fig   = charts.build_equity_ticker_pie(rows)
-        return summary_rows, rows, status, alloc_fig, equity_fig, ticker_fig
+        return summary_rows, rows, status, alloc_fig, equity_fig, ticker_fig, filter_options
+
+    @app.callback(
+        Output("inv-account-summary-table", "data", allow_duplicate=True),
+        Input("inv-account-filter",         "value"),
+        prevent_initial_call=True,
+    )
+    def filter_holdings_by_account(account_filter):
+        rows = charts.get_investment_position_rows(live_price=False)
+        acct = None if (not account_filter or account_filter == "all") else account_filter
+        return charts.get_account_summary_rows(rows, account_filter=acct)
 
     # ── Save ticker type changes ──────────────────────────────────────────────
     @app.callback(

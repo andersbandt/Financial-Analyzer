@@ -396,17 +396,15 @@ Roughly in priority order:
 **Medium effort:**
 - [ ] **International vs US diversification** — chart or KPI showing % of equity holdings that are US-domestic vs international (e.g. VXUS); would need a domestic/international tag per ticker in `ticker_metadata` or a manual classification
 - [ ] **Ticker detail page** — drilldown for a single ticker: metadata, price history, position history over time
-- [ ] **Live asset allocation with Refresh** — hook the Investments tab allocation pies to a "Refresh (Live Prices)" button so clicking Refresh updates the pies with live data (currently they always use cached/cost-basis)
 
 **Polish:**
-- [ ] Dark mode toggle
 - [ ] Persist period/dropdown selections across page refreshes via `dcc.Store` (tab selection is already persisted via URL hash; this is for per-tab controls like the period dropdown)
 - [ ] Make the transaction table link back to CLI (e.g. copy sql_key for `a07_add_note`)
-- [ ] Calendar heatmap of daily spending (GitHub-style grid)
-- [ ] Top merchants chart (group by extracted merchant name)
 - [ ] Year-over-year comparison (pick two date ranges, view deltas side-by-side)
 
 **Shipped (recent sessions):**
+- [x] **Top merchants chart** — horizontal bar chart of top 20 merchants by spend, with regex-based merchant name extraction from raw descriptions; in Spending tab with its own period selector
+- [x] **Live asset allocation with Refresh** — allocation pies auto-populate from cache on tab load; "Refresh (Live Prices)" button in Portfolio Positions section re-fetches all three pies with live data
 - [x] **URL tab routing** — `dcc.Location` + `sync_tab_url` callback; each tab has a hash URL (`/#investments` etc.) that persists on refresh and works with browser back/forward
 - [x] **Ticker Type Manager** — per-ticker `dcc.Dropdown` grid (replaced broken DataTable dropdown); Save button uses pattern-matching `ALL` callback to reliably persist types to `ticker_metadata`
 - [x] **Asset allocation consistency** — all three investment pies now use the same valuation logic (market_value when available, avg_cost * shares fallback), so totals match across charts
