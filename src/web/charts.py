@@ -744,6 +744,41 @@ def get_investment_position_rows(live_price: bool = False) -> list[dict]:
 VALID_ASSET_TYPES = ["EQUITY", "ETF", "MUTUALFUND", "BOND", "MONEYMARKET", "CRYPTOCURRENCY", "UNKNOWN"]
 
 
+def get_account_summary_rows(positions: list[dict]) -> list[dict]:
+    """
+    Build per-account holdings summary from already-computed position rows.
+    Returns a flat list that includes one row per holding plus a subtotal row
+    per account (marked with _is_total=True for conditional styling).
+    """
+    from collections import defaultdict
+    accounts: dict[str, list[dict]] = defaultdict(list)
+    for row in positions:
+        accounts[row["account"]].append(row)
+
+    result = []
+    for acc_name in sorted(accounts):
+        holdings = accounts[acc_name]
+        acc_total = sum((r.get("market_value") or 0) for r in holdings)
+        for r in sorted(holdings, key=lambda x: x["ticker"]):
+            result.append({
+                "account":       r["account"],
+                "ticker":        r["ticker"],
+                "shares":        r["shares"],
+                "current_price": r["current_price"],
+                "market_value":  r["market_value"],
+                "_is_total":     False,
+            })
+        result.append({
+            "account":       acc_name,
+            "ticker":        f"TOTAL ({len(holdings)} holding{'s' if len(holdings) != 1 else ''})",
+            "shares":        None,
+            "current_price": None,
+            "market_value":  round(acc_total, 2) if acc_total else None,
+            "_is_total":     True,
+        })
+    return result
+
+
 def get_ticker_type_rows() -> list[dict]:
     """
     All active holdings with their current asset type, for the type editor.

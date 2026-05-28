@@ -502,6 +502,50 @@ def _investments_tab():
     }
     return html.Div(style=TAB_CONTENT_STYLE, children=[
 
+        # ── Account holdings summary ─────────────────────────────────────────
+        html.Div("Account Holdings Summary", style=SECTION_HEADER),
+        html.P("Active positions grouped by account. Prices from cache — click 'Refresh (Live Prices)' to update.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            dash_table.DataTable(
+                id="inv-account-summary-table",
+                columns=[
+                    {"name": "Account",       "id": "account",       "type": "text"},
+                    {"name": "Ticker",        "id": "ticker",        "type": "text"},
+                    {"name": "Shares",        "id": "shares",        "type": "numeric",
+                     "format": {"specifier": ".4f"}},
+                    {"name": "Price ($)",     "id": "current_price", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Value ($)",     "id": "market_value",  "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                ],
+                data=[],
+                style_cell={"fontSize": "13px", "padding": "6px 12px",
+                             "fontFamily": "system-ui, -apple-system, sans-serif"},
+                style_header={"fontWeight": "600", "background": "#f8f9fb",
+                               "borderBottom": "2px solid #dde2ea", "fontSize": "12px",
+                               "color": "#6b7a90", "textTransform": "uppercase",
+                               "letterSpacing": "0.04em"},
+                style_data={"border": "1px solid #f0f2f5"},
+                style_data_conditional=[
+                    # Bold subtotal rows
+                    {"if": {"filter_query": "{_is_total} = true"},
+                     "fontWeight": "700", "backgroundColor": "#f0f4ff",
+                     "borderTop": "2px solid #c7d2fe"},
+                    {"if": {"row_index": "odd", "filter_query": "{_is_total} = false"},
+                     "backgroundColor": "#fafbfc"},
+                    # Mute the repeated account name on holding rows
+                    {"if": {"column_id": "account", "filter_query": "{_is_total} = false"},
+                     "color": "#9aa5b4"},
+                    # Hide the internal _is_total column value
+                    {"if": {"column_id": "_is_total"}, "display": "none"},
+                ],
+                style_table={"overflowX": "auto"},
+                sort_action="none",
+                filter_action="none",
+            ),
+        ]),
+
         # ── Asset allocation pies ────────────────────────────────────────────
         html.Div("Asset Allocation", style=SECTION_HEADER),
         html.P("Breakdown by market value. Click 'Refresh (Live Prices)' below to populate.",
@@ -1230,14 +1274,15 @@ def create_app() -> Dash:
 
     # ── Investment positions (live prices behind Refresh button) ─────────────
     @app.callback(
-        Output("inv-positions-table",  "data"),
-        Output("inv-refresh-status",   "children"),
-        Output("inv-alloc-pie",        "figure"),
-        Output("inv-equity-pie",       "figure"),
-        Output("inv-ticker-pie",       "figure"),
-        Input("inv-refresh-btn",       "n_clicks"),
-        Input("inv-override-save-btn", "n_clicks"),
-        Input("main-tabs",             "value"),
+        Output("inv-account-summary-table", "data"),
+        Output("inv-positions-table",       "data"),
+        Output("inv-refresh-status",        "children"),
+        Output("inv-alloc-pie",             "figure"),
+        Output("inv-equity-pie",            "figure"),
+        Output("inv-ticker-pie",            "figure"),
+        Input("inv-refresh-btn",            "n_clicks"),
+        Input("inv-override-save-btn",      "n_clicks"),
+        Input("main-tabs",                  "value"),
     )
     def update_inv_positions(refresh_clicks, _override_clicks, _tab):
         live = bool(refresh_clicks and refresh_clicks > 0)
@@ -1251,10 +1296,11 @@ def create_app() -> Dash:
             status = (f"{n} position{'s' if n != 1 else ''} — {priced} prices from cache"
                       + (f", {missing} need Refresh" if missing else "")
                       + ". Click 'Refresh (Live Prices)' to update.")
-        alloc_fig  = charts.build_investment_allocation_pie(rows)
-        equity_fig = charts.build_equity_detail_pie(rows)
-        ticker_fig = charts.build_equity_ticker_pie(rows)
-        return rows, status, alloc_fig, equity_fig, ticker_fig
+        summary_rows = charts.get_account_summary_rows(rows)
+        alloc_fig    = charts.build_investment_allocation_pie(rows)
+        equity_fig   = charts.build_equity_detail_pie(rows)
+        ticker_fig   = charts.build_equity_ticker_pie(rows)
+        return summary_rows, rows, status, alloc_fig, equity_fig, ticker_fig
 
     # ── Save ticker type changes ──────────────────────────────────────────────
     @app.callback(
