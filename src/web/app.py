@@ -443,7 +443,7 @@ def _categories_tab():
         html.Div(style={"display": "flex", "gap": "20px", "marginBottom": "20px",
                         "alignItems": "flex-start"}, children=[
 
-            # Left: sortable/filterable list of all categories
+            # Left: sortable/filterable reference table
             html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
                 html.Div("All Categories", style={**KPI_LABEL, "marginBottom": "8px"}),
                 dash_table.DataTable(
@@ -455,8 +455,6 @@ def _categories_tab():
                         {"name": "Keywords", "id": "keyword_count", "type": "numeric"},
                     ],
                     data=[],
-                    row_selectable="single",
-                    selected_rows=[],
                     sort_action="native",
                     filter_action="native",
                     filter_options={"case": "insensitive"},
@@ -467,8 +465,6 @@ def _categories_tab():
                     style_cell=_TABLE_STYLE["style_cell"],
                     style_data_conditional=[
                         {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                        {"if": {"state": "selected"},
-                         "backgroundColor": "#e8f0fe", "border": "1px solid #4a80e8"},
                     ],
                 ),
             ]),
@@ -480,9 +476,23 @@ def _categories_tab():
                                 "marginBottom": "16px"},
                          children="Select a category to edit"),
 
-                # Name
+                # Category selector dropdown
                 html.Div(style={"marginBottom": "16px"}, children=[
-                    html.Label("Name", style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
+                    html.Label("Category", style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
+                    dcc.Dropdown(
+                        id="cat-selector-dropdown",
+                        options=[],
+                        value=None,
+                        searchable=True,
+                        clearable=True,
+                        placeholder="Search and select a category…",
+                        style={"fontSize": "14px"},
+                    ),
+                ]),
+
+                # Name (rename)
+                html.Div(style={"marginBottom": "16px"}, children=[
+                    html.Label("Rename", style={**KPI_LABEL, "display": "block", "marginBottom": "4px"}),
                     html.Div(style={"display": "flex", "gap": "8px", "alignItems": "center"}, children=[
                         dcc.Input(id="cat-edit-name", type="text", debounce=False,
                                   placeholder="Category name", style=_input_style),
@@ -723,11 +733,35 @@ def _investments_tab():
                           config={"displayModeBar": False}),
             ]),
         ]),
-        # Row 2: per-ticker breakdown (wider, taller)
-        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
-            dcc.Graph(id="inv-ticker-pie",
-                      figure=charts.build_equity_ticker_pie([]),
-                      config={"displayModeBar": False}),
+        # Row 2: per-ticker breakdown + copyable table
+        html.Div(style={**CARD, "marginBottom": "20px",
+                        "display": "flex", "gap": "20px", "alignItems": "flex-start"}, children=[
+            html.Div(style={"flex": "1 1 0", "minWidth": "0"}, children=[
+                dcc.Graph(id="inv-ticker-pie",
+                          figure=charts.build_equity_ticker_pie([]),
+                          config={"displayModeBar": False}),
+            ]),
+            html.Div(style={"flex": "0 0 220px", "paddingTop": "16px"}, children=[
+                html.Div("Holdings by Ticker",
+                         style={**KPI_LABEL, "marginBottom": "8px"}),
+                dash_table.DataTable(
+                    id="inv-ticker-pct-table",
+                    columns=[
+                        {"name": "Ticker", "id": "ticker", "type": "text"},
+                        {"name": "%",      "id": "pct",    "type": "numeric",
+                         "format": {"specifier": ".2f"}},
+                    ],
+                    data=[],
+                    sort_action="native",
+                    page_action="none",
+                    style_table={"overflowY": "auto", "maxHeight": "380px"},
+                    style_header=_TABLE_STYLE["style_header"],
+                    style_cell={**_TABLE_STYLE["style_cell"], "padding": "5px 10px"},
+                    style_data_conditional=[
+                        {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                    ],
+                ),
+            ]),
         ]),
 
         # ── Ticker type manager ───────────────────────────────────────────────
@@ -862,6 +896,133 @@ def _investments_tab():
                                "borderBottom": "2px solid #dde2ea"},
                 style_data={"border": "1px solid #f0f2f5"},
                 style_table={"maxHeight": "200px", "overflowY": "auto"},
+            ),
+        ]),
+
+        # ── Record Dividend ───────────────────────────────────────────────────
+        html.Div("Record Dividend (Share-based)", style=SECTION_HEADER),
+        html.P("Enter the total shares you currently hold. "
+               "The delta vs your recorded total is recorded as a DIV transaction.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "flex-end",
+                            "marginBottom": "12px", "flexWrap": "wrap"}, children=[
+                html.Div(children=[
+                    html.Label("Account",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Dropdown(id="inv-div-account", options=[], value=None,
+                                 searchable=True, clearable=True,
+                                 placeholder="Select account…",
+                                 style={"width": "220px", "fontSize": "14px"}),
+                ]),
+                html.Div(children=[
+                    html.Label("Ticker",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Dropdown(id="inv-div-ticker", options=[], value=None,
+                                 searchable=True, clearable=True,
+                                 placeholder="Select ticker…",
+                                 style={"width": "160px", "fontSize": "14px"}),
+                ]),
+            ]),
+            html.Div(id="inv-div-info",
+                     style={"fontSize": "13px", "color": "#1a2940",
+                            "marginBottom": "12px", "minHeight": "20px"}),
+            html.Div(style={"display": "flex", "gap": "10px", "alignItems": "flex-end",
+                            "flexWrap": "wrap"}, children=[
+                html.Div(children=[
+                    html.Label("Total shares currently owned",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-div-total", type="number", min=0, step="any",
+                              placeholder="e.g. 152.3456", debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "160px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
+                ]),
+                html.Div(children=[
+                    html.Label("Note (optional)",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-div-note", type="text", placeholder="Optional note",
+                              debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "220px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
+                ]),
+                html.Button("Add Dividend", id="inv-div-submit", n_clicks=0,
+                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#27ae60", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer",
+                                   "alignSelf": "flex-end"}),
+            ]),
+            html.Span(id="inv-div-status",
+                      style={"fontSize": "12px", "color": "#6b7a90",
+                             "display": "block", "marginTop": "8px"}),
+        ]),
+
+        # ── What If: Unsold Positions ─────────────────────────────────────────
+        html.Div("What If: Unsold Positions", style=SECTION_HEADER),
+        html.P("For each SELL transaction, shows what those shares would be worth today. "
+               "Positive delta = stock rose after sale. Negative delta = good call to sell.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            html.Div(style={"display": "flex", "gap": "16px", "alignItems": "center",
+                            "marginBottom": "12px"}, children=[
+                html.Button("Refresh (Live Prices)", id="inv-whatif-refresh-btn", n_clicks=0,
+                            style=btn_style),
+                html.Span(id="inv-whatif-status",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
+            dash_table.DataTable(
+                id="inv-whatif-table",
+                columns=[
+                    {"name": "Date Sold",       "id": "date",          "type": "text"},
+                    {"name": "Account",         "id": "account",       "type": "text"},
+                    {"name": "Ticker",          "id": "ticker",        "type": "text"},
+                    {"name": "Shares",          "id": "shares",        "type": "numeric",
+                     "format": {"specifier": ".4f"}},
+                    {"name": "Sale Price ($)",  "id": "sale_price",    "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Proceeds ($)",    "id": "proceeds",      "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Price Today ($)", "id": "current_price", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Value if Held ($)", "id": "value_if_held", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Delta ($)",       "id": "delta_dollar",  "type": "numeric",
+                     "format": {"specifier": "+,.2f"}},
+                    {"name": "Delta (%)",       "id": "delta_pct",     "type": "numeric",
+                     "format": {"specifier": "+.2f"}},
+                    {"name": "Days Since Sale", "id": "days_since",    "type": "numeric"},
+                ],
+                data=[],
+                style_cell_conditional=[
+                    {"if": {"column_id": "sale_price"},    "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "proceeds"},      "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "current_price"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "value_if_held"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "delta_dollar"},  "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "delta_pct"},     "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "days_since"},    "textAlign": "right"},
+                ],
+                style_data_conditional=[
+                    {"if": {"filter_query": "{delta_dollar} > 0", "column_id": "delta_dollar"},
+                     "color": "#c0392b"},
+                    {"if": {"filter_query": "{delta_dollar} < 0", "column_id": "delta_dollar"},
+                     "color": "#27ae60"},
+                    {"if": {"filter_query": "{delta_pct} > 0",    "column_id": "delta_pct"},
+                     "color": "#c0392b"},
+                    {"if": {"filter_query": "{delta_pct} < 0",    "column_id": "delta_pct"},
+                     "color": "#27ae60"},
+                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                ],
+                **{**_TABLE_STYLE, "page_size": 25},
             ),
         ]),
 
@@ -1350,32 +1511,35 @@ def create_app() -> Dash:
     def update_categories(_tab):
         return charts.build_category_treemap(), charts.get_category_tree_text()
 
-    # ── Category editor: load table ───────────────────────────────────────────
+    # ── Category editor: load table + dropdown ────────────────────────────────
     @app.callback(
-        Output("cat-categories-table", "data"),
+        Output("cat-categories-table",  "data"),
+        Output("cat-selector-dropdown", "options"),
         Input("main-tabs", "value"),
     )
     def load_cat_table(_tab):
-        return charts.get_category_editor_rows()
+        rows = charts.get_category_editor_rows()
+        opts = [{"label": r["name"], "value": r["id"]} for r in rows]
+        return rows, opts
 
-    # ── Category editor: populate edit panel when a row is selected ───────────
+    # ── Category editor: populate edit panel from dropdown selection ──────────
     @app.callback(
         Output("cat-selected-id",    "data"),
         Output("cat-edit-heading",   "children"),
         Output("cat-edit-name",      "value"),
         Output("cat-edit-parent",    "options"),
         Output("cat-edit-parent",    "value"),
-        Input("cat-categories-table", "selected_rows"),
-        State("cat-categories-table", "data"),
+        Input("cat-selector-dropdown", "value"),
     )
-    def load_cat_editor(selected_rows, data):
-        if not selected_rows or not data:
+    def load_cat_editor(cat_id):
+        if cat_id is None:
             return None, "Select a category to edit", "", [], None
-        row = data[selected_rows[0]]
-        cat_id   = row["id"]
-        cat_name = row["name"]
-        parent_id = row.get("parent_id")
         all_rows = charts.get_category_editor_rows()
+        row = next((r for r in all_rows if r["id"] == cat_id), None)
+        if row is None:
+            return None, "Category not found", "", [], None
+        cat_name  = row["name"]
+        parent_id = row.get("parent_id")
         parent_options = [{"label": "Root (level 1)", "value": 1}] + [
             {"label": f"{r['name']} (id={r['id']})", "value": r["id"]}
             for r in all_rows if r["id"] != cat_id
@@ -1396,6 +1560,7 @@ def create_app() -> Dash:
         Output("cat-name-status",       "children"),
         Output("cat-edit-heading",      "children",  allow_duplicate=True),
         Output("cat-categories-table",  "data",      allow_duplicate=True),
+        Output("cat-selector-dropdown", "options",   allow_duplicate=True),
         Input("cat-save-name-btn",      "n_clicks"),
         State("cat-edit-name",          "value"),
         State("cat-selected-id",        "data"),
@@ -1403,15 +1568,18 @@ def create_app() -> Dash:
     )
     def save_cat_name(n_clicks, new_name, cat_id):
         if cat_id is None or not new_name or not new_name.strip():
-            return "Nothing to save.", no_update, no_update
+            return "Nothing to save.", no_update, no_update, no_update
         new_name = new_name.strip()
         dbh.category.update_category_name(cat_id, new_name)
-        return f"Renamed to '{new_name}'.", f"Editing: {new_name}", charts.get_category_editor_rows()
+        rows = charts.get_category_editor_rows()
+        opts = [{"label": r["name"], "value": r["id"]} for r in rows]
+        return f"Renamed to '{new_name}'.", f"Editing: {new_name}", rows, opts
 
     # ── Category editor: save parent ──────────────────────────────────────────
     @app.callback(
         Output("cat-parent-status",     "children"),
         Output("cat-categories-table",  "data",      allow_duplicate=True),
+        Output("cat-selector-dropdown", "options",   allow_duplicate=True),
         Input("cat-save-parent-btn",    "n_clicks"),
         State("cat-edit-parent",        "value"),
         State("cat-selected-id",        "data"),
@@ -1419,11 +1587,13 @@ def create_app() -> Dash:
     )
     def save_cat_parent(n_clicks, new_parent_id, cat_id):
         if cat_id is None or new_parent_id is None:
-            return "Nothing to save.", no_update
+            return "Nothing to save.", no_update, no_update
         if new_parent_id == cat_id:
-            return "Cannot set a category as its own parent.", no_update
+            return "Cannot set a category as its own parent.", no_update, no_update
         dbh.category.update_parent(cat_id, new_parent_id)
-        return f"Parent updated (id={new_parent_id}).", charts.get_category_editor_rows()
+        rows = charts.get_category_editor_rows()
+        opts = [{"label": r["name"], "value": r["id"]} for r in rows]
+        return f"Parent updated (id={new_parent_id}).", rows, opts
 
     # ── Category editor: keyword add / delete ─────────────────────────────────
     @app.callback(
@@ -1432,6 +1602,7 @@ def create_app() -> Dash:
         Output("cat-kw-status",         "children"),
         Output("cat-new-kw",            "value"),
         Output("cat-categories-table",  "data",          allow_duplicate=True),
+        Output("cat-selector-dropdown", "options",       allow_duplicate=True),
         Input("cat-add-kw-btn",         "n_clicks"),
         Input("cat-delete-kw-btn",      "n_clicks"),
         State("cat-new-kw",             "value"),
@@ -1443,28 +1614,33 @@ def create_app() -> Dash:
     def keyword_actions(add_clicks, del_clicks, new_kw, selected_rows, kw_data, cat_id):
         trigger = ctx.triggered_id
         if cat_id is None:
-            return no_update, no_update, "No category selected.", no_update, no_update
+            return no_update, no_update, "No category selected.", no_update, no_update, no_update
 
         if trigger == "cat-add-kw-btn":
             if not new_kw or not new_kw.strip():
-                return no_update, no_update, "Enter a keyword first.", no_update, no_update
+                return no_update, no_update, "Enter a keyword first.", no_update, no_update, no_update
             kw = new_kw.strip().upper()
+            existing = {r["keyword"] for r in (kw_data or [])}
+            if kw in existing:
+                return no_update, no_update, f"'{kw}' already exists for this category.", no_update, no_update, no_update
             dbh.keywords.insert_keyword(kw, cat_id)
             kw_rows  = charts.get_keywords_for_category(cat_id)
             cat_rows = charts.get_category_editor_rows()
-            return kw_rows, [], f"Added '{kw}'.", "", cat_rows
+            opts     = [{"label": r["name"], "value": r["id"]} for r in cat_rows]
+            return kw_rows, [], f"Added '{kw}'.", "", cat_rows, opts
 
         if trigger == "cat-delete-kw-btn":
             if not selected_rows:
-                return no_update, no_update, "Select keywords to delete.", no_update, no_update
+                return no_update, no_update, "Select keywords to delete.", no_update, no_update, no_update
             for idx in selected_rows:
                 dbh.keywords.delete_keyword(kw_data[idx]["kw_id"])
             n = len(selected_rows)
             kw_rows  = charts.get_keywords_for_category(cat_id)
             cat_rows = charts.get_category_editor_rows()
-            return kw_rows, [], f"Deleted {n} keyword{'s' if n != 1 else ''}.", no_update, cat_rows
+            opts     = [{"label": r["name"], "value": r["id"]} for r in cat_rows]
+            return kw_rows, [], f"Deleted {n} keyword{'s' if n != 1 else ''}.", no_update, cat_rows, opts
 
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update
 
     # ── Balance over time (by account + by type) ─────────────────────────────
     @app.callback(
@@ -1569,6 +1745,7 @@ def create_app() -> Dash:
         Output("inv-equity-pie",            "figure"),
         Output("inv-ticker-pie",            "figure"),
         Output("inv-account-filter",        "options"),
+        Output("inv-ticker-pct-table",      "data"),
         Input("inv-refresh-btn",            "n_clicks"),
         Input("inv-override-save-btn",      "n_clicks"),
         Input("main-tabs",                  "value"),
@@ -1595,7 +1772,8 @@ def create_app() -> Dash:
         alloc_fig    = charts.build_investment_allocation_pie(rows)
         equity_fig   = charts.build_equity_detail_pie(rows)
         ticker_fig   = charts.build_equity_ticker_pie(rows)
-        return summary_rows, rows, status, alloc_fig, equity_fig, ticker_fig, filter_options
+        pct_rows     = charts.get_ticker_pct_rows(rows)
+        return summary_rows, rows, status, alloc_fig, equity_fig, ticker_fig, filter_options, pct_rows
 
     @app.callback(
         Output("inv-account-summary-table", "data", allow_duplicate=True),
@@ -1609,10 +1787,11 @@ def create_app() -> Dash:
 
     # ── Save ticker type changes ──────────────────────────────────────────────
     @app.callback(
-        Output("inv-type-status",  "children"),
-        Output("inv-alloc-pie",    "figure", allow_duplicate=True),
-        Output("inv-equity-pie",   "figure", allow_duplicate=True),
-        Output("inv-ticker-pie",   "figure", allow_duplicate=True),
+        Output("inv-type-status",       "children"),
+        Output("inv-alloc-pie",         "figure",   allow_duplicate=True),
+        Output("inv-equity-pie",        "figure",   allow_duplicate=True),
+        Output("inv-ticker-pie",        "figure",   allow_duplicate=True),
+        Output("inv-ticker-pct-table",  "data",     allow_duplicate=True),
         Input("inv-type-save-btn", "n_clicks"),
         State({"type": "ticker-type", "ticker": ALL}, "value"),
         State({"type": "ticker-type", "ticker": ALL}, "id"),
@@ -1641,6 +1820,7 @@ def create_app() -> Dash:
             charts.build_investment_allocation_pie(rows),
             charts.build_equity_detail_pie(rows),
             charts.build_equity_ticker_pie(rows),
+            charts.get_ticker_pct_rows(rows),
         )
 
     # ── Save manual price override ────────────────────────────────────────────
@@ -1663,13 +1843,109 @@ def create_app() -> Dash:
         msg = f"Override {'set' if p else 'cleared'}: {t}" + (f" = ${p:,.4f}" if p else "")
         return msg, charts.get_price_override_rows(), "", None
 
+    # ── Dividend form: account dropdown ───────────────────────────────────────
+    @app.callback(
+        Output("inv-div-account", "options"),
+        Input("main-tabs",        "value"),
+    )
+    def load_div_accounts(_tab):
+        ids = dbh.account.get_account_id_by_type(4)
+        return [{"label": dbh.account.get_account_name_from_id(aid), "value": aid} for aid in ids]
+
+    # ── Dividend form: ticker dropdown (populated from account) ───────────────
+    @app.callback(
+        Output("inv-div-ticker",  "options"),
+        Output("inv-div-ticker",  "value"),
+        Output("inv-div-info",    "children"),
+        Input("inv-div-account",  "value"),
+        prevent_initial_call=True,
+    )
+    def load_div_tickers(account_id):
+        if account_id is None:
+            return [], None, ""
+        tickers = sorted(row[0] for row in dbh.investments.get_account_ticker(account_id))
+        opts    = [{"label": t, "value": t} for t in tickers]
+        return opts, None, ""
+
+    # ── Dividend form: show recorded shares when ticker selected ──────────────
+    @app.callback(
+        Output("inv-div-info", "children", allow_duplicate=True),
+        Input("inv-div-ticker",  "value"),
+        State("inv-div-account", "value"),
+        prevent_initial_call=True,
+    )
+    def show_recorded_shares(ticker, account_id):
+        if ticker is None or account_id is None:
+            return ""
+        try:
+            shares = invh.get_account_ticker_shares(account_id, ticker)
+            return f"Recorded shares on file: {shares:.4f}"
+        except Exception:
+            return "No recorded shares found for this ticker/account."
+
+    # ── Dividend form: submit ─────────────────────────────────────────────────
+    @app.callback(
+        Output("inv-div-status", "children"),
+        Output("inv-div-total",  "value"),
+        Output("inv-div-note",   "value"),
+        Input("inv-div-submit",  "n_clicks"),
+        State("inv-div-account", "value"),
+        State("inv-div-ticker",  "value"),
+        State("inv-div-total",   "value"),
+        State("inv-div-note",    "value"),
+        prevent_initial_call=True,
+    )
+    def submit_dividend(_clicks, account_id, ticker, total_shares, note):
+        if account_id is None or ticker is None:
+            return "Select an account and ticker first.", no_update, no_update
+        if total_shares is None:
+            return "Enter the total shares currently owned.", no_update, no_update
+        try:
+            recorded      = invh.get_account_ticker_shares(account_id, ticker)
+            div_shares    = round(float(total_shares) - recorded, 8)
+            if div_shares <= 0:
+                return (f"Calculated dividend ({div_shares:.4f}) is zero or negative — "
+                        f"recorded total is {recorded:.4f}. Check your entry."), no_update, no_update
+            today = dateh.get_cur_str_date()
+            dbh.investments.insert_investment(
+                today, account_id, ticker, div_shares, "DIV", 0.00,
+                description=f"DIVIDEND: {div_shares:.4f}",
+                note=note or "",
+            )
+            return (f"Added {div_shares:.4f} dividend shares for {ticker} "
+                    f"(was {recorded:.4f} → now {float(total_shares):.4f})."), None, None
+        except Exception as e:
+            return f"Error: {e}", no_update, no_update
+
+    # ── What If: Unsold Positions ─────────────────────────────────────────────
+    @app.callback(
+        Output("inv-whatif-table",          "data"),
+        Output("inv-whatif-status",         "children"),
+        Input("inv-whatif-refresh-btn",     "n_clicks"),
+        Input("main-tabs",                  "value"),
+    )
+    def update_whatif_table(refresh_clicks, _tab):
+        live = bool(refresh_clicks and refresh_clicks > 0)
+        rows = charts.get_whatif_unsold_rows(live_price=live)
+        n = len(rows)
+        priced = sum(1 for r in rows if r.get("current_price") is not None)
+        missing = n - priced
+        if live:
+            status = f"{n} sell transaction{'s' if n != 1 else ''} — live prices loaded ({missing} unavailable)."
+        else:
+            status = (f"{n} sell transaction{'s' if n != 1 else ''} — {priced} prices from cache"
+                      + (f", {missing} need Refresh" if missing else "")
+                      + ". Click 'Refresh (Live Prices)' to update.")
+        return rows, status
+
     # ── Investment transactions (type filter) ─────────────────────────────────
     @app.callback(
         Output("inv-transactions-table", "data"),
         Input("inv-type-filter",         "value"),
         Input("main-tabs",               "value"),
+        Input("inv-div-submit",          "n_clicks"),
     )
-    def update_inv_transactions(trans_types, _tab):
+    def update_inv_transactions(trans_types, _tab, _submit):
         return charts.get_investment_transaction_rows(trans_types=trans_types or None)
 
     # ── Largest transactions ─────────────────────────────────────────────────

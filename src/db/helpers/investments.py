@@ -110,6 +110,19 @@ def get_investment_ledge_data():
     return ledger_data
 
 
+def get_sell_transactions():
+    """Returns all SELL transactions as (id, date, account_id, ticker, shares, value), newest first."""
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, date, account_id, ticker, shares, value
+            FROM investment
+            WHERE trans_type = 'SELL'
+            ORDER BY date DESC
+        """)
+        return cur.fetchall()
+
+
 # get_all_ticker: gets all the tickers in the database
 def get_all_ticker():
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:

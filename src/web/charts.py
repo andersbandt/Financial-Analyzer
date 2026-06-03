@@ -975,6 +975,47 @@ def get_investment_transaction_rows(trans_types: list | None = None) -> list[dic
     return rows
 
 
+def get_whatif_unsold_rows(live_price: bool = False) -> list[dict]:
+    """
+    For every SELL transaction, compute what those shares would be worth today
+    vs what was actually received. Positive delta = stock rose after sale (regret).
+    Negative delta = stock fell after sale (good call).
+    """
+    sells = dbh.investments.get_sell_transactions()
+    today = _dt.date.today()
+    rows = []
+    for row in sells:
+        _, date, account_id, ticker, shares, value = row
+        shares_f  = float(shares) if shares else 0.0
+        proceeds  = float(value)  if value  else 0.0
+        if shares_f == 0:
+            continue
+        sale_price = proceeds / shares_f
+
+        cur_price = invh.get_ticker_price(ticker, use_cache=not live_price)
+        value_if_held = cur_price * shares_f if cur_price else None
+        delta_dollar  = round(value_if_held - proceeds, 2) if value_if_held is not None else None
+        delta_pct     = round((cur_price / sale_price - 1) * 100, 2) if cur_price and sale_price else None
+
+        sale_date     = _dt.date.fromisoformat(date[:10])
+        days_since    = (today - sale_date).days
+
+        rows.append({
+            "date":          date[:10],
+            "account":       dbh.account.get_account_name_from_id(account_id),
+            "ticker":        ticker,
+            "shares":        round(shares_f, 4),
+            "sale_price":    round(sale_price, 2),
+            "proceeds":      round(proceeds, 2),
+            "current_price": round(cur_price, 2) if cur_price else None,
+            "value_if_held": round(value_if_held, 2) if value_if_held is not None else None,
+            "delta_dollar":  delta_dollar,
+            "delta_pct":     delta_pct,
+            "days_since":    days_since,
+        })
+    return rows
+
+
 # Maps yfinance/Finnhub quoteType strings to high-level allocation buckets.
 _ALLOC_GROUP = {
     "EQUITY":         "Stocks",
@@ -1205,6 +1246,29 @@ def build_equity_ticker_pie(positions: list[dict]) -> go.Figure:
         height=460,
     )
     return fig
+
+
+def get_ticker_pct_rows(positions: list[dict]) -> list[dict]:
+    """Ticker + percentage rows for the copyable holdings table."""
+    _EQUITY_TYPES = {"EQUITY", "ETF", "MUTUALFUND"}
+    ticker_vals: dict[str, float] = {}
+    for row in positions:
+        if (row.get("type") or "").upper() not in _EQUITY_TYPES:
+            continue
+        ticker = row["ticker"]
+        mv = row.get("market_value") or 0
+        if mv <= 0:
+            mv = (row.get("avg_cost") or 0) * (row.get("shares") or 0)
+        if mv > 0:
+            ticker_vals[ticker] = ticker_vals.get(ticker, 0) + mv
+    total = sum(ticker_vals.values())
+    if not total:
+        return []
+    return sorted(
+        [{"ticker": t, "pct": round(v / total * 100, 2)} for t, v in ticker_vals.items()],
+        key=lambda r: r["pct"],
+        reverse=True,
+    )
 
 
 # ─── Wealth & balances ────────────────────────────────────────────────────────
