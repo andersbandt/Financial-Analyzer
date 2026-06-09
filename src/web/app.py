@@ -155,7 +155,7 @@ def _kpi_card(card_id, label, sub=""):
 
 def _dropdown(id_, options, value, width="160px", clearable=False, **kwargs):
     return dcc.Dropdown(id=id_, options=options, value=value,
-                        clearable=clearable, style={"width": width}, **kwargs)
+                        clearable=clearable, maxHeight=400, style={"width": width}, **kwargs)
 
 
 def _graph(id_, flex="1 1 0"):
@@ -335,6 +335,7 @@ def _wealth_tab(account_options):
                     multi=True,
                     placeholder="All accounts…",
                     clearable=True,
+                    maxHeight=400,
                     style={"width": "360px", "minWidth": "200px"},
                 ),
             ),
@@ -486,6 +487,7 @@ def _categories_tab():
                         searchable=True,
                         clearable=True,
                         placeholder="Search and select a category…",
+                        maxHeight=400,
                         style={"fontSize": "14px"},
                     ),
                 ]),
@@ -511,6 +513,7 @@ def _categories_tab():
                         dcc.Dropdown(id="cat-edit-parent",
                                      options=[], value=None, clearable=False,
                                      placeholder="Select parent…",
+                                     maxHeight=400,
                                      style={"flex": "1", "fontSize": "14px"}),
                         html.Button("Save", id="cat-save-parent-btn", n_clicks=0, style=_BTN_STYLE),
                     ]),
@@ -615,6 +618,7 @@ def _build_ticker_type_grid():
                     options=type_options,
                     value=current_type,
                     clearable=False,
+                    maxHeight=400,
                     style={"fontSize": "13px"},
                 ),
             ],
@@ -764,24 +768,6 @@ def _investments_tab():
             ]),
         ]),
 
-        # ── Ticker type manager ───────────────────────────────────────────────
-        html.Div("Ticker Type Manager", style=SECTION_HEADER),
-        html.P("Set the asset type for each holding. Changes are saved to the database and "
-               "immediately reflected in the allocation charts above.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
-        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
-            _build_ticker_type_grid(),
-            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "center",
-                            "marginTop": "12px"}, children=[
-                html.Button("Save Types", id="inv-type-save-btn", n_clicks=0,
-                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
-                                   "background": "#1a2940", "color": "#fff", "border": "none",
-                                   "borderRadius": "6px", "cursor": "pointer"}),
-                html.Span(id="inv-type-status",
-                          style={"color": "#6b7a90", "fontSize": "13px"}),
-            ]),
-        ]),
-
         # ── Portfolio positions ───────────────────────────────────────────────
         html.Div("Portfolio Positions", style=SECTION_HEADER),
         html.P("Active holdings (net shares > 0). Click Refresh to fetch live prices "
@@ -847,6 +833,141 @@ def _investments_tab():
             ),
         ]),
 
+        # ── Investment transactions ───────────────────────────────────────────
+        html.Div("Investment Transactions", style=SECTION_HEADER),
+        _control_bar(
+            _labeled("Type filter",
+                dcc.Checklist(
+                    id="inv-type-filter",
+                    options=[
+                        {"label": "  BUY",  "value": "BUY"},
+                        {"label": "  SELL", "value": "SELL"},
+                        {"label": "  DIV",  "value": "DIV"},
+                    ],
+                    value=["BUY", "SELL", "DIV"],
+                    inline=True,
+                    inputStyle={"marginRight": "6px"},
+                    labelStyle={"marginRight": "20px", "fontSize": "14px"},
+                ),
+            ),
+        ),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            dash_table.DataTable(
+                id="inv-transactions-table",
+                columns=[
+                    {"name": "Date",         "id": "date",         "type": "text"},
+                    {"name": "Account",      "id": "account",      "type": "text"},
+                    {"name": "Ticker",       "id": "ticker",       "type": "text"},
+                    {"name": "Type",         "id": "trans_type",   "type": "text"},
+                    {"name": "Shares",       "id": "shares",       "type": "numeric",
+                     "format": {"specifier": ".4f"}},
+                    {"name": "Strike ($)",   "id": "strike_price", "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Value ($)",    "id": "value",        "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Note",         "id": "note",         "type": "text"},
+                ],
+                data=[],
+                style_cell_conditional=[
+                    {"if": {"column_id": "strike_price"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                    {"if": {"column_id": "value"}, "textAlign": "right",
+                     "fontVariantNumeric": "tabular-nums"},
+                ],
+                style_data_conditional=[
+                    {"if": {"filter_query": '{trans_type} = "BUY"',  "column_id": "trans_type"},
+                     "color": "#27ae60"},
+                    {"if": {"filter_query": '{trans_type} = "SELL"', "column_id": "trans_type"},
+                     "color": "#c0392b"},
+                    {"if": {"filter_query": '{trans_type} = "DIV"',  "column_id": "trans_type"},
+                     "color": "#4466cc"},
+                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                ],
+                **{**_TABLE_STYLE, "page_size": 25},
+            ),
+        ]),
+
+        # ── Record Dividend ───────────────────────────────────────────────────
+        html.Div("Record Dividend (Share-based)", style=SECTION_HEADER),
+        html.P("Enter the total shares you currently hold. "
+               "The delta vs your recorded total is recorded as a DIV transaction.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "flex-end",
+                            "marginBottom": "12px", "flexWrap": "wrap"}, children=[
+                html.Div(children=[
+                    html.Label("Account",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Dropdown(id="inv-div-account", options=[], value=None,
+                                 searchable=True, clearable=True,
+                                 placeholder="Select account…",
+                                 maxHeight=400,
+                                 style={"width": "220px", "fontSize": "14px"}),
+                ]),
+                html.Div(children=[
+                    html.Label("Ticker",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Dropdown(id="inv-div-ticker", options=[], value=None,
+                                 searchable=True, clearable=True,
+                                 placeholder="Select ticker…",
+                                 maxHeight=400,
+                                 style={"width": "160px", "fontSize": "14px"}),
+                ]),
+            ]),
+            html.Div(id="inv-div-info",
+                     style={"fontSize": "13px", "color": "#1a2940",
+                            "marginBottom": "12px", "minHeight": "20px"}),
+            html.Div(style={"display": "flex", "gap": "10px", "alignItems": "flex-end",
+                            "flexWrap": "wrap"}, children=[
+                html.Div(children=[
+                    html.Label("Total shares currently owned",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-div-total", type="number", min=0, step="any",
+                              placeholder="e.g. 152.3456", debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "160px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
+                ]),
+                html.Div(children=[
+                    html.Label("Note (optional)",
+                               style={"fontSize": "12px", "color": "#6b7a90",
+                                      "display": "block", "marginBottom": "4px"}),
+                    dcc.Input(id="inv-div-note", type="text", placeholder="Optional note",
+                              debounce=False,
+                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "220px",
+                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
+                ]),
+                html.Button("Add Dividend", id="inv-div-submit", n_clicks=0,
+                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#27ae60", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer",
+                                   "alignSelf": "flex-end"}),
+            ]),
+            html.Span(id="inv-div-status",
+                      style={"fontSize": "12px", "color": "#6b7a90",
+                             "display": "block", "marginTop": "8px"}),
+        ]),
+
+        # ── Ticker type manager ───────────────────────────────────────────────
+        html.Div("Ticker Type Manager", style=SECTION_HEADER),
+        html.P("Set the asset type for each holding. Changes are saved to the database and "
+               "immediately reflected in the allocation charts above.",
+               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
+            _build_ticker_type_grid(),
+            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "center",
+                            "marginTop": "12px"}, children=[
+                html.Button("Save Types", id="inv-type-save-btn", n_clicks=0,
+                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#1a2940", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer"}),
+                html.Span(id="inv-type-status",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
+        ]),
+
         # ── Manual price overrides ────────────────────────────────────────────
         html.Div("Manual Price Overrides", style=SECTION_HEADER),
         html.P("Set a manual price for any ticker (useful for mutual funds or when API data is unavailable). "
@@ -899,185 +1020,74 @@ def _investments_tab():
             ),
         ]),
 
-        # ── Record Dividend ───────────────────────────────────────────────────
-        html.Div("Record Dividend (Share-based)", style=SECTION_HEADER),
-        html.P("Enter the total shares you currently hold. "
-               "The delta vs your recorded total is recorded as a DIV transaction.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
-        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
-            html.Div(style={"display": "flex", "gap": "12px", "alignItems": "flex-end",
-                            "marginBottom": "12px", "flexWrap": "wrap"}, children=[
-                html.Div(children=[
-                    html.Label("Account",
-                               style={"fontSize": "12px", "color": "#6b7a90",
-                                      "display": "block", "marginBottom": "4px"}),
-                    dcc.Dropdown(id="inv-div-account", options=[], value=None,
-                                 searchable=True, clearable=True,
-                                 placeholder="Select account…",
-                                 style={"width": "220px", "fontSize": "14px"}),
+        # ── What If: Unsold Positions (collapsible) ───────────────────────────
+        html.Details(style={"marginBottom": "20px"}, children=[
+            html.Summary("What If: Unsold Positions",
+                         style={**SECTION_HEADER, "cursor": "pointer", "userSelect": "none",
+                                "marginTop": "20px"}),
+            html.P("For each SELL transaction, shows what those shares would be worth today. "
+                   "Positive delta = stock rose after sale. Negative delta = good call to sell.",
+                   style={"color": "#6b7a90", "fontSize": "13px", "margin": "8px 0 12px 0"}),
+            html.Div(style=CARD, children=[
+                html.Div(style={"display": "flex", "gap": "16px", "alignItems": "center",
+                                "marginBottom": "12px"}, children=[
+                    html.Button("Refresh (Live Prices)", id="inv-whatif-refresh-btn", n_clicks=0,
+                                style=btn_style),
+                    html.Span(id="inv-whatif-status",
+                              style={"color": "#6b7a90", "fontSize": "13px"}),
                 ]),
-                html.Div(children=[
-                    html.Label("Ticker",
-                               style={"fontSize": "12px", "color": "#6b7a90",
-                                      "display": "block", "marginBottom": "4px"}),
-                    dcc.Dropdown(id="inv-div-ticker", options=[], value=None,
-                                 searchable=True, clearable=True,
-                                 placeholder="Select ticker…",
-                                 style={"width": "160px", "fontSize": "14px"}),
-                ]),
-            ]),
-            html.Div(id="inv-div-info",
-                     style={"fontSize": "13px", "color": "#1a2940",
-                            "marginBottom": "12px", "minHeight": "20px"}),
-            html.Div(style={"display": "flex", "gap": "10px", "alignItems": "flex-end",
-                            "flexWrap": "wrap"}, children=[
-                html.Div(children=[
-                    html.Label("Total shares currently owned",
-                               style={"fontSize": "12px", "color": "#6b7a90",
-                                      "display": "block", "marginBottom": "4px"}),
-                    dcc.Input(id="inv-div-total", type="number", min=0, step="any",
-                              placeholder="e.g. 152.3456", debounce=False,
-                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "160px",
-                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
-                ]),
-                html.Div(children=[
-                    html.Label("Note (optional)",
-                               style={"fontSize": "12px", "color": "#6b7a90",
-                                      "display": "block", "marginBottom": "4px"}),
-                    dcc.Input(id="inv-div-note", type="text", placeholder="Optional note",
-                              debounce=False,
-                              style={"padding": "7px 10px", "borderRadius": "6px", "width": "220px",
-                                     "border": "1px solid #dde2ea", "fontSize": "14px"}),
-                ]),
-                html.Button("Add Dividend", id="inv-div-submit", n_clicks=0,
-                            style={"padding": "7px 18px", "fontSize": "13px", "fontWeight": "600",
-                                   "background": "#27ae60", "color": "#fff", "border": "none",
-                                   "borderRadius": "6px", "cursor": "pointer",
-                                   "alignSelf": "flex-end"}),
-            ]),
-            html.Span(id="inv-div-status",
-                      style={"fontSize": "12px", "color": "#6b7a90",
-                             "display": "block", "marginTop": "8px"}),
-        ]),
-
-        # ── What If: Unsold Positions ─────────────────────────────────────────
-        html.Div("What If: Unsold Positions", style=SECTION_HEADER),
-        html.P("For each SELL transaction, shows what those shares would be worth today. "
-               "Positive delta = stock rose after sale. Negative delta = good call to sell.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
-        html.Div(style={**CARD, "marginBottom": "20px"}, children=[
-            html.Div(style={"display": "flex", "gap": "16px", "alignItems": "center",
-                            "marginBottom": "12px"}, children=[
-                html.Button("Refresh (Live Prices)", id="inv-whatif-refresh-btn", n_clicks=0,
-                            style=btn_style),
-                html.Span(id="inv-whatif-status",
-                          style={"color": "#6b7a90", "fontSize": "13px"}),
-            ]),
-            dash_table.DataTable(
-                id="inv-whatif-table",
-                columns=[
-                    {"name": "Date Sold",       "id": "date",          "type": "text"},
-                    {"name": "Account",         "id": "account",       "type": "text"},
-                    {"name": "Ticker",          "id": "ticker",        "type": "text"},
-                    {"name": "Shares",          "id": "shares",        "type": "numeric",
-                     "format": {"specifier": ".4f"}},
-                    {"name": "Sale Price ($)",  "id": "sale_price",    "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Proceeds ($)",    "id": "proceeds",      "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Price Today ($)", "id": "current_price", "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Value if Held ($)", "id": "value_if_held", "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Delta ($)",       "id": "delta_dollar",  "type": "numeric",
-                     "format": {"specifier": "+,.2f"}},
-                    {"name": "Delta (%)",       "id": "delta_pct",     "type": "numeric",
-                     "format": {"specifier": "+.2f"}},
-                    {"name": "Days Since Sale", "id": "days_since",    "type": "numeric"},
-                ],
-                data=[],
-                style_cell_conditional=[
-                    {"if": {"column_id": "sale_price"},    "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "proceeds"},      "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "current_price"}, "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "value_if_held"}, "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "delta_dollar"},  "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "delta_pct"},     "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "days_since"},    "textAlign": "right"},
-                ],
-                style_data_conditional=[
-                    {"if": {"filter_query": "{delta_dollar} > 0", "column_id": "delta_dollar"},
-                     "color": "#c0392b"},
-                    {"if": {"filter_query": "{delta_dollar} < 0", "column_id": "delta_dollar"},
-                     "color": "#27ae60"},
-                    {"if": {"filter_query": "{delta_pct} > 0",    "column_id": "delta_pct"},
-                     "color": "#c0392b"},
-                    {"if": {"filter_query": "{delta_pct} < 0",    "column_id": "delta_pct"},
-                     "color": "#27ae60"},
-                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                ],
-                **{**_TABLE_STYLE, "page_size": 25},
-            ),
-        ]),
-
-        # ── Investment transactions ───────────────────────────────────────────
-        html.Div("Investment Transactions", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Type filter",
-                dcc.Checklist(
-                    id="inv-type-filter",
-                    options=[
-                        {"label": "  BUY",  "value": "BUY"},
-                        {"label": "  SELL", "value": "SELL"},
-                        {"label": "  DIV",  "value": "DIV"},
+                dash_table.DataTable(
+                    id="inv-whatif-table",
+                    columns=[
+                        {"name": "Date Sold",       "id": "date",          "type": "text"},
+                        {"name": "Account",         "id": "account",       "type": "text"},
+                        {"name": "Ticker",          "id": "ticker",        "type": "text"},
+                        {"name": "Shares",          "id": "shares",        "type": "numeric",
+                         "format": {"specifier": ".4f"}},
+                        {"name": "Sale Price ($)",  "id": "sale_price",    "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Proceeds ($)",    "id": "proceeds",      "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Price Today ($)", "id": "current_price", "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Value if Held ($)", "id": "value_if_held", "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Delta ($)",       "id": "delta_dollar",  "type": "numeric",
+                         "format": {"specifier": "+,.2f"}},
+                        {"name": "Delta (%)",       "id": "delta_pct",     "type": "numeric",
+                         "format": {"specifier": "+.2f"}},
+                        {"name": "Days Since Sale", "id": "days_since",    "type": "numeric"},
                     ],
-                    value=["BUY", "SELL", "DIV"],
-                    inline=True,
-                    inputStyle={"marginRight": "6px"},
-                    labelStyle={"marginRight": "20px", "fontSize": "14px"},
+                    data=[],
+                    style_cell_conditional=[
+                        {"if": {"column_id": "sale_price"},    "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "proceeds"},      "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "current_price"}, "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "value_if_held"}, "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "delta_dollar"},  "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "delta_pct"},     "textAlign": "right",
+                         "fontVariantNumeric": "tabular-nums"},
+                        {"if": {"column_id": "days_since"},    "textAlign": "right"},
+                    ],
+                    style_data_conditional=[
+                        {"if": {"filter_query": "{delta_dollar} > 0", "column_id": "delta_dollar"},
+                         "color": "#c0392b"},
+                        {"if": {"filter_query": "{delta_dollar} < 0", "column_id": "delta_dollar"},
+                         "color": "#27ae60"},
+                        {"if": {"filter_query": "{delta_pct} > 0",    "column_id": "delta_pct"},
+                         "color": "#c0392b"},
+                        {"if": {"filter_query": "{delta_pct} < 0",    "column_id": "delta_pct"},
+                         "color": "#27ae60"},
+                        {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                    ],
+                    **{**_TABLE_STYLE, "page_size": 25},
                 ),
-            ),
-        ),
-        html.Div(style=CARD, children=[
-            dash_table.DataTable(
-                id="inv-transactions-table",
-                columns=[
-                    {"name": "Date",         "id": "date",         "type": "text"},
-                    {"name": "Account",      "id": "account",      "type": "text"},
-                    {"name": "Ticker",       "id": "ticker",       "type": "text"},
-                    {"name": "Type",         "id": "trans_type",   "type": "text"},
-                    {"name": "Shares",       "id": "shares",       "type": "numeric",
-                     "format": {"specifier": ".4f"}},
-                    {"name": "Strike ($)",   "id": "strike_price", "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Value ($)",    "id": "value",        "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Note",         "id": "note",         "type": "text"},
-                ],
-                data=[],
-                style_cell_conditional=[
-                    {"if": {"column_id": "strike_price"}, "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                    {"if": {"column_id": "value"}, "textAlign": "right",
-                     "fontVariantNumeric": "tabular-nums"},
-                ],
-                style_data_conditional=[
-                    {"if": {"filter_query": '{trans_type} = "BUY"',  "column_id": "trans_type"},
-                     "color": "#27ae60"},
-                    {"if": {"filter_query": '{trans_type} = "SELL"', "column_id": "trans_type"},
-                     "color": "#c0392b"},
-                    {"if": {"filter_query": '{trans_type} = "DIV"',  "column_id": "trans_type"},
-                     "color": "#4466cc"},
-                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                ],
-                **{**_TABLE_STYLE, "page_size": 25},
-            ),
+            ]),
         ]),
     ])
 

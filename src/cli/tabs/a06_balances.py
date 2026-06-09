@@ -34,7 +34,7 @@ class TabBalances(SubMenu):
                       Action("Graph executive summary", self.a03_graph_account_balance),
                       Action("Retirement modeling", self.a04_retirement_modeling),
                       Action("Delete a balance", self.a05_delete_balance),
-                      Action("Print raw balance table", self.a06_print_balance_table),
+                      Action("Print balance table", self.a06_print_balance_table),
                       Action("View asset allocation", self.a07_asset_allocation),
                       Action("Graph single account balance", self.a08_graph_single_account_balance)]
 
@@ -373,6 +373,8 @@ class TabBalances(SubMenu):
 
         account_name = dbh.account.get_account_name_from_id(account_id)
 
+        logh.clear_tmp_folder()
+
         # Try modeled day-by-day balance (works for accounts with transactions)
         balance_history = balh.model_account_balance(account_id)
         if balance_history:
@@ -388,5 +390,8 @@ class TabBalances(SubMenu):
             balances = [entry[2] for entry in raw]
 
         grapa.create_line_chart(dates, balances, title=f"Balance Over Time: {account_name}", y_format='currency', rotate_xticks=True)
-        grapa.show_plots()
+
+        print("\nGenerating .pdf ...")
+        logh.generate_summary_pdf("single_account_balance.pdf")
         return True
+

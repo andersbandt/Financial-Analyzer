@@ -21,7 +21,7 @@ class MainApplication:
         self.tabs = []
 
         # tag:BASEFILEPATH
-        self.basefilepath = "C:/Users/ander/OneDrive/Documents/Financials" # tag:hardcode
+        self.basefilepath = "C:/Users/ander/OneDrive/Documents/financials/years" # tag:hardcode
 
         # initialize the tabs in self.tabs[]
         self.initTabs()
