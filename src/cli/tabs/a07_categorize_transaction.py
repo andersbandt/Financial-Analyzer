@@ -77,22 +77,34 @@ class TabTransCategorize(SubMenu):
     def a03_update_transaction_category(self):
         print(" ... updating transaction categories ...")
 
+        def print_transactions_table(sql_keys):
+            rows = []
+            for key in sql_keys:
+                t = transr.get_transaction(key)
+                cat_name = cath.category_id_to_name(t.category_id) if t.category_id else "NA"
+                rows.append([t.sql_key, t.date, t.value, t.description, cat_name])
+            clip.print_variable_table(
+                ["SQL Key", "Date", "Amount", "Description", "Category"],
+                rows,
+                max_width=50,
+                max_width_column="Description",
+            )
+
         # STEP 1: Get transactions to update
-        search_options = ["SEARCH", "MANUAL"]
-        search_type = clih.prompt_num_options("How do you want to procure sql key to update?: ",
+        search_options = ["SEARCH", "MANUAL", "PICK FROM CATEGORY"]
+        search_type = clih.prompt_num_options("How do you want to find transactions to update?: ",
                                               search_options)
         if search_type is False:
             print("Ok, quitting transaction update\n")
             return False
 
         found_sql_key = []
-        if search_type == 1:
+
+        if search_type == 1:  # SEARCH — find all matches, then drop unwanted ones
             found_transactions = transh.search_trans()
             if found_transactions is False:
                 print("... and quitting update transactions category too !")
                 return False
-
-            # Add all found transactions to the list
             if len(found_transactions) >= 1:
                 for transaction in found_transactions:
                     found_sql_key.append(transaction.sql_key)
@@ -100,39 +112,63 @@ class TabTransCategorize(SubMenu):
                 print("No transactions found from search. Quitting.")
                 return False
 
-        elif search_type == 2:
-            sql_key = clih.spinput("Please enter sql key to update: ", inp_type="int")
-            if sql_key is False:
+        elif search_type == 2:  # MANUAL — enter individual sql keys
+            print("Enter sql keys one at a time. Quit when done.")
+            while True:
+                sql_key = clih.spinput("Please enter sql key to add (or quit to finish): ", inp_type="int")
+                if sql_key is False:
+                    break
+                found_sql_key.append(sql_key)
+                print(f"Added sql_key={sql_key}. Total so far: {len(found_sql_key)}")
+            if not found_sql_key:
+                print("No sql keys entered. Quitting.")
+                return False
+
+        elif search_type == 3:  # PICK FROM CATEGORY — browse category, pick specific transactions
+            category_id = clih.category_prompt_all("Which category to browse?", False)
+            if category_id is False:
                 print("Ok, quitting transaction update\n")
                 return False
-            found_sql_key.append(sql_key)
+            all_transactions = transr.recall_transaction_category(category_id)
+            if not all_transactions:
+                print("No transactions found for that category. Quitting.")
+                return False
+            all_sql_keys = [t.sql_key for t in all_transactions]
+            print(f"\n=== {len(all_sql_keys)} transaction(s) in category ===")
+            print_transactions_table(all_sql_keys)
 
-        # STEP 2: Show transactions found and allow removal if from search
+            print("\nEnter sql keys to ADD to update list. Quit when done.")
+            while True:
+                sql_key = clih.spinput("Enter sql key to add (or quit to finish): ", inp_type="int")
+                if sql_key is False:
+                    break
+                if sql_key in all_sql_keys:
+                    found_sql_key.append(sql_key)
+                    print(f"Added sql_key={sql_key}. Total so far: {len(found_sql_key)}")
+                else:
+                    print(f"sql_key={sql_key} not found in that category!")
+            if not found_sql_key:
+                print("No transactions selected. Quitting.")
+                return False
+
+        # STEP 2: Show transactions found; SEARCH mode allows dropping unwanted ones
         print(f"\n=== Found {len(found_sql_key)} transaction(s) ===")
-        for id_key in found_sql_key:
-            transaction = transr.get_transaction(id_key)
-            transaction.print_trans(include_sql_key=True)
+        print_transactions_table(found_sql_key)
 
         if search_type == 1:
-            print("\n--- You can now remove transactions you don't want to update ---")
-            status = True
-            while status:
+            print("\n--- Remove any transactions you don't want to update ---")
+            while True:
                 sql_to_remove = clih.spinput(
-                    "\nEnter sql key of transaction to REMOVE from update list (or quit to continue): ",
-                    "int")
+                    "\nEnter sql key to REMOVE from list (or quit to continue): ", "int")
                 if sql_to_remove is False:
-                    status = False
+                    break
+                if sql_to_remove in found_sql_key:
+                    found_sql_key.remove(sql_to_remove)
+                    print(f"Removed sql_key={sql_to_remove}")
+                    print(f"\n=== {len(found_sql_key)} transaction(s) remaining ===")
+                    print_transactions_table(found_sql_key)
                 else:
-                    if sql_to_remove in found_sql_key:
-                        found_sql_key.remove(sql_to_remove)
-                        print(f"Removed sql_key={sql_to_remove}")
-                        # reprint updated list
-                        print(f"\n=== {len(found_sql_key)} transaction(s) remaining ===")
-                        for id_key in found_sql_key:
-                            transaction = transr.get_transaction(id_key)
-                            transaction.print_trans(include_sql_key=True)
-                    else:
-                        print(f"sql_key={sql_to_remove} not in list!")
+                    print(f"sql_key={sql_to_remove} not in list!")
 
         if len(found_sql_key) == 0:
             print("No transactions left to update. Quitting")
@@ -140,9 +176,7 @@ class TabTransCategorize(SubMenu):
 
         # STEP 3: Show final list and get new category
         print(f"\n=== Final list: {len(found_sql_key)} transaction(s) will be updated ===")
-        for id_key in found_sql_key:
-            transaction = transr.get_transaction(id_key)
-            transaction.print_trans(include_sql_key=True)
+        print_transactions_table(found_sql_key)
 
         new_category_id = clih.category_prompt_all(
             "\nWhat is the new category for these transactions?",
@@ -156,7 +190,6 @@ class TabTransCategorize(SubMenu):
         new_category_name = cath.category_id_to_name(new_category_id)
         print(f"\n=== CONFIRMATION ===")
         print(f"About to update {len(found_sql_key)} transaction(s) to category: {new_category_name}")
-        print(f"SQL keys: {found_sql_key}")
 
         confirm = clih.promptYesNo("Are you sure you want to update these transactions?")
         if not confirm:
@@ -170,9 +203,9 @@ class TabTransCategorize(SubMenu):
         print(f"\n✓ Successfully updated {len(found_sql_key)} transaction(s) to category: {new_category_name}")
         return True
 
-        ##############################################################################
-        ####      OTHER HELPER FUNCTIONS           ###################################
-        ##############################################################################
+    ##############################################################################
+    ####      OTHER HELPER FUNCTIONS           ###################################
+    ##############################################################################
 
 
 

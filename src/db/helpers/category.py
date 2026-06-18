@@ -155,6 +155,26 @@ def update_category_name(category_id, new_name: str) -> bool:
     return True
 
 
+def merge_categories(source_id, target_id) -> dict:
+    """Move all transactions, keywords, and child categories from source to target, then delete source.
+    Returns a dict with counts of affected rows."""
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+
+        cur.execute("UPDATE transactions SET category_id=? WHERE category_id=?", (target_id, source_id))
+        txn_count = cur.rowcount
+
+        cur.execute("UPDATE keywords SET category_id=? WHERE category_id=?", (target_id, source_id))
+        kw_count = cur.rowcount
+
+        cur.execute("UPDATE category SET parent_id=? WHERE parent_id=?", (target_id, source_id))
+        child_count = cur.rowcount
+
+        cur.execute("DELETE FROM category WHERE category_id=?", (source_id,))
+
+    return {"transactions": txn_count, "keywords": kw_count, "children": child_count}
+
+
 
 
 

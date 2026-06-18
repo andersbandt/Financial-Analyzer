@@ -301,15 +301,15 @@ def category_tree_prompt():
             else:
                 new_arr = cath.get_category_children_obj(Category.Category(cur_cat_obj.parent))
             return new_arr
-        elif cat_inp == 'q':
+        elif cat_inp is False or cat_inp == 'q':
             return -1
         elif cat_inp is None:
             print("Ruh oh, bad category input")
 
         # PARSE INPUT CATEGORY FOR TREE SEARCH
         cur_cat_obj = find_category(category_arr, cat_inp)
-        prev_cat_obj = cur_cat_obj
         if cur_cat_obj is not None:
+            prev_cat_obj = cur_cat_obj
             print("\nGoing deeper into Category tree... ")
             print("Forming new array based on: " + cur_cat_obj.name)
             category_arr = cath.get_category_children_obj(cur_cat_obj)

@@ -25,7 +25,8 @@ class TabCategory(SubMenu):
                       Action("Print keywords", self.a04_print_keywords),
                       Action("Delete category", self.a05_delete_category),
                       Action("Update parent of category", self.a06_move_parent),
-                      Action("Delete a keyword", self.a07_delete_keyword)
+                      Action("Delete a keyword", self.a07_delete_keyword),
+                      Action("Merge category", self.a08_merge_category),
                       ]
 
         # call parent class __init__ method
@@ -275,6 +276,45 @@ class TabCategory(SubMenu):
             # Delete the keyword
             dbh.keywords.delete_keyword(keyword_id)
             print(f"✓ Successfully deleted keyword '{keyword_string}'\n")
+
+    def a08_merge_category(self):
+        print("... merging categories ...")
+        print("Select the SOURCE category (will be deleted after merge):")
+        source_id = clih.category_prompt_all("Source category (to remove): ", False)
+        if source_id is False:
+            return False
+
+        print("\nSelect the TARGET category (transactions/keywords moved here):")
+        target_id = clih.category_prompt_all("Target category (to keep): ", False)
+        if target_id is False:
+            return False
+
+        if source_id == target_id:
+            print("ERROR: source and target are the same category.")
+            return False
+
+        source_name = cath.category_id_to_name(source_id)
+        target_name = cath.category_id_to_name(target_id)
+
+        print(f"\n--- Merge Preview ---")
+        print(f"  Merge:  {source_name} (ID={source_id})")
+        print(f"  Into:   {target_name} (ID={target_id})")
+        print(f"  All transactions, keywords, and child categories will move to {target_name}.")
+        print(f"  {source_name} will be deleted.")
+        print(f"---------------------")
+
+        confirm = clih.promptYesNo(f"Confirm merge {source_name} → {target_name}?")
+        if not confirm:
+            print("Aborted.")
+            return False
+
+        result = dbh.category.merge_categories(source_id, target_id)
+        print(f"\n✓ Merge complete:")
+        print(f"  Transactions reassigned: {result['transactions']}")
+        print(f"  Keywords reassigned:     {result['keywords']}")
+        print(f"  Child categories moved:  {result['children']}")
+        print(f"  '{source_name}' has been deleted.")
+        return True
 
     ##############################################################################
     ####      OTHER HELPER FUNCTIONS           ###################################
