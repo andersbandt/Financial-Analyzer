@@ -391,9 +391,15 @@ def account_prompt_all(prompt_str):
         logger.exception("Uh oh, no accounts found!")
         return
 
-    ac_inp = inp_auto(prompt_str, accounts, echo=True)
-    ac_inp_id = acch.account_name_to_id(ac_inp)
-    return ac_inp_id
+    while True:
+        ac_inp = inp_auto(prompt_str, accounts, echo=True, exact_match=True)
+        if ac_inp is False:
+            return False
+        if ac_inp == -1:
+            print("Account not found — please try again.")
+            continue
+        ac_inp_id = acch.account_name_to_id(ac_inp)
+        return ac_inp_id
 
 
 def get_account_id_manual():

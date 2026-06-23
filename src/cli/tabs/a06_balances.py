@@ -67,7 +67,7 @@ class TabBalances(SubMenu):
 
         # prompt user for account ID
         account_id = clih.account_prompt_all("What account do you want to add balance to?")
-        if account_id is False or None:
+        if account_id is False or account_id is None:
             return False
 
         # prompt for balance amount
