@@ -25,6 +25,7 @@ from account import account_helper as acch
 from tools import load_helper as loadh
 import db.helpers as dbh
 from tools import date_helper as dateh
+from db import app_settings
 
 # import logger
 from loguru import logger
@@ -216,10 +217,21 @@ class TabLoadData(SubMenu):
 
         self.statement.print_statement(sort_by_category=True)
 
-        # NOTE: accuracy isn't there to roll this in, or I can just make it more easy to update categories
-        # res = clih.promptYesNo("Do you want to attempt ML categorization of transactions?")
-        # if res:
-        #     self.statement.categorize_ml()
+        # ML categorization runs automatically (no per-load prompt) when enabled via
+        # Main Dash > System configuration. Toggle with app_settings.set_ml_categorization_on_load().
+        if app_settings.get_ml_categorization_on_load():
+            self.statement.categorize_ml()
+
+            ml_categorized = [t for t in self.statement.transactions if t.note and "ml_classified" in t.note]
+            if ml_categorized:
+                clip.print_variable_table(
+                    ["DATE", "AMOUNT", "DESC", "CATEGORY", "NOTE"],
+                    [[t.date, t.value, t.description, cath.category_id_to_name(t.category_id), t.note]
+                     for t in ml_categorized],
+                    title=f"ML-categorized ({len(ml_categorized)} transactions)",
+                )
+
+            self.statement.print_statement(sort_by_category=True)
 
         res = clih.promptYesNo("Do you want to attempt manual categorization of remaining transactions?")
         if res:

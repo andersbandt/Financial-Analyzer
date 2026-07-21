@@ -151,20 +151,33 @@ Each tab in `src/cli/tabs/` follows the pattern of returning an Action array to 
 
 ### Transaction Categorization System
 
-Three categorization methods (in `Ledger.categorizeStatementAutomatic()`, `categorize_manual()`, `categorize_ml()`):
+Three categorization methods, defined in `Ledger` (`src/statement_types/Ledger.py`): `categorizeLedgerAutomatic()`, `categorize_ml()`, `categorize_manual()`.
 
-1. **Keyword-based**: Matches transaction descriptions against keywords table
+The normal "Load Data" flow (`a06_categorize_statement` in `src/cli/tabs/a04_load_data.py`) runs them as a pipeline: **keywords → ML → manual**, in that order, each only acting on transactions the previous step left uncategorized:
+
+1. **Keyword-based** (`categorizeLedgerAutomatic()`): Matches transaction descriptions against keywords table
    - Keywords stored in `keywords` SQL table (category_id, keyword)
    - Case-insensitive substring matching
    - First match wins (order matters)
+   - Always runs unconditionally, first.
 
-2. **ML-based** (`src/analysis/transaction_classifier.py`):
+2. **ML-based** (`categorize_ml(confidence_threshold=0.8)`, model logic in `src/analysis/transaction_classifier.py`):
    - Scikit-learn pipeline with TF-IDF on descriptions + numerical features
    - LogisticRegression multi-class classifier
    - Features: description (text), value, account type, day of month, day of week
    - Model persisted via joblib to `analysis/model.joblib`
+   - Only predictions ≥ `confidence_threshold` are applied; the rest are left for manual review
+   - Runs automatically (no per-load prompt) if enabled — see **App Settings** below. Applied transactions get a note tagged `ml_classified conf=<score>`.
 
-3. **Manual**: Interactive CLI prompts user to select category per transaction
+3. **Manual** (`categorize_manual()`): Interactive CLI prompts user to select category per transaction. Always offered last, via a yes/no prompt, for whatever's still uncategorized.
+
+### App Settings (persisted config)
+
+`src/db/app_settings.py` stores small persisted app-wide toggles as JSON (`src/db/app_settings.json`, gitignored — same lazy-load/write-through pattern as `price_cache.json`/`price_override.json` in `investment_helper.py`). Currently one setting:
+
+- `ml_categorization_on_load` (default `True`) — controls whether step 2 above runs automatically during statement load. Toggle via CLI: **Main Dash (tab 1) → "System configuration"**. Access programmatically via `app_settings.get_ml_categorization_on_load()` / `set_ml_categorization_on_load(bool)`.
+
+This is the pattern to follow for any future simple persisted toggle — no SQL table needed for app-level (non-financial) preferences.
 
 ### File Loading System
 
@@ -427,7 +440,7 @@ Roughly in priority order:
 
 - **Categories tab full tree printout is dense**: The treemap and category hierarchy work correctly. The `id=0` "NA" placeholder fix (filtered before tree-walking) resolved the prior RecursionError. The full tree text printout is functional but visually information-dense — cosmetic cleanup is a nice-to-have, not a bug.
 - **Hardcoded file paths and account mappings**: See `# tag:hardcode` comments throughout; notably in `db/__init__.py`, `cli/cli_main.py`, `tools/load_helper.py`, and `analysis/investment_helper.py`
-- **ML categorization model not actively used**: Commented out in some flows; ~70% accuracy on 60-class classification
+- **ML categorization model**: Now runs automatically as part of the load pipeline (keywords → ML → manual), gated by the `ml_categorization_on_load` app setting (default on). See **Transaction Categorization System** above. Note: the ~70% accuracy figure below is from the original classifier; per a 2026-07 rewrite (`Ledger.categorize_ml()` docstring), at the default 0.8 confidence threshold it auto-labels ~60% of uncategorized transactions at ~98% measured accuracy, leaving the rest for manual review.
 - **Test coverage is minimal**: `tests/tester.py` is primarily for experimentation
 - **No API integration**: All data is manually downloaded CSV/PDF (no Plaid, no bank APIs)
 - **Duplicate prevention not foolproof**: Some duplicate transactions may slip through
@@ -447,10 +460,9 @@ Current ML model (`src/analysis.py` + `src/analysis/transaction_classifier.py`) 
 - Expected improvement: 85%+ accuracy on top-level, easier to maintain
 - Requires: Restructure category table to explicit hierarchy levels
 
-**2. Hybrid Keyword + ML Approach**
-- Use keyword rules for high-confidence cases (~90% of transactions)
-- Reserve ML for ambiguous cases only (~10%)
-- Current keyword system in `Ledger.categorizeStatementAutomatic()` could be primary classifier
+**2. Hybrid Keyword + ML Approach** — Implemented (2026-07)
+- Keyword rules (`Ledger.categorizeLedgerAutomatic()`) run first as the primary classifier
+- ML (`categorize_ml()`, confidence-thresholded) now runs automatically on whatever keywords miss, before manual review
 
 **3. Category Consolidation**
 - Merge rare categories (<10 samples) into "OTHER" or parent categories

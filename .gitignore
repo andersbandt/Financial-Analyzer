@@ -13,6 +13,9 @@ category_tree.PNG
 # Persistent price cache - local only, not committed
 price_cache.json
 
+# Persisted app settings (e.g. ML categorization toggle) - local only, not committed
+app_settings.json
+
 # Plaid API credentials and encryption keys
 plaid_config.json
 *.key

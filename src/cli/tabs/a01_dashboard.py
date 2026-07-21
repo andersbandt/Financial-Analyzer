@@ -9,8 +9,10 @@ import sys
 # import user defined modules
 from db import DATABASE_DIRECTORY
 from db import helpers as dbh
+from db import app_settings
 from cli.cli_class import SubMenu
 from cli.cli_class import Action
+import cli.cli_helper as clih
 
 
 class TabMainDashboard(SubMenu):
@@ -34,7 +36,17 @@ class TabMainDashboard(SubMenu):
         print("... displaying high level summary ...")
 
     def a02_config(self):
-        print("... adjust settings here ...")
+        current = app_settings.get_ml_categorization_on_load()
+        print(f"\nML categorization on statement load is currently: {'ENABLED' if current else 'DISABLED'}")
+        print("When enabled, the Load Data tab automatically runs the ML classifier on any "
+              "transactions keyword matching missed, before falling back to manual categorization.")
+
+        toggle = clih.promptYesNo(f"Do you want to {'DISABLE' if current else 'ENABLE'} ML categorization on load?")
+        if toggle:
+            app_settings.set_ml_categorization_on_load(not current)
+            print(f"ML categorization on load is now {'ENABLED' if not current else 'DISABLED'}.")
+        else:
+            print("Setting unchanged.")
 
     def a03_execute_sql(self):
         with sqlite3.connect(DATABASE_DIRECTORY) as conn:
