@@ -172,6 +172,7 @@ def create_statement(year, month, filepath, account_id_prompt=False):
         "VanguardBrokerage": st.VanguardBrokerage.VanguardBrokerage,
         "VanguardRoth":      st.VanguardRoth.VanguardRoth,
         "Venmo":             st.Venmo.Venmo,
+        "VenmoCredit":       st.VenmoCredit.VenmoCredit,
         "Robinhood":         st.Robinhood.Robinhood,
         "CitiMastercard":    st.CitiMasterCard.CitiMastercard,
     }

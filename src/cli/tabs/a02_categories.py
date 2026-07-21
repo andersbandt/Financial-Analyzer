@@ -161,7 +161,8 @@ class TabCategory(SubMenu):
             return False
 
         keyword_string = clih.spinput("What is the string for this keyword?  "
-                                      "*note that it will be converted to all uppercase\n\tkeyword :",
+                                      "*note that it will be converted to all uppercase\n"
+                                      "*use && to require multiple strings (e.g. AMAZON&&WHOLE FOODS)\n\tkeyword :",
                                       inp_type="text")
         keyword_string = keyword_string.upper()
 

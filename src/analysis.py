@@ -28,41 +28,19 @@ from sklearn.model_selection import cross_val_score
 
 ### STEP 1: LOAD IN TRAINING DATA
 def prepare_transactions(transactions):
+    # NOTE: the model is text-only now (numeric features measurably hurt accuracy).
+    # All feature prep goes through TransactionClassifier.prepare_features so
+    # training and prediction (Ledger.categorize_ml) can never drift apart.
+    # 'value' is kept in the frame purely for the error-analysis printout.
     data = pd.DataFrame([{
-        "account_id": t.account_id,
-        "date": t.date,
         "value": t.value,
         "description": t.description,
         "category_id": t.category_id
     } for t in transactions])
 
-    # do some really quick data conversions
-    data["DateTime"] = pd.to_datetime(data["date"], format="%Y-%m-%d", errors="coerce")
-    data["AccountType"] = data["account_id"].apply(acch.get_account_type_by_id)
-    data["Year"] = data["DateTime"].dt.year
-    data["Month"] = data["DateTime"].dt.month
-    data["Day"] = data["DateTime"].dt.day
-    data["DayOfWeek"] = data["DateTime"].dt.dayofweek
-    data["IsMonthStart"] = data["DateTime"].dt.is_month_start.astype(int)
-    data["IsMonthEnd"] = data["DateTime"].dt.is_month_end.astype(int)
-
-    # Add new engineered features
-    data["IsWeekend"] = (data["DayOfWeek"] >= 5).astype(int)  # Saturday=5, Sunday=6
-
-    # Bucket transaction amounts (helps model generalize better)
-    # Fill any NaN amounts with 0 before bucketing
-    amount_abs = data["value"].abs().fillna(0)
-    data["AmountBucket"] = pd.cut(
-        amount_abs,
-        bins=[0, 10, 50, 100, 500, float('inf')],
-        labels=[0, 1, 2, 3, 4]
-    ).cat.codes
-
     y = data["category_id"]
-
-    # Drop only the columns we actually don't need (removed phantom columns)
-    data = data.drop(columns=["account_id", "date", "DateTime", "category_id", "Year", "IsMonthStart", "IsMonthEnd"],
-                     errors="ignore")
+    data = transaction_classifier.TransactionClassifier.prepare_features(
+        data.drop(columns=["category_id"]))
     return data, y
 
 
@@ -71,7 +49,7 @@ def graph_accuracy(iters, X_trn, X_tst, y_trn, y_tst):
     scores = []
 
     for i in iters:
-        model = TransactionClassifier(max_iter=i)
+        model = transaction_classifier.TransactionClassifier(max_iter=i)
 
         model.train(X_trn, y_trn)
         yp = model.predict(X_tst)
@@ -162,7 +140,7 @@ print(f"{'='*80}\n")
 
 ### STEP 4: TRAIN CLASSIFIER WITH CROSS-VALIDATION
 print("Training model with cross-validation...")
-tc = transaction_classifier.TransactionClassifier(max_iter=2000, class_weight='balanced')
+tc = transaction_classifier.TransactionClassifier(max_iter=2000)
 
 # Perform 5-fold cross-validation on training data
 cv_scores = cross_val_score(tc.model, X_train, y_train, cv=5, scoring='accuracy')
@@ -187,6 +165,25 @@ print(f"Test Set Accuracy: {test_accuracy:.3f}\n")
 unique_labels = np.unique(np.concatenate([y_test, y_pred]))
 category_names = [cath.category_id_to_name(lbl) for lbl in unique_labels]
 print(classification_report(y_test, y_pred, labels=unique_labels, target_names=category_names, zero_division=0))
+
+
+### STEP 5b: CONFIDENCE-GATED AUTOMATION REPORT
+# Shows what fraction of transactions the model would auto-categorize (and how
+# accurately) at each confidence threshold. Ledger.categorize_ml() only applies
+# predictions at or above its confidence_threshold (default 0.8).
+print(f"{'='*80}")
+print("CONFIDENCE-GATED AUTOMATION (what categorize_ml will do)")
+print(f"{'='*80}\n")
+_, y_conf = tc.predict_with_confidence(X_test)
+for thr in [0.5, 0.6, 0.7, 0.8, 0.9]:
+    mask = y_conf >= thr
+    if mask.sum() == 0:
+        print(f"  threshold {thr:.1f}: no transactions above threshold")
+        continue
+    gated_acc = accuracy_score(y_test[mask], y_pred[mask])
+    print(f"  threshold {thr:.1f}: auto-labels {mask.mean():5.1%} of transactions, "
+          f"accuracy on those {gated_acc:.3f}")
+print()
 
 
 ### STEP 6: ANALYZE ERRORS

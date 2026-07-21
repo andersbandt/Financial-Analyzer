@@ -119,14 +119,21 @@ class Transaction:
         # if the category ID is blank (able to assign a new one)
         if self.category_id is None or self.category_id == 0:
             best_keyword = None
+            best_score = 0
             best_category_id = None
             desc_upper = self.description.upper()
             for category in categories:
                 try:
                     for keyword in category.keyword:
-                        if keyword in desc_upper:
-                            if best_keyword is None or len(keyword) > len(best_keyword):
+                        # compound keywords use "&&" to require ALL parts in the description
+                        parts = keyword.split("&&")
+                        if all(part in desc_upper for part in parts):
+                            # score by total matched length so a compound match
+                            # outranks any of its individual parts
+                            score = sum(len(part) for part in parts)
+                            if best_keyword is None or score > best_score:
                                 best_keyword = keyword
+                                best_score = score
                                 best_category_id = category.id
                 except Exception as e:
                     print("ERROR: couldn't automatically categorize transaction:", e)

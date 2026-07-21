@@ -24,7 +24,9 @@ def insert_account_search_str(account_id, search_str):
 def get_account_id_from_string(search_str):
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
-        cur.execute(f"SELECT account_id FROM {TABLE_NAME} WHERE ? LIKE '%' || file_search_str || '%'", (search_str,))
+        # longest (most specific) pattern wins, e.g. 'venmo_credit' beats 'venmo'
+        cur.execute(f"SELECT account_id FROM {TABLE_NAME} WHERE ? LIKE '%' || file_search_str || '%' "
+                    "ORDER BY LENGTH(file_search_str) DESC", (search_str,))
         res = cur.fetchall()
         try:
             account_id = res[0][0]

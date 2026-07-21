@@ -28,7 +28,9 @@ class TabTransCategorize(SubMenu):
         action_arr = [
             Action("Print uncategorized", self.a01_print_uncategorized),
             Action("Categorize uncategorized", self.a02_categorize_NA),
-            Action("Update categories", self.a03_update_transaction_category)
+            Action("Update categories", self.a03_update_transaction_category),
+            Action("Categorize with ML model", self.a04_categorize_ml),
+            Action("Suggest new keywords", self.a05_suggest_keywords)
         ]
 
         # call parent class __init__ method
@@ -201,6 +203,119 @@ class TabTransCategorize(SubMenu):
             dbh.transactions.update_transaction_category_k(key, new_category_id)
 
         print(f"\n✓ Successfully updated {len(found_sql_key)} transaction(s) to category: {new_category_name}")
+        return True
+
+    def a04_categorize_ml(self):
+        print("... categorizing uncategorized transactions with ML model ...")
+        ledger_data = dbh.transactions.get_uncategorized_transactions()
+        if len(ledger_data) == 0:
+            print("No uncategorized transactions!")
+            return True
+
+        transactions = []
+        for data in ledger_data:
+            transactions.append(
+                Transaction.Transaction(
+                    data[1], data[2], data[3], data[4], data[5], sql_key=data[0], note=data[6]
+                )
+            )
+
+        uncategorized_statement = Ledger.Ledger("Uncategorized Transactions!", transactions=transactions)
+
+        # only predictions at/above this confidence get applied; the rest stay
+        # uncategorized for the manual flow (see analysis.py threshold report)
+        raw = clih.spinput("Confidence threshold 0-1 (blank for 0.8): ", inp_type="text")
+        try:
+            threshold = float(raw)
+        except (TypeError, ValueError):
+            threshold = 0.8
+
+        uncategorized_statement.categorize_ml(confidence_threshold=threshold)
+
+        # show what the model wants to change and confirm before writing to DB
+        categorized = [t for t in transactions if t.get_cat_status()]
+        if len(categorized) == 0:
+            print("Model wasn't confident enough on any transaction. Nothing to save.")
+            return True
+
+        ml_statement = Ledger.Ledger("ML categorized (pending save)", transactions=categorized)
+        ml_statement.print_statement()
+
+        if not clih.promptYesNo(f"Save these {len(categorized)} ML-assigned categories to the database?"):
+            print("Ok, not saving ML categorization.")
+            return False
+
+        ml_statement.update_statement()
+
+        # update_statement only writes category_id -- persist the
+        # "ml_classified conf=X.XX" note separately so the DB keeps an audit
+        # trail of which categories were ML-assigned (and how confident)
+        for t in categorized:
+            dbh.transactions.update_transaction_note_k(t.sql_key, t.note)
+
+        return True
+
+
+    def a05_suggest_keywords(self):
+        print("... mining keyword suggestions from categorized transactions ...")
+        from analysis import keyword_miner
+
+        transactions = transr.recall_transaction_data()
+        suggestions = keyword_miner.mine_keyword_suggestions(transactions)
+        if len(suggestions) == 0:
+            print("No keyword suggestions found - existing keywords already cover the frequent merchants!")
+            return True
+
+        rows = []
+        for i, s in enumerate(suggestions):
+            rows.append([i + 1,
+                         s["keyword"],
+                         cath.category_id_to_name(s["category_id"]),
+                         s["matches"],
+                         f"{s['purity']:.0%}",
+                         s["new_matches"]])
+        clip.print_variable_table(
+            ["#", "Keyword", "Category", "Matches", "Purity", "Not yet covered"], rows)
+        print("\n'Matches' = categorized transactions containing the keyword; "
+              "'Purity' = share filed under that category;\n"
+              "'Not yet covered' = matches no existing keyword already handles.")
+
+        print("\nEnter a suggestion # to add it as a keyword, 'all' to add every "
+              "suggestion, or 'q'/'quit' to stop.")
+        added = 0
+        remaining = dict(enumerate(suggestions, start=1))
+        while len(remaining) > 0:
+            choice = clih.spinput("Add keyword #: ", inp_type="text")
+            if choice is False or str(choice).strip().lower() in ("q", "quit", ""):
+                break
+
+            if str(choice).strip().lower() == "all":
+                picks = list(remaining.keys())
+            else:
+                try:
+                    num = int(choice)
+                except ValueError:
+                    print("Please enter a number, 'all', or 'q'")
+                    continue
+                if num not in remaining:
+                    print(f"#{num} is not an open suggestion")
+                    continue
+                picks = [num]
+
+            for num in picks:
+                s = remaining.pop(num)
+                # guard against duplicates (matches a03_manage_keywords behavior)
+                if len(dbh.keywords.get_category_id_for_keyword(s["keyword"])) != 0:
+                    print(f"Keyword '{s['keyword']}' already exists - skipping")
+                    continue
+                dbh.keywords.insert_keyword(s["keyword"], s["category_id"])
+                print(f"Added keyword '{s['keyword']}' -> {cath.category_id_to_name(s['category_id'])}")
+                added += 1
+
+            if str(choice).strip().lower() == "all":
+                break
+
+        print(f"\nDone - added {added} keyword(s).")
         return True
 
     ##############################################################################
