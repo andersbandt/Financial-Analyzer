@@ -57,7 +57,10 @@ class TabLoadData(SubMenu):
         print("... loading in financial data for certain year/month ...")
 
         # get month / year combination to examine in
-        [year, month] = clih.prompt_year_month()
+        year_month = clih.prompt_year_month()
+        if year_month is False:
+            return False
+        [year, month] = year_month
 
         # create list of Statement objects for each file for the particular month/year combination
         statement_list = loadh.get_month_year_statement_list(
