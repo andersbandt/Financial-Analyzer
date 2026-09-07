@@ -288,7 +288,7 @@ class TabLoadData(SubMenu):
     # a07_sort_ledger: sorts the ledger by some metric
     def a09_sort_ledger(self):
         print(" ... sorting Ledger object")
-        strings_arr = ["$ up", "$ down", "date up", "date down"]
+        strings_arr = ["amount up", "amount down", "date up", "date down", "categorization method"]
         method = clih.inp_auto("Enter sorting method", strings_arr, echo=True)
 
         if method == strings_arr[0]:
@@ -299,6 +299,8 @@ class TabLoadData(SubMenu):
             self.statement.sort_date_asc()
         elif method == strings_arr[3]:
             self.statement.sort_date_desc()
+        elif method == strings_arr[4]:
+            self.statement.sort_categorization_method()
         else:
             return False
 

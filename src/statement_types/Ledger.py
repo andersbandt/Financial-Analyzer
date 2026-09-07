@@ -172,6 +172,17 @@ class Ledger:
         sorted_trans = sorted(self.transactions, key=lambda t: t.date, reverse=True)
         self.transactions = sorted_trans
 
+    # sort_categorization_method: sorts alphabetically by the note field, grouping
+    #   transactions by how they were categorized (e.g. "keyword=..." vs "ml_classified ...").
+    #   Uncategorized/note-less transactions (note is None) sort first.
+    # TODO(possible improvement): this is a plain alphabetical sort on note text, so it only
+    #   groups cleanly because "keyword=" and "ml_classified" happen to be distinct prefixes.
+    #   If notes ever get freeform/manual content mixed in, switch to sorting by a derived key
+    #   (e.g. classify note -> "keyword"/"ml"/"other" enum) instead of raw note string.
+    def sort_categorization_method(self):
+        sorted_trans = sorted(self.transactions, key=lambda t: t.note or "")
+        self.transactions = sorted_trans
+
     ##############################################################################
     ####      PRINTING FUNCTIONS    ##############################################
     ##############################################################################
