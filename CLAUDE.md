@@ -63,6 +63,19 @@ self.basefilepath = "C:/Users/ander/OneDrive/Documents/Financials"
 
 Look for `# tag:hardcode` or `# tag:HARDCODE` comments throughout the codebase to find other hardcoded paths.
 
+## Working Across Two Machines
+
+The user works on this project from two separate machines. Two independent things need to stay in sync between them, and neither is handled by anything automatic:
+
+**1. The git repo itself**
+Claude only ever sees the state of the machine it's currently running on. Before assuming the working tree reflects the "latest" work, check `git status` / `git log` rather than assuming — the other machine may have local commits or uncommitted changes this session can't see. Claude should never attempt to reach across to the other machine; if the user reports the two are diverged, resolve it via normal git (push/pull/merge) on the machine being worked on, not by guessing at the other machine's state.
+
+**2. `financials.db` (not tracked by git — see Hardcoded Configuration)**
+Since the DB is gitignored (it holds real financial data), it doesn't travel with `git pull`. Current plan: store `financials.db` inside the same OneDrive tree already used for statement files (see `basefilepath` above), and point each machine's local `DATABASE_DIRECTORY` at that synced path so OneDrive replicates the file between machines.
+- **Golden rule**: never run the app on both machines at once. Fully close it on one machine and wait for OneDrive to finish uploading (green checkmark) before opening it on the other. OneDrive has no concept of merging two SQLite writers — a genuine collision just produces a second `financials-<machine>.db` conflict-copy file, silently, next to the real one.
+- This is reasonably safe because `src/db/__init__.py` uses SQLite's default rollback-journal mode (not WAL) — one file plus a transient `-journal` that's deleted after each commit, so there are no `-wal`/`-shm` sidecar files that could fall out of sync with the main DB.
+- Considered but not implemented (revisit only if a real corruption/collision happens): a lock file synced alongside the DB (hostname/PID/timestamp, checked on startup) to warn if it looks already open elsewhere; a startup scan for stray `financials-*.db` conflict-copy files so a silent collision becomes a loud error; auto-backup of `financials.db` to a local non-synced folder on every startup.
+
 ## Architecture
 
 ### Core Data Flow
