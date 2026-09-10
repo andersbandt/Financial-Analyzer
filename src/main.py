@@ -38,12 +38,21 @@ def main(tab_num=None, action_num=None):
 
 
 def db_init():
-    """Create the database using the values of TableStatements."""
+    """Create the database using the values of TableStatements.
+
+    Returns (ok: bool, lock: DBLock | None). `lock` is the held multi-machine
+    guard lock and must be released on exit.
+    """
     from db import DATABASE_DIRECTORY, TableStatements, all_tables_init, populate_tables, migrate_plaid_schema, migrate_statement_parser_configs
+    from db import db_guard
 
     print("NOTICE: you are currently using ...")
     print(f"\t\t {DATABASE_DIRECTORY}")
     print("... as your database directory!!!\n")
+
+    # Multi-machine safety checks (conflict copies, integrity, backup, lock).
+    # Raises DBGuardAbort if the app must not start.
+    lock = db_guard.guard_database_startup(DATABASE_DIRECTORY, role="cli", interactive=True)
 
     # append every single variable string in class
     statements = []
@@ -57,7 +66,9 @@ def db_init():
     db_status = all_tables_init(statements, DATABASE_DIRECTORY)
     if not db_status:
         print("I don't think database file was able to be located!!!")
-        return False
+        if lock is not None:
+            lock.release()
+        return False, None
 
     populate_tables(DATABASE_DIRECTORY)
 
@@ -65,7 +76,7 @@ def db_init():
     migrate_plaid_schema(DATABASE_DIRECTORY)
     migrate_statement_parser_configs(DATABASE_DIRECTORY)
 
-    return True
+    return True, lock
 
 
 # thing that's gotta be here
@@ -110,11 +121,23 @@ Examples:
             print(f"Error: Invalid target format '{args.target}'. Expected format: XY (e.g., 15)")
             sys.exit(1)
 
-    # Initialize database
-    status = db_init()
-    if not status:
-        print("Something went wrong with database. EXITING!")
-        sys.exit()
+    # Initialize database (with multi-machine safety guard)
+    from db.db_guard import DBGuardAbort
 
-    # Run main with optional direct action
-    main(tab_num=tab_num, action_num=action_num)
+    db_lock = None
+    try:
+        status, db_lock = db_init()
+        if not status:
+            print("Something went wrong with database. EXITING!")
+            sys.exit()
+
+        # Run main with optional direct action
+        main(tab_num=tab_num, action_num=action_num)
+    except DBGuardAbort as e:
+        print(f"\nStartup blocked by db_guard: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+    finally:
+        if db_lock is not None:
+            db_lock.release()

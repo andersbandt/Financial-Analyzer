@@ -19,8 +19,19 @@ from loguru import logger
 
 def db_init():
     from db import DATABASE_DIRECTORY, TableStatements, all_tables_init, populate_tables
+    from db import db_guard
 
     logger.info(f"Using database: {DATABASE_DIRECTORY}")
+
+    # Multi-machine safety checks. The dashboard is read-only, so it takes no
+    # lock -- it just hard-stops on a conflict copy / corrupt image and warns if
+    # the CLI looks open on the other machine.
+    try:
+        db_guard.guard_database_startup(DATABASE_DIRECTORY, role="dashboard", interactive=False)
+    except db_guard.DBGuardAbort as e:
+        logger.error(f"Startup blocked by db_guard: {e}")
+        sys.exit(1)
+
     statements = [
         v for v in TableStatements.__dict__.values()
         if str(v).startswith("CREATE")

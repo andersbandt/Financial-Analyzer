@@ -53,7 +53,7 @@ Note: Test coverage is minimal and primarily used for experimentation.
 
 1. **Database path** in `src/db/__init__.py` (line 6):
 ```python
-DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db"
+DATABASE_DIRECTORY = "C:/Users/ander/OneDrive/Documents/financials/db/financials.db"
 ```
 
 2. **Statements base path** in `src/cli/cli_main.py` (line 22):
@@ -74,7 +74,19 @@ Claude only ever sees the state of the machine it's currently running on. Before
 Since the DB is gitignored (it holds real financial data), it doesn't travel with `git pull`. Current plan: store `financials.db` inside the same OneDrive tree already used for statement files (see `basefilepath` above), and point each machine's local `DATABASE_DIRECTORY` at that synced path so OneDrive replicates the file between machines.
 - **Golden rule**: never run the app on both machines at once. Fully close it on one machine and wait for OneDrive to finish uploading (green checkmark) before opening it on the other. OneDrive has no concept of merging two SQLite writers — a genuine collision just produces a second `financials-<machine>.db` conflict-copy file, silently, next to the real one.
 - This is reasonably safe because `src/db/__init__.py` uses SQLite's default rollback-journal mode (not WAL) — one file plus a transient `-journal` that's deleted after each commit, so there are no `-wal`/`-shm` sidecar files that could fall out of sync with the main DB.
-- Considered but not implemented (revisit only if a real corruption/collision happens): a lock file synced alongside the DB (hostname/PID/timestamp, checked on startup) to warn if it looks already open elsewhere; a startup scan for stray `financials-*.db` conflict-copy files so a silent collision becomes a loud error; auto-backup of `financials.db` to a local non-synced folder on every startup.
+
+### Startup guard (`src/db/db_guard.py`)
+
+`guard_database_startup()` runs a layered defense at startup, called from `db_init()` in both `main.py` (`role="cli"`) and `dashboard.py` (`role="dashboard"`). Gated by the `db_guard_on_startup` app setting (default on; toggle via CLI **Main Dash → "System configuration"**). Order:
+
+1. **Conflict-copy scan** — globs the DB folder for `financials*.db` besides the real file (OneDrive names conflict copies `financials-<MACHINE>.db` etc.). Any hit → LOUD banner + `DBGuardAbort`, app refuses to start until you reconcile by hand.
+2. **Sync-settled check** — if `financials.db`'s mtime is within `_SYNC_QUIET_SECONDS` (8s) or a `-journal` is present, warns and polls, but **always returns within `sync_timeout` (default 15s)** then continues anyway. Purely advisory, never raises. Normal startup (DB last touched hours ago) returns instantly.
+3. **Integrity check** — `PRAGMA quick_check`; anything but `ok` → LOUD banner + `DBGuardAbort`.
+3a. **DB fingerprint** — prints a short `sha256`-derived code (e.g. `9306-1B9D-D5F3`) plus size and UTC mtime. Start the app on both machines and compare the line: matching code = byte-identical DB. `database_fingerprint()` returns the full dict if needed elsewhere.
+4. **Local backup** (CLI only) — timestamped copy to `%LOCALAPPDATA%\Financial-Analyzer\db-backups\`, a **non-synced** folder; keeps the last 20. Best-effort, never raises.
+5. **Lock file** (CLI only) — `financials.db.lock` next to the DB: `{hostname, pid, started_at, heartbeat_at}` JSON, refreshed every 60s by a daemon thread, deleted on clean exit (`atexit` + `finally` in `main.py`). On startup: foreign lock with a heartbeat < 5 min old → LOUD banner, interactive `yes` prompt to override (non-interactive → abort); older → treated as abandoned, taken over. Same-hostname dead pid → taken over silently. The dashboard takes **no** lock (read-only) but prints a NOTE if the CLI looks open elsewhere.
+
+Caveat baked into the design: the lock file rides OneDrive too, so it's a strong warning for "left it open on the other machine", not a hard guarantee against launching both within the sync window. The golden rule above still stands.
 
 ## Architecture
 

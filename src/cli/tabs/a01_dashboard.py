@@ -36,17 +36,45 @@ class TabMainDashboard(SubMenu):
         print("... displaying high level summary ...")
 
     def a02_config(self):
-        current = app_settings.get_ml_categorization_on_load()
-        print(f"\nML categorization on statement load is currently: {'ENABLED' if current else 'DISABLED'}")
-        print("When enabled, the Load Data tab automatically runs the ML classifier on any "
-              "transactions keyword matching missed, before falling back to manual categorization.")
+        while True:
+            ml = app_settings.get_ml_categorization_on_load()
+            guard = app_settings.get_db_guard_on_startup()
 
-        toggle = clih.promptYesNo(f"Do you want to {'DISABLE' if current else 'ENABLE'} ML categorization on load?")
-        if toggle:
-            app_settings.set_ml_categorization_on_load(not current)
-            print(f"ML categorization on load is now {'ENABLED' if not current else 'DISABLED'}.")
-        else:
-            print("Setting unchanged.")
+            print("\n--- System configuration ---")
+            print(f"  1. ML categorization on statement load : {'ENABLED' if ml else 'DISABLED'}")
+            print(f"  2. Database sync guard on startup      : {'ENABLED' if guard else 'DISABLED'}")
+            print("  0. Back")
+
+            choice = clih.spinput("Toggle which setting? (0 to go back)", inp_type="int")
+            if choice is False or choice == 0:
+                return
+
+            if choice == 1:
+                print("\nWhen enabled, the Load Data tab automatically runs the ML classifier on any "
+                      "transactions keyword matching missed, before falling back to manual categorization.")
+                if clih.promptYesNo(f"Do you want to {'DISABLE' if ml else 'ENABLE'} ML categorization on load?"):
+                    app_settings.set_ml_categorization_on_load(not ml)
+                    print(f"  -> ML categorization on load is now {'ENABLED' if not ml else 'DISABLED'}.")
+                else:
+                    print("  Setting unchanged.")
+
+            elif choice == 2:
+                print("\nThe DB sync guard runs multi-machine safety checks at startup: OneDrive "
+                      "conflict-copy\ndetection, a SQLite integrity check, a local (non-synced) backup, "
+                      "and a lock file that\nwarns if the app looks open on your other machine.")
+                if guard:
+                    print("\n  WARNING: disabling this removes ALL of those protections.")
+                    if not clih.promptYesNo("  Really DISABLE the DB sync guard?"):
+                        print("  Setting unchanged.")
+                        continue
+                    app_settings.set_db_guard_on_startup(False)
+                    print("  -> DB sync guard is now DISABLED.")
+                else:
+                    app_settings.set_db_guard_on_startup(True)
+                    print("  -> DB sync guard is now ENABLED.")
+
+            else:
+                print("  Invalid choice.")
 
     def a03_execute_sql(self):
         with sqlite3.connect(DATABASE_DIRECTORY) as conn:

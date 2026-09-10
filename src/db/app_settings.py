@@ -16,6 +16,9 @@ APP_SETTINGS_FILE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspat
 # setting added after the file already existed)
 _DEFAULTS = {
     "ml_categorization_on_load": True,
+    # Multi-machine safety checks run at startup (see db/db_guard.py):
+    # conflict-copy detection, integrity check, local backup, open-elsewhere lock.
+    "db_guard_on_startup": True,
 }
 
 _settings = {}
@@ -63,3 +66,11 @@ def get_ml_categorization_on_load():
 
 def set_ml_categorization_on_load(enabled: bool):
     set_setting("ml_categorization_on_load", bool(enabled))
+
+
+def get_db_guard_on_startup():
+    return get_setting("db_guard_on_startup")
+
+
+def set_db_guard_on_startup(enabled: bool):
+    set_setting("db_guard_on_startup", bool(enabled))

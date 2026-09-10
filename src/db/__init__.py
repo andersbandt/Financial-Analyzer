@@ -3,7 +3,7 @@
 import sqlite3
 
 # setup database master file
-DATABASE_DIRECTORY = "C:/Users/ander/Documents/GitHub/Financial-Analyzer/src/db/financials.db" # tag:hardcode
+DATABASE_DIRECTORY = "C:/Users/ander/OneDrive/Documents/financials/db/financials.db" # tag:hardcode
 
 
 """
@@ -140,6 +140,10 @@ def all_tables_init(statements: list, database_directory: str) -> bool:
 def migrate_plaid_schema(database_directory: str):
     """One-time migration to add Plaid support to existing databases"""
     migration_statements = [
+        # account columns that predate Plaid but may be missing on older DBs
+        "ALTER TABLE account ADD COLUMN retirement BOOLEAN",
+        "ALTER TABLE account ADD COLUMN savings_goal INT(10)",
+
         "ALTER TABLE account ADD COLUMN plaid_account_id VARCHAR(100)",
         "ALTER TABLE account ADD COLUMN plaid_institution_id VARCHAR(100)",
         "ALTER TABLE account ADD COLUMN access_token_encrypted BLOB",
