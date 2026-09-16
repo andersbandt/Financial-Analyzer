@@ -10,6 +10,7 @@ import db.helpers.transactions as ledger
 import db.helpers.file_mapping as file_mapping
 import db.helpers.ticker_metadata as ticker_metadata
 import db.helpers.statement_parser as statement_parser
+import db.helpers.recurring_transaction as recurring_transaction
 
 """
 The above import statements are necessary for making an

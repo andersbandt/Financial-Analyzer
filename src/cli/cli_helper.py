@@ -7,6 +7,7 @@
 # import needed modules
 import re
 import questionary
+from cli.cli_class import select_prompt
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from datetime import datetime
@@ -102,7 +103,9 @@ def promptYesNo(prompt_str):
 
 # prompt_num_options: prompts an array of string options with a corresponding int response
 def prompt_num_options(prompt_str, prompt_string_arr):
-    selection = questionary.select(prompt_str, choices=prompt_string_arr + ["[ Cancel ]"]).ask()
+    # select_prompt enables type-to-filter, which matters most here: this is the
+    # picker used for long lists like every category or account.
+    selection = select_prompt(prompt_str, prompt_string_arr + ["[ Cancel ]"])
     if selection is None or selection == "[ Cancel ]":
         return False
     return prompt_string_arr.index(selection) + 1

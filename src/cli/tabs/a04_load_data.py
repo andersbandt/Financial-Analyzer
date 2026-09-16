@@ -43,7 +43,9 @@ class TabLoadData(SubMenu):
             Action("Load ALL data", self.a02_load_all_data),
             Action("Load single file", self.a03_load_single_file),
             Action("Add manual transaction", self.a04_add_manual_transaction),
-            Action("Check data status", self.a05_check_status)
+            Action("Check data status", self.a05_check_status),
+            Action("Manage recurring transactions", self.a11_manage_recurring_transactions),
+            Action("Apply recurring transactions (paycheck deductions)", self.a12_apply_recurring_transactions),
         ]
 
         # call parent class __init__ method
@@ -76,23 +78,13 @@ class TabLoadData(SubMenu):
 
         logger.debug(f"Final monthly statement has {len(self.statement.transactions)} transactions")
 
-        # auto-add certain paycheck related deduction expenses
-        if clih.promptYesNo("Do you want to add preset monthly expenses?"):
-            # TODO: need to figure out how to turn this into a DB table and not be hardcoded
-            #   also would be a good idea to automate the complementary transaction
-            # retrieve Transaction object based on preset sql
-            date = dateh.month_year_to_date_range(year, month)[1]
-            amount = (42.32*30.5/7)  # $42.32 per week, estimated at months of 30.5 days
-            transaction1 = Transaction(date, 2000000003, cath.category_name_to_id("HEALTH"), -1*amount, "Messina Health INsurance", note="auto-loaded by month")
-            transaction1c = Transaction(date,
-                                        2000000003,
-                                        cath.category_name_to_id("INCOME"),
-                                        amount,
-                                        "INCOME (Health insurance)",
-                                        note="auto-loaded by month (complementary income)"
-                                        )
-            self.statement.add_transaction(transaction1)
-            self.statement.add_transaction(transaction1c)
+        # apply any active recurring transactions (paycheck deductions, HSA/401k contributions,
+        # etc.) for this month -- see "Manage recurring transactions" / "Apply recurring
+        # transactions" for the standalone version of this (paychecks are usually biweekly,
+        # not monthly, so this hook is a convenience, not the only way to apply them).
+        if clih.promptYesNo("Do you want to apply recurring transactions (paycheck deductions) for this month?"):
+            default_date = dateh.month_year_to_date_range(year, month)[1]
+            self.apply_recurring_transactions(default_date, target_statement=self.statement)
 
         self.statement.print_statement()
         self.update_listing()
@@ -197,6 +189,241 @@ class TabLoadData(SubMenu):
         elif method_num == 2:
             self.check_data_integrity_02(acc_id_arr)
 
+    ##############################################################################
+    ####      RECURRING TRANSACTIONS (paycheck deductions, etc.)     #############
+    ##############################################################################
+
+    # apply_recurring_transactions: applies every ACTIVE recurring_transaction preset for `date`.
+    #   Each preset writes its main (category) transaction, plus -- if add_complementary is set --
+    #   a same-account, opposite-sign transaction under complementary_category_id, so deductions
+    #   that never show up on a bank statement (health insurance, HSA/401k, taxes, ...) still show
+    #   up in category/income reporting without changing the account's recorded balance.
+    #   @param date               date to post the transactions on (e.g. the actual pay date)
+    #   @param target_statement   if given (called mid statement-load), append the new
+    #                             Transactions to it so they get saved along with the rest of
+    #                             that month's statement, matching the old hardcoded behavior.
+    #                             If None (standalone use), insert into the DB immediately.
+    def apply_recurring_transactions(self, date, target_statement=None):
+        presets = dbh.recurring_transaction.get_all_recurring_transactions(active_only=True)
+        if not presets:
+            print("No active recurring transactions configured. Use 'Manage recurring transactions' to add some.")
+            return []
+
+        target_month = date[:7]  # "YYYY-MM" -- string-prefix compare, dates are stored as ISO text
+        created = []
+        applied_count = 0
+        for row in presets:
+            (rid, name, account_id, category_id, default_amount, description,
+             add_complementary, complementary_category_id, active, note) = row
+
+            # double-apply guard: warn if this preset already posted a transaction this
+            # calendar month (e.g. you ran Load Data twice for the same month). Per-preset,
+            # so you can skip the ones already done and still apply anything new.
+            applied_this_month = sorted({
+                d for d in dbh.recurring_transaction.get_applied_dates(rid) if d[:7] == target_month
+            })
+            if applied_this_month:
+                print(f"\n{name}: already applied on {', '.join(applied_this_month)} this month.")
+                if not clih.promptYesNo(f"  Apply '{name}' again for {target_month} anyway?"):
+                    print(f"  Skipped '{name}'.")
+                    continue
+
+            print(f"\n{name}  (default {default_amount:+.2f}  |  "
+                  f"{acch.account_id_to_name(account_id)} / {cath.category_id_to_name(category_id)})")
+            amount_inp = input(f"  Amount for this occurrence [enter to accept {default_amount:+.2f}]: ").strip()
+            if amount_inp == "":
+                amount = default_amount
+            else:
+                try:
+                    amount = float(amount_inp.replace(",", ""))
+                except ValueError:
+                    print("  Invalid number, using default.")
+                    amount = default_amount
+
+            txns = [Transaction(date, account_id, category_id, amount, description,
+                                 note=f"recurring_transaction id={rid}")]
+
+            if add_complementary:
+                comp_category_id = complementary_category_id
+                if comp_category_id is None:
+                    comp_category_id = cath.category_name_to_id("INCOME")
+                txns.append(Transaction(date, account_id, comp_category_id, -1 * amount,
+                                         f"{description} (complementary)",
+                                         note=f"recurring_transaction id={rid} (complementary)"))
+
+            for t in txns:
+                if target_statement is not None:
+                    target_statement.add_transaction(t)
+                else:
+                    dbh.transactions.insert_transaction(t)
+                created.append(t)
+            applied_count += 1
+
+        dest = "current statement (save it to persist)" if target_statement is not None else "database"
+        print(f"\nApplied {applied_count}/{len(presets)} recurring transaction preset(s) "
+              f"({len(presets) - applied_count} skipped), creating {len(created)} row(s) in the {dest}.")
+        return created
+
+    def a11_manage_recurring_transactions(self):
+        while True:
+            presets = dbh.recurring_transaction.get_all_recurring_transactions(active_only=False)
+            print("\n--- Recurring transactions (paycheck deductions, etc.) ---")
+            if not presets:
+                print("  (none configured yet)")
+            for row in presets:
+                (rid, name, account_id, category_id, amount, description,
+                 add_complementary, complementary_category_id, active, note) = row
+                status = "ACTIVE" if active else "inactive"
+                comp = (f" + complementary -> {cath.category_id_to_name(complementary_category_id)}"
+                        if add_complementary and complementary_category_id is not None else "")
+                print(f"  [{rid}] {name:<30} {amount:>+9.2f}  "
+                      f"{acch.account_id_to_name(account_id)} / {cath.category_id_to_name(category_id)}"
+                      f"{comp}  ({status})")
+
+            action = clih.prompt_num_options(
+                "Action?", ["Add new", "Edit existing", "Toggle active/inactive", "Delete", "Done"])
+            if action is False or action == 5:
+                return True
+            elif action == 1:
+                self._add_recurring_transaction_prompt()
+            elif not presets:
+                print("Nothing to edit/toggle/delete yet -- add one first.")
+            elif action == 2:
+                self._edit_recurring_transaction_prompt(presets)
+            elif action == 3:
+                self._toggle_recurring_transaction_prompt(presets)
+            elif action == 4:
+                self._delete_recurring_transaction_prompt(presets)
+
+    def a12_apply_recurring_transactions(self):
+        print("... applying active recurring transactions (e.g. paycheck deductions) ...")
+        pay_date = clih.get_date_input(
+            "What date should these recurring transactions be posted on? (e.g. your actual pay date)")
+        if pay_date is False or pay_date is None:
+            return False
+        return self.apply_recurring_transactions(pay_date, target_statement=None)
+
+    def _select_recurring_transaction(self, presets, prompt_str):
+        labels = [f"[{row[0]}] {row[1]}" for row in presets]
+        idx = clih.prompt_num_options(prompt_str, labels)
+        if idx is False:
+            return None
+        return presets[idx - 1]
+
+    def _add_recurring_transaction_prompt(self):
+        print("\n--- Add recurring transaction ---")
+        name = clih.spinput("Short name (e.g. 'HSA Contribution')", "text")
+        if name is False:
+            return False
+
+        account_id = clih.account_prompt_all(
+            "Which account does this post to? (usually wherever your paycheck lands)")
+        if account_id in (False, None):
+            return False
+
+        category_id = clih.category_prompt_all("Category for this deduction/line item?", False)
+        if category_id in (False, None):
+            return False
+
+        amount = clih.spinput(
+            "Default amount per occurrence (negative = money out, e.g. -225.00 for a deduction)", "float")
+        if amount is False:
+            return False
+
+        description = clih.spinput("Transaction description (shown in the ledger)", "text")
+        if description is False or description == "":
+            description = name
+
+        add_complementary = clih.promptYesNo(
+            "Add an offsetting complementary transaction too? Recommended for paycheck deductions -- "
+            "your account only ever sees the NET deposit, so this 'grosses up' income/spending reports "
+            "without changing the account balance."
+        )
+        complementary_category_id = None
+        if add_complementary:
+            complementary_category_id = clih.category_prompt_all(
+                "Category for the complementary (offsetting) leg? (usually INCOME)", False)
+            if complementary_category_id in (False, None):
+                return False
+
+        note = clih.spinput("Optional note (enter to skip)", "text")
+        if note is False or note == "":
+            note = None
+
+        rid = dbh.recurring_transaction.insert_recurring_transaction(
+            name, account_id, category_id, amount, description,
+            add_complementary=add_complementary,
+            complementary_category_id=complementary_category_id,
+            note=note,
+        )
+        print(f"Created recurring transaction #{rid}.")
+        return True
+
+    def _edit_recurring_transaction_prompt(self, presets):
+        row = self._select_recurring_transaction(presets, "Edit which recurring transaction?")
+        if row is None:
+            return False
+        (rid, name, account_id, category_id, amount, description,
+         add_complementary, complementary_category_id, active, note) = row
+
+        field = clih.prompt_num_options(
+            f"Editing '{name}' -- which field?",
+            ["Name", "Amount", "Description", "Category", "Account", "Complementary category", "Note", "Cancel"])
+        if field is False or field == 8:
+            return False
+
+        if field == 1:
+            new_val = clih.spinput("New name", "text")
+            if new_val is not False:
+                dbh.recurring_transaction.update_recurring_transaction(rid, name=new_val)
+        elif field == 2:
+            new_val = clih.spinput(f"New amount (was {amount:+.2f})", "float")
+            if new_val is not False:
+                dbh.recurring_transaction.update_recurring_transaction(rid, amount=new_val)
+        elif field == 3:
+            new_val = clih.spinput("New description", "text")
+            if new_val is not False:
+                dbh.recurring_transaction.update_recurring_transaction(rid, description=new_val)
+        elif field == 4:
+            new_val = clih.category_prompt_all("New category?", False)
+            if new_val not in (False, None):
+                dbh.recurring_transaction.update_recurring_transaction(rid, category_id=new_val)
+        elif field == 5:
+            new_val = clih.account_prompt_all("New account?")
+            if new_val not in (False, None):
+                dbh.recurring_transaction.update_recurring_transaction(rid, account_id=new_val)
+        elif field == 6:
+            new_val = clih.category_prompt_all("New complementary category?", False)
+            if new_val not in (False, None):
+                dbh.recurring_transaction.update_recurring_transaction(rid, complementary_category_id=new_val)
+        elif field == 7:
+            new_val = clih.spinput("New note", "text")
+            if new_val is not False:
+                dbh.recurring_transaction.update_recurring_transaction(rid, note=new_val)
+
+        print("Updated.")
+        return True
+
+    def _toggle_recurring_transaction_prompt(self, presets):
+        row = self._select_recurring_transaction(presets, "Toggle active status of which recurring transaction?")
+        if row is None:
+            return False
+        rid, active = row[0], row[8]
+        dbh.recurring_transaction.set_recurring_transaction_active(rid, not bool(active))
+        print(f"Recurring transaction #{rid} is now {'ACTIVE' if not active else 'inactive'}.")
+        return True
+
+    def _delete_recurring_transaction_prompt(self, presets):
+        row = self._select_recurring_transaction(presets, "Delete which recurring transaction?")
+        if row is None:
+            return False
+        rid, name = row[0], row[1]
+        if clih.promptYesNo(f"Really delete recurring transaction '{name}' (#{rid})? "
+                             f"This does not affect transactions already applied from it."):
+            dbh.recurring_transaction.delete_recurring_transaction(rid)
+            print("Deleted.")
+            return True
+        return False
 
     ########              ##########################              ########
     #######  BELOW FUNCTIONS AVAILABLE AFTER STATEMENT IS LOADED IN ######

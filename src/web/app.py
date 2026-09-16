@@ -972,7 +972,7 @@ def _investments_tab():
         html.Div("Manual Price Overrides", style=SECTION_HEADER),
         html.P("Set a manual price for any ticker (useful for mutual funds or when API data is unavailable). "
                "Override rows are highlighted in yellow in the positions table. "
-               "Leave price blank to clear an override.",
+               "Use the ✕ next to a row below to delete an override.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         html.Div(style={**CARD, "marginBottom": "20px"}, children=[
             html.Div(style={"display": "flex", "gap": "10px", "alignItems": "flex-end",
@@ -1012,6 +1012,7 @@ def _investments_tab():
                      "format": {"specifier": ",.4f"}},
                 ],
                 data=charts.get_price_override_rows(),
+                row_deletable=True,
                 style_cell={"fontSize": "13px", "padding": "6px 10px"},
                 style_header={"fontWeight": "600", "background": "#f8f9fb",
                                "borderBottom": "2px solid #dde2ea"},
@@ -1852,6 +1853,41 @@ def create_app() -> Dash:
         invh.set_manual_price_override(t, p)
         msg = f"Override {'set' if p else 'cleared'}: {t}" + (f" = ${p:,.4f}" if p else "")
         return msg, charts.get_price_override_rows(), "", None
+
+    # ── Delete manual price override (row ✕ in the table) ─────────────────────
+    @app.callback(
+        Output("inv-override-status",  "children", allow_duplicate=True),
+        Output("inv-overrides-table",  "data",     allow_duplicate=True),
+        Output("inv-positions-table",  "data",     allow_duplicate=True),
+        Output("inv-alloc-pie",        "figure",   allow_duplicate=True),
+        Output("inv-equity-pie",       "figure",   allow_duplicate=True),
+        Output("inv-ticker-pie",       "figure",   allow_duplicate=True),
+        Output("inv-ticker-pct-table", "data",     allow_duplicate=True),
+        Input("inv-overrides-table",   "data_previous"),
+        State("inv-overrides-table",   "data"),
+        prevent_initial_call=True,
+    )
+    def delete_price_override(prev_rows, cur_rows):
+        if not prev_rows:
+            return (no_update,) * 7
+        cur_tickers = {(r.get("ticker") or "").strip().upper() for r in (cur_rows or [])}
+        removed = [(r.get("ticker") or "").strip().upper() for r in prev_rows
+                   if (r.get("ticker") or "").strip().upper() not in cur_tickers]
+        if not removed:
+            return (no_update,) * 7
+        for t in removed:
+            invh.set_manual_price_override(t, None)
+        rows = charts.get_investment_position_rows(live_price=False)
+        msg = f"Override cleared: {', '.join(removed)}"
+        return (
+            msg,
+            charts.get_price_override_rows(),
+            rows,
+            charts.build_investment_allocation_pie(rows),
+            charts.build_equity_detail_pie(rows),
+            charts.build_equity_ticker_pie(rows),
+            charts.get_ticker_pct_rows(rows),
+        )
 
     # ── Dividend form: account dropdown ───────────────────────────────────────
     @app.callback(

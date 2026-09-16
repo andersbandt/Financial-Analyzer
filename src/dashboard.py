@@ -51,5 +51,15 @@ if __name__ == "__main__":
 
     from web.app import create_app
     app = create_app()
-    print("\n  Financial Dashboard -> http://127.0.0.1:8050\n")
+
+    url = "http://127.0.0.1:8050"
+    print(f"\n  Financial Dashboard -> {url}\n")
+
+    # Auto-open in the default browser once the server is up. Opt out with
+    # --no-browser or DASHBOARD_NO_BROWSER=1.
+    if "--no-browser" not in sys.argv and not os.environ.get("DASHBOARD_NO_BROWSER"):
+        import threading
+        import webbrowser
+        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+
     app.run(debug=False, host="127.0.0.1", port=8050)

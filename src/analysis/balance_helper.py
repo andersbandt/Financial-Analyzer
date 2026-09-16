@@ -64,7 +64,7 @@ def add_account_balance(account_id, bal_amount, bal_date):
                                        bal_date)
 
     # print out balance addition confirmation
-    print(f"Great, inserted a balance of {bal_amount} for account {account_id} on date {bal_date}")
+    print(f"Great, inserted a balance of ${float(bal_amount):,.2f} for account {account_id} on date {bal_date}")
     return True
 
 

@@ -82,6 +82,28 @@ class TableStatements:
                     asset_type              VARCHAR(50),
                     name                    VARCHAR(100),
                     last_updated            DATETIME)"""
+    # recurring_transaction: user-defined templates for money that moves the same way every
+    # pay period but never shows up on its own as a bank-statement line -- paycheck deductions
+    # (health insurance, HSA/401k, taxes, etc). "amount" is signed (negative = money out).
+    # "add_complementary" controls whether applying this preset also writes a same-account,
+    # opposite-sign transaction under complementary_category_id -- this "grosses up" income
+    # and category spending to reflect the true pre-deduction paycheck, while netting to zero
+    # against the account balance (which already reflects the net direct deposit).
+    # See src/db/helpers/recurring_transaction.py and TabLoadData in cli/tabs/a04_load_data.py.
+    recurring_transaction = """CREATE TABLE recurring_transaction
+                    (id                         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name                        VARCHAR(100),
+                    account_id                  INT(10) REFERENCES account(account_id),
+                    category_id                 INT(10) REFERENCES category(category_id),
+                    amount                      NUMERIC(10,2),
+                    description                 VARCHAR(300),
+                    add_complementary           BOOLEAN DEFAULT 1,
+                    complementary_category_id   INT(10) REFERENCES category(category_id),
+                    active                      BOOLEAN DEFAULT 1,
+                    sort_order                  INT(10),
+                    note                        VARCHAR(300),
+                    created_at                  DATETIME,
+                    updated_at                  DATETIME)"""
     plaid_sync_state = """CREATE TABLE plaid_sync_state
                     (id                     INTEGER PRIMARY KEY AUTOINCREMENT,
                     account_id              INT(10) REFERENCES account(account_id),

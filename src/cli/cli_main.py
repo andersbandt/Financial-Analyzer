@@ -2,7 +2,13 @@
 
 # import user defined modules
 import questionary
+from cli.cli_class import select_prompt
 from cli.tabs import *
+
+
+_EXIT = "[ Exit ]"
+_SEARCH = "[ Search all actions ]"
+_QUIT_SEARCH = "[ Back ]"
 
 
 class MainApplication:
@@ -58,20 +64,57 @@ class MainApplication:
         # print out menu options
         print("Attempting to start main loop of CLI interface menu")
 
-        choices = [tab.title for tab in self.tabs] + ["[ Exit ]"]
+        choices = [tab.title for tab in self.tabs] + [_SEARCH, _EXIT]
         while True:
             self.print_header()
-            selection = questionary.select(
-                "Select a tab:",
-                choices=choices,
-            ).ask()
+            selection = select_prompt("Select a tab:", choices)
 
-            if selection is None or selection == "[ Exit ]":
+            if selection is None or selection == _EXIT:
                 print('Exiting...')
                 break
 
+            if selection == _SEARCH:
+                self.search_actions()
+                continue
+
             tab = next(t for t in self.tabs if t.title == selection)
             tab.run()
+
+    def all_actions(self):
+        """Flatten every tab's action list into (tab, action_num, label) tuples.
+
+        action_num is 1-indexed to match SubMenu.run_sub_action().
+        """
+        flat = []
+        for tab in self.tabs:
+            if tab is None:
+                continue
+            for i, action in enumerate(tab.action_arr, 1):
+                flat.append((tab, i, f"{tab.title}  >  {action.title}"))
+        return flat
+
+    def search_actions(self):
+        """Search every sub menu action by name and run the selected one.
+
+        Type to filter the list (substring match on "Tab > Action"), enter to run.
+        """
+        flat = self.all_actions()
+        # Choice carries the (tab, action_num) payload so duplicate action titles
+        # across tabs still resolve to the right one.
+        choices = [questionary.Choice(label, value=(tab, num)) for tab, num, label in flat]
+        # NOTE: questionary.Choice swaps a None value for the title, so "Back"
+        # comes back as the _QUIT_SEARCH string rather than as None.
+        choices.append(questionary.Choice(_QUIT_SEARCH))
+
+        selection = select_prompt(
+            f"Search actions ({len(flat)} available) - type to filter:",
+            choices,
+        )
+        if selection is None or selection == _QUIT_SEARCH:
+            return False
+
+        tab, action_num = selection
+        return tab.run_sub_action(action_num)
 
 
 ###########################################################

@@ -2,6 +2,25 @@
 import questionary
 
 
+def select_prompt(message, choices, **kwargs):
+    """Wrapper around questionary.select that enables type-to-search filtering.
+
+    Newer questionary versions support `use_search_filter` (type any substring to
+    narrow the visible choices). Older ones raise TypeError on the unknown kwarg,
+    so fall back to a plain select in that case.
+    """
+    try:
+        return questionary.select(
+            message,
+            choices=choices,
+            use_search_filter=True,
+            use_jk_keys=False,  # required, otherwise j/k are swallowed as navigation
+            **kwargs,
+        ).ask()
+    except TypeError:
+        return questionary.select(message, choices=choices, **kwargs).ask()
+
+
 class Action:
     def __init__(self, title, action):
         self.title = title
@@ -23,10 +42,7 @@ class SubMenu:
     def run(self):
         while True:
             choices = [a.title for a in self.action_arr] + [_QUIT]
-            selection = questionary.select(
-                self.title,
-                choices=choices,
-            ).ask()
+            selection = select_prompt(self.title, choices)
 
             if selection is None or selection == _QUIT:
                 break

@@ -335,7 +335,7 @@ class TabInvestment(SubMenu):
                                                    bal_date)
 
                 # print out balance addition confirmation
-                print(f"Great, inserted a balance of {acc_val_arr[i]} for account {inv_acc_id[i]} on date {bal_date}")
+                print(f"Great, inserted a balance of ${float(acc_val_arr[i]):,.2f} for account {inv_acc_id[i]} on date {bal_date}")
 
     def a06_add_dividend(self):
         print("... adding dividend for a ticker ...")
