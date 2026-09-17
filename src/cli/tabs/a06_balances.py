@@ -373,8 +373,6 @@ class TabBalances(SubMenu):
 
         account_name = dbh.account.get_account_name_from_id(account_id)
 
-        logh.clear_tmp_folder()
-
         # Try modeled day-by-day balance (works for accounts with transactions)
         balance_history = balh.model_account_balance(account_id)
         if balance_history:
@@ -389,9 +387,6 @@ class TabBalances(SubMenu):
             dates = [entry[3] for entry in raw]
             balances = [entry[2] for entry in raw]
 
-        grapa.create_line_chart(dates, balances, title=f"Balance Over Time: {account_name}", y_format='currency', rotate_xticks=True)
-
-        print("\nGenerating .pdf ...")
-        logh.generate_summary_pdf("single_account_balance.pdf")
+        grapa.create_line_chart(dates, balances, title=f"Balance Over Time: {account_name}", y_format='currency', rotate_xticks=True, show=True)
         return True
 

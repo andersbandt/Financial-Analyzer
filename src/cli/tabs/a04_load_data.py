@@ -171,9 +171,10 @@ class TabLoadData(SubMenu):
         print("... checking data status ...")
 
         # get user input on which method to use
-        print("Two method for data integrity checking")
+        print("Three methods for data integrity checking")
         print("METHOD 1: checks for presence of files on the system matching to certain accounts")
         print("METHOD 2: actually pulls data from files and sees if it exists in the database")
+        print("METHOD 3: checks credit card accounts for balance drift (summed transactions vs actual balance)")
         method_num = clih.spinput("What type of data integrity method to use?", inp_type="int")
 
         # set up information on which account(s) we are interested in
@@ -188,6 +189,8 @@ class TabLoadData(SubMenu):
             self.check_data_integrity_01(acc_id_arr)
         elif method_num == 2:
             self.check_data_integrity_02(acc_id_arr)
+        elif method_num == 3:
+            self.check_data_integrity_03(acc_id_arr)
 
     ##############################################################################
     ####      RECURRING TRANSACTIONS (paycheck deductions, etc.)     #############
@@ -712,6 +715,57 @@ class TabLoadData(SubMenu):
             )
 
         # Return results for further processing or debugging
+        return True
+
+    # NOTE: this checks for MISSING transactions rather than missing files -- for a credit card,
+    #   summing every transaction ever recorded (charges + payments) reconstructs its balance from
+    #   $0 at account opening, so that running total should match the card's real-world balance.
+    #   If a recorded balance snapshot exists (Balances tab), that's the ground truth to compare
+    #   against. If not (e.g. venmo_credit has never had one entered), we fall back to assuming the
+    #   card should sit near $0 -- true for any card paid off in full each cycle -- so a large
+    #   nonzero sum is still a signal, just a weaker one than a real snapshot comparison would give.
+    def check_data_integrity_03(self, acc_id_arr):
+        """
+        Checks credit card data integrity by comparing the sum of all recorded transactions
+        for an account against its actual (recorded) balance. A large drift usually means
+        charges or payments are missing from the database.
+        """
+        credit_acc_id_arr = [acc_id for acc_id in acc_id_arr
+                              if acch.get_account_type_by_id(acc_id) == acch.types.CREDIT_CARD.value]
+        if not credit_acc_id_arr:
+            logger.info("Method 3: no credit card accounts found to check.")
+            return True
+
+        drift_rows = []
+        for acc_id in credit_acc_id_arr:
+            transactions = dbh.transactions.get_transactions_by_account_id(acc_id)
+            txn_sum = sum(t[4] for t in transactions)  # column 4 = amount
+
+            balances = dbh.balance.get_balance_by_account_id(acc_id)
+            if balances:
+                expected = balances[-1][2]  # most recent recorded balance
+                basis = f"recorded balance ({balances[-1][3]})"
+            else:
+                expected = 0
+                basis = "assumed $0 (no recorded balance snapshot)"
+
+            drift = txn_sum - expected
+            drift_rows.append([
+                acch.account_id_to_name(acc_id), len(transactions), f"{txn_sum:,.2f}",
+                basis, drift,
+            ])
+
+        drift_rows.sort(key=lambda r: -abs(r[-1]))
+        clip.print_variable_table(
+            ["Account", "# Txns", "Txn sum", "Compared against", "Drift"],
+            [row[:-1] + [f"{row[-1]:+,.2f}"] for row in drift_rows],
+            min_width=12, max_width=40, max_width_column="Compared against",
+            title="Data integrity check -- Method 3 (credit card balance drift)",
+        )
+
+        n_clean = sum(1 for r in drift_rows if abs(r[-1]) < 1.0)
+        logger.info(f"{n_clean}/{len(credit_acc_id_arr)} credit card account(s) show no significant drift.")
+
         return True
 
     def update_listing(self):

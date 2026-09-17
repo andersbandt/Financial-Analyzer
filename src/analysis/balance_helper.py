@@ -112,15 +112,15 @@ def model_balance(starting_balance, transactions):
 
 
 def model_account_balance(account_id):
-    # get starting balance
-    start_date = "1999-10-02"
-    end_date = dateh.get_cur_str_date()
-    for date in dateh.iterate_dates(start_date, end_date):
-        tmp = get_account_balance_on_date(account_id, date)
-        if tmp is not False:
-            start_date = date
-            starting_balance = tmp
-            break
+    # get starting balance: earliest recorded balance snapshot for this account (if any)
+    all_balances = dbh.balance.get_balance_by_account_id(account_id)
+    if all_balances:
+        start_date = all_balances[0][3]
+        starting_balance = all_balances[0][2]
+    else:
+        print(f"No recorded balance snapshot found for account {account_id}; assuming starting balance of $0")
+        start_date = "1999-10-02"
+        starting_balance = 0
 
     print(f"Starting balance found for account: {starting_balance}")
     # get transaction list
