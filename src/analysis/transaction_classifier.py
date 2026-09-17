@@ -23,8 +23,16 @@ must build their input frame through it so train/predict never drift apart.
 """
 
 # import needed modules
+import os
 import re
 import pandas as pd
+
+# Resolved relative to this file, not the process's current working directory --
+# CLAUDE.md documents launching the CLI as `python src/main.py` from the repo root,
+# which makes a plain "analysis/model.joblib" relative path resolve to
+# <repo_root>/analysis/model.joblib (doesn't exist) instead of the real
+# <repo_root>/src/analysis/model.joblib, silently breaking model loading.
+_DEFAULT_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model.joblib")
 
 # import ML modules (sklearn)
 from sklearn.compose import ColumnTransformer
@@ -108,14 +116,14 @@ class TransactionClassifier:
         preds = self.model.classes_[proba.argmax(axis=1)]
         return preds, proba.max(axis=1)
 
-    def save(self, path="analysis/model.joblib"):
+    def save(self, path=None):
         import joblib
-        joblib.dump(self.model, path)
+        joblib.dump(self.model, path or _DEFAULT_MODEL_PATH)
 
     @staticmethod
-    def load(path="analysis/model.joblib"):
+    def load(path=None):
         import joblib
         clf = TransactionClassifier()
-        clf.model = joblib.load(path)
+        clf.model = joblib.load(path or _DEFAULT_MODEL_PATH)
         clf.is_trained = True
         return clf

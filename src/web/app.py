@@ -8,6 +8,8 @@ Balances / Retirement / Transactions). The Period dropdown above the tabs
 drives most charts; some tabs have their own local controls.
 """
 
+import time
+
 from dash import Dash, html, dcc, Input, Output, State, dash_table, ALL, ctx, no_update
 import plotly.graph_objects as go
 
@@ -265,7 +267,41 @@ def _spending_tab(category_options):
                 ),
             ]),
         ),
+        dcc.Store(id="sankey-drill-root", data=None),
+        dcc.Store(id="sankey-last-click", data=None),
+        html.Div(style={"marginBottom": "8px", "display": "flex",
+                        "alignItems": "center", "gap": "10px"}, children=[
+            html.Button("◀ Back to full view", id="sankey-back-btn", n_clicks=0,
+                        style={"padding": "6px 14px", "fontSize": "13px", "fontWeight": "600",
+                               "background": "#1a2940", "color": "#fff", "border": "none",
+                               "borderRadius": "6px", "cursor": "pointer", "display": "none"}),
+            html.Span(id="sankey-breadcrumb-text",
+                      style={"color": "#6b7a90", "fontSize": "13px"}),
+        ]),
         html.Div(style=ROW, children=[_graph("chart-sankey")]),
+
+        # Click-through: transactions behind whichever node/link was clicked
+        html.Div(id="sankey-click-info", style={
+            "marginTop": "12px", "marginBottom": "8px", "color": "#6b7a90", "fontSize": "13px",
+        }, children="Click a node in the Sankey above to see its transactions here."),
+        html.Div(style=CARD, children=[
+            dash_table.DataTable(
+                id="sankey-click-table",
+                columns=[
+                    {"name": "Date",        "id": "date",        "type": "text"},
+                    {"name": "Description", "id": "description", "type": "text"},
+                    {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
+                     "format": {"specifier": ",.2f"}},
+                    {"name": "Category",    "id": "category",    "type": "text"},
+                    {"name": "Account",     "id": "account",     "type": "text"},
+                    {"name": "Note",        "id": "note",        "type": "text"},
+                ],
+                data=[],
+                style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
+                **{**_TABLE_STYLE, "page_size": 20},
+            ),
+        ]),
     ])
 
 
@@ -1429,9 +1465,107 @@ def create_app() -> Dash:
         Input("sankey-date-range", "start_date"),
         Input("sankey-date-range", "end_date"),
         Input("radio-sankey-mode", "value"),
+        Input("sankey-drill-root", "data"),
     )
-    def update_sankey(date_start, date_end, view_mode):
-        return charts.build_sankey(date_start, date_end, view_mode)
+    def update_sankey(date_start, date_end, view_mode, drill_root):
+        return charts.build_sankey(date_start, date_end, view_mode, root_category_id=drill_root)
+
+    # ── Sankey click-through: single click shows transactions, a second click on the
+    # same node within DOUBLE_CLICK_WINDOW seconds also drills the diagram into it ──
+    DOUBLE_CLICK_WINDOW = 0.6
+
+    @app.callback(
+        Output("sankey-click-info", "children"),
+        Output("sankey-click-table", "data"),
+        Output("sankey-last-click", "data"),
+        Output("sankey-drill-root", "data"),
+        Output("radio-sankey-mode", "value"),
+        Input("chart-sankey", "clickData"),
+        State("sankey-date-range", "start_date"),
+        State("sankey-date-range", "end_date"),
+        State("sankey-last-click", "data"),
+        prevent_initial_call=True,
+    )
+    def sankey_click_through(click_data, date_start, date_end, last_click):
+        if not click_data or not click_data.get("points"):
+            return no_update, no_update, no_update, no_update, no_update
+
+        point = click_data["points"][0]
+        # customdata is set explicitly on both nodes ("LABEL") and links ("A|B") in
+        # build_sankey specifically because Plotly's own click payload fields are
+        # unreliable here -- a link click has no source/target sub-objects and an empty
+        # "label", it only shows up in customdata.
+        customdata = point.get("customdata")
+        label = None
+        if isinstance(customdata, str) and customdata:
+            if "|" in customdata:
+                left, right = customdata.split("|", 1)
+                # a link -- prefer whichever side isn't the generic income node, since
+                # that's almost always the side someone actually wants to drill into
+                if right not in ("INCOME", "PAYCHECK"):
+                    label = right
+                elif left not in ("INCOME", "PAYCHECK"):
+                    label = left
+                else:
+                    label = right
+            else:
+                label = customdata  # a node click
+
+        if not label:
+            label = point.get("label") or None
+
+        if not label:
+            # Couldn't find a label where we expected one -- show the raw payload so it
+            # can be reported back and the extraction logic adjusted to match.
+            return (f"Couldn't identify which node was clicked. Raw click payload: {point}",
+                    [], no_update, no_update, no_update)
+
+        category_id = cath.category_name_to_id(label)
+        if category_id in (None, -1):
+            return (f"'{label}' isn't a real category (maybe the income node) — nothing to drill into.",
+                    [], {"label": label, "ts": time.time()}, no_update, no_update)
+
+        rows = charts.get_transaction_rows(
+            date_start=date_start, date_end=date_end,
+            category_id=category_id, include_descendants=True,
+        )
+        info = (f"{label}: {len(rows)} transaction(s) between {date_start} and {date_end} "
+                f"(includes subcategories)")
+
+        now = time.time()
+        is_double_click = (
+            last_click and last_click.get("label") == label
+            and (now - last_click.get("ts", 0)) < DOUBLE_CLICK_WINDOW
+        )
+        if is_double_click:
+            # drilled in -- reset the click-timing state so a third click isn't
+            # mistaken for part of a new double-click pair
+            return info, rows, None, category_id, "hierarchical"
+
+        return info, rows, {"label": label, "ts": now}, no_update, no_update
+
+    # ── Sankey drill breadcrumb: "back to full view" button + current-root label ──
+    @app.callback(
+        Output("sankey-back-btn", "style"),
+        Output("sankey-breadcrumb-text", "children"),
+        Input("sankey-drill-root", "data"),
+    )
+    def sankey_breadcrumb(drill_root):
+        base_style = {"padding": "6px 14px", "fontSize": "13px", "fontWeight": "600",
+                      "background": "#1a2940", "color": "#fff", "border": "none",
+                      "borderRadius": "6px", "cursor": "pointer"}
+        if drill_root is None:
+            return {**base_style, "display": "none"}, ""
+        name = cath.category_id_to_name(drill_root) or f"category {drill_root}"
+        return base_style, f"Drilled into: {name} (double-click a node again, or use Back)"
+
+    @app.callback(
+        Output("sankey-drill-root", "data", allow_duplicate=True),
+        Input("sankey-back-btn", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def sankey_back_to_full_view(n_clicks):
+        return None
 
     # ── Transaction multi-filter search ──────────────────────────────────────
     @app.callback(

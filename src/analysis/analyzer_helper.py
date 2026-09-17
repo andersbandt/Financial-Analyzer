@@ -163,7 +163,7 @@ def create_top_category_amounts_array(transactions, categories, count_NA=True):
     return top_cat_str, category_amounts
 
 
-def generate_sankey_data(transactions, categories, view_mode="top_level"):
+def generate_sankey_data(transactions, categories, view_mode="top_level", root_category_id=None):
     """
     Processes transactions and categories into spending_data format for Sankey.
 
@@ -173,61 +173,66 @@ def generate_sankey_data(transactions, categories, view_mode="top_level"):
         view_mode: "top_level" or "hierarchical"
             - "top_level": Shows income flowing to top-level expense categories
             - "hierarchical": Shows parent -> child category relationships
+        root_category_id: if given, ancestor chains stop here instead of walking all the
+            way to the true top-level category -- used for the "drill into a category"
+            view, where this category itself should act as the diagram's source instead
+            of INCOME. Callers are expected to have already filtered `transactions` down
+            to this category + its descendants.
 
     Returns:
         List of dicts with 'category', 'subcategory', 'amount' keys
     """
-    # Map categories by ID for quick access
-    category_map = {cat.id: cat for cat in categories}
-
     # Prepare data structure to aggregate amounts
     spending_dict = defaultdict(float)
 
+    # Load every category once and walk ancestor chains in memory. Previously top_level
+    # mode called cath.get_category_parent() per transaction, which opens a fresh DB
+    # connection per ancestor level -- thousands of round trips on an "all time" range,
+    # and the main cause of the Sankey being slow to switch views. Hierarchical mode also
+    # only ever looked at a transaction's *immediate* parent, so a category nested 3+
+    # levels deep (e.g. SHOPPING -> HOUSEHOLD -> KITCHEN) with no transactions directly
+    # tagged at the middle level never got connected back to its top-level ancestor --
+    # walking the full chain here fixes both.
+    all_categories = cath.load_categories()
+    all_cat_map = {cat.id: cat for cat in all_categories}
+
+    def ancestor_chain(cat_id):
+        """[top_level_cat, ..., cat_id's own Category], inclusive. Empty if not found.
+        Stops at root_category_id (inclusive) when given, instead of true top-level."""
+        chain = []
+        seen = set()
+        cur = all_cat_map.get(cat_id)
+        while cur is not None and cur.id not in seen:
+            chain.append(cur)
+            seen.add(cur.id)
+            if cur.id == root_category_id or cur.parent == 1:
+                break
+            cur = all_cat_map.get(cur.parent)
+        chain.reverse()
+        return chain
+
     if view_mode == "top_level":
-        # TOP-LEVEL VIEW: Roll up all transactions to their top-level categories
+        # TOP-LEVEL VIEW: roll every transaction up to its top-level ancestor and
+        # self-reference it (income source is connected in process_sankey_data)
         for transaction in transactions:
-            # Get the top-level category for this transaction
-            top_level_id = cath.get_category_parent(transaction.category_id, printmode=False)
-            top_level_cat = category_map.get(top_level_id)
-
-            if not top_level_cat:
+            chain = ancestor_chain(transaction.category_id)
+            if not chain:
                 continue
-
-            # Create self-referencing flow (income source will be added in process_sankey_data)
-            parent_name = top_level_cat.name
-            child_name = top_level_cat.name
-
-            spending_dict[(parent_name, child_name)] += transaction.value
+            top_level_cat = chain[0]
+            spending_dict[(top_level_cat.name, top_level_cat.name)] += transaction.value
 
     elif view_mode == "hierarchical":
-        # HIERARCHICAL VIEW: Show parent -> child category relationships
-        # Load all categories for lookup
-        all_categories = cath.load_categories()
-        all_cat_map = {cat.id: cat for cat in all_categories}
-
+        # HIERARCHICAL VIEW: self-reference the top-level ancestor (so it always connects
+        # to income, no matter how deep the transaction's own category is nested), plus a
+        # parent -> child link at every hop down the chain for the detailed breakdown.
         for transaction in transactions:
-            trans_cat = all_cat_map.get(transaction.category_id)
-
-            if not trans_cat:
+            chain = ancestor_chain(transaction.category_id)
+            if not chain:
                 continue
-
-            # Determine parent-child relationship
-            if trans_cat.parent == 1:
-                # Top-level category - self-reference (will flow from income)
-                parent_name = trans_cat.name
-                child_name = trans_cat.name
-            else:
-                # Child category - find parent and create parent -> child flow
-                parent_cat = all_cat_map.get(trans_cat.parent)
-
-                if parent_cat:
-                    parent_name = parent_cat.name
-                    child_name = trans_cat.name
-                else:
-                    # Parent not found, skip
-                    continue
-
-            spending_dict[(parent_name, child_name)] += transaction.value
+            top_level_cat = chain[0]
+            spending_dict[(top_level_cat.name, top_level_cat.name)] += transaction.value
+            for parent_cat, child_cat in zip(chain, chain[1:]):
+                spending_dict[(parent_cat.name, child_cat.name)] += transaction.value
 
     else:
         raise ValueError(f"Invalid view_mode '{view_mode}'. Must be 'top_level' or 'hierarchical'")
@@ -241,9 +246,13 @@ def generate_sankey_data(transactions, categories, view_mode="top_level"):
     return spending_data
 
 
-def process_sankey_data(data):
+def process_sankey_data(data, income_source_override=None):
     """
     Processes input data into labels and links for a Sankey diagram.
+
+    income_source_override: when given, use this exact label as the diagram's source
+    instead of auto-detecting INCOME/PAYCHECK -- used for the "drill into a category"
+    view, where the drilled-into category itself (e.g. "MISC FINANCE") is the source.
     """
 
     # Helper function to flatten nested subcategories
@@ -268,21 +277,24 @@ def process_sankey_data(data):
     # Combine categories and subcategories, ensuring no duplicates
     labels = list(categories | subcategories)  # Set union to ensure uniqueness
 
-    # Find income source category (positive amounts) - prefer one that exists in data
-    income_source = None
-    for item in data:
-        if item["amount"] > 0:
-            income_source = item["category"]
-            break
-
-    # If no income found in data, check if "PAYCHECK" category exists, otherwise use first category
-    if income_source is None:
-        if "PAYCHECK" in labels:
-            income_source = "PAYCHECK"
-        elif labels:
-            income_source = labels[0]
-        else:
-            income_source = "Income"  # Fallback if no labels at all
+    # Find income source category. Prefer the real INCOME/PAYCHECK category by name over
+    # scanning for "first positive amount" -- that heuristic is order-dependent and can
+    # latch onto the wrong category (e.g. a top-level bucket like MISC FINANCE that happens
+    # to net positive that period) depending on dict iteration order.
+    if income_source_override is not None:
+        income_source = income_source_override
+    elif "INCOME" in labels:
+        income_source = "INCOME"
+    elif "PAYCHECK" in labels:
+        income_source = "PAYCHECK"
+    else:
+        income_source = None
+        for item in data:
+            if item["amount"] > 0:
+                income_source = item["category"]
+                break
+        if income_source is None:
+            income_source = labels[0] if labels else "Income"  # Fallback if no labels at all
 
     # Ensure income source is in labels
     if income_source not in labels:
@@ -294,20 +306,36 @@ def process_sankey_data(data):
 
     def process_item(item):
         """
-        Recursively process each item, adding links and labels.
+        Adds a link for one (category, subcategory, amount) entry, or skips it.
         """
-        if item["amount"] < 0:
-            if item["category"] == item["subcategory"]:  # handle top-level categories
+        is_top_level_self_ref = item["category"] == item["subcategory"]
+
+        if is_top_level_self_ref and item["category"] == income_source:
+            # The income source's own self-referencing entry only exists so income_source
+            # detection works above -- it must never be rendered, or it draws as a giant
+            # self-loop back onto the income node.
+            return
+
+        if item["amount"] == 0:
+            return  # nothing to draw
+
+        if is_top_level_self_ref:
+            if item["amount"] < 0:
+                # spending: income -> category
                 source_idx = labels.index(income_source)
+                target_idx = labels.index(item["category"])
             else:
+                # a non-income top-level category that net *received* money this period
+                # (e.g. gifts under MISC FINANCE) -- flows INTO income instead of looping
+                # on itself.
                 source_idx = labels.index(item["category"])
+                target_idx = labels.index(income_source)
         else:
+            # hierarchical parent -> child link, no self-loop risk
             source_idx = labels.index(item["category"])
+            target_idx = labels.index(item["subcategory"])
 
         sources.append(source_idx)
-
-        # Determine the target based on subcategories (assuming a structure with 'subcategory')
-        target_idx = labels.index(item["subcategory"])
         targets.append(target_idx)
         values.append(abs(item["amount"])) # NOTE: unsure if this is required or not, but couldn't get anything to show up when they are negative
 

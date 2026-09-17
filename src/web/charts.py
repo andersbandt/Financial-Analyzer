@@ -687,10 +687,12 @@ def get_transaction_rows(
 
 
 def build_sankey(date_start: str | None, date_end: str | None,
-                 view_mode: str = "top_level") -> go.Figure:
+                 view_mode: str = "top_level", root_category_id: int | None = None) -> go.Figure:
     """
     Spending flow Sankey for an explicit date range.
     If either date is None, falls back to all-time (no filter).
+    root_category_id: if given, scope the diagram to just that category + its descendants,
+    with the category itself acting as the source instead of INCOME (the "drill in" view).
     """
     if date_start and date_end:
         transactions = transr.recall_transaction_data(date_start, date_end)
@@ -699,31 +701,56 @@ def build_sankey(date_start: str | None, date_end: str | None,
         transactions = transr.recall_transaction_data()
         range_label = "all time"
 
+    # exclude internal transfers/balance-adjustments -- not real income or spending,
+    # and left in they dominate the diagram (matches _income_expense_split's convention)
+    transactions = [t for t in transactions if _cat_name(t.category_id) not in _SKIP_CATS]
+
+    root_name = None
+    if root_category_id is not None:
+        allowed = set(cath.get_all_category_descendants(root_category_id))
+        allowed.add(root_category_id)
+        transactions = [t for t in transactions if t.category_id in allowed]
+        root_name = cath.category_id_to_name(root_category_id)
+
     if not transactions:
         fig = go.Figure()
         fig.update_layout(title=f"No transactions found ({range_label})")
         return fig
 
-    if view_mode == "top_level":
+    if view_mode == "top_level" and root_category_id is None:
         categories = cath.get_top_level_categories()
     else:
         categories = cath.load_categories()
 
-    spending_data = anah.generate_sankey_data(transactions, categories, view_mode=view_mode)
-    labels, sources, targets, values = anah.process_sankey_data(spending_data)
+    spending_data = anah.generate_sankey_data(transactions, categories, view_mode=view_mode,
+                                               root_category_id=root_category_id)
+    labels, sources, targets, values = anah.process_sankey_data(
+        spending_data, income_source_override=root_name)
 
     view_label = "Top-Level" if view_mode == "top_level" else "Hierarchical"
+    title = f"Spending Flow — {view_label} ({range_label})"
+    if root_name:
+        title = f"Spending Flow — {view_label} — {root_name} ({range_label})"
+    # customdata makes click identification reliable: Plotly's built-in click payload
+    # fields are inconsistent between node clicks and link clicks (a link click's point
+    # has no source/target sub-objects and an empty "label"), so give every node AND
+    # every link an explicit, unambiguous label to read back in the click callback.
+    link_customdata = [f"{labels[s]}|{labels[t]}" for s, t in zip(sources, targets)]
     fig = go.Figure(go.Sankey(
         node=dict(
             pad=15,
             thickness=30,
             line=dict(color="black", width=0.5),
             label=labels,
+            customdata=labels,
+            hovertemplate="%{customdata}: $%{value:,.2f}<extra></extra>",
         ),
-        link=dict(source=sources, target=targets, value=values),
+        link=dict(source=sources, target=targets, value=values,
+                  customdata=link_customdata,
+                  hovertemplate="%{customdata}: $%{value:,.2f}<extra></extra>"),
     ))
     fig.update_layout(
-        title=f"Spending Flow — {view_label} ({range_label})",
+        title=title,
         font_size=12,
         height=560,
         margin=dict(t=60, b=20, l=20, r=20),
