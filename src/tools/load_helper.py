@@ -232,7 +232,15 @@ def create_statement(year, month, filepath, account_id_prompt=False):
 
 # get_month_year_statement_list:
 #   @brief      MAIN FUNCTION THAT IS DOING THE SHIT WHEN LOADING !!!!
-def get_month_year_statement_list(basefilepath, year, month, printmode=False):
+#   @param      raise_on_error  default (True) preserves the original behavior: a bad file
+#                               (e.g. unparseable amount column) aborts the whole call. Pass
+#                               False for read-only/audit callers (see check_data_integrity_02)
+#                               so one bad old file doesn't kill a scan across years of data --
+#                               the file is just skipped and reported via error_log instead.
+#   @param      error_log       optional list; on a caught error (only when raise_on_error is
+#                               False) appends (year, month, filepath, error_str) to it.
+def get_month_year_statement_list(basefilepath, year, month, printmode=False,
+                                   raise_on_error=True, error_log=None):
     file_list = get_year_month_files(basefilepath, year, month)
 
     statement_list = []
@@ -241,17 +249,23 @@ def get_month_year_statement_list(basefilepath, year, month, printmode=False):
     for file in file_list:
         statement = create_statement(year, month, file, account_id_prompt=False)
         if statement is not None:  # NOTE: added this check to prevent returned statement list from having None in there
-            statement_list.append(statement)
-            status_list.append(True)
-            account_list.append(statement_list[-1].account_id)
-
             try:
                 statement.load_statement_data()
                 if printmode:
                     statement.print_statement()
+                statement_list.append(statement)
+                status_list.append(True)
+                account_list.append(statement.account_id)
             except Exception as e:
                 print("Something went wrong loading statement from filepath!!!\n\terror is: ", e)
-                raise e
+                if raise_on_error:
+                    raise e
+                if error_log is not None:
+                    error_log.append((year, month, file, str(e)))
+                # skip the file (it contributes no transactions) but keep the per-file
+                # status/account lists aligned with file_list for the table print below
+                status_list.append(False)
+                account_list.append(statement.account_id)
 
         else:
             print(f"... seems like no statement could be created for {file}")

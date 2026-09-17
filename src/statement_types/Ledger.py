@@ -100,6 +100,35 @@ class Ledger:
                 print("Transactions left:", num_to_categorize - i)
         return True, manually_categorized
 
+    # edit_transaction_category_cli: lets the user re-categorize any transaction (already
+    #   categorized or not) by its "#" row number from print_statement(), instead of only
+    #   being able to categorize whatever's left uncategorized. Loops until the user quits
+    #   (empty/q/quit/exit), so multiple transactions can be fixed in one pass.
+    def edit_transaction_category_cli(self):
+        if not self.transactions:
+            print("No transactions loaded to edit.")
+            return False
+
+        self.print_statement()
+        while True:
+            idx = clih.spinput(
+                f"\nEnter the # of the transaction to edit (1-{len(self.transactions)}), or 'q' to finish",
+                inp_type="int")
+            if idx is False:
+                return True
+
+            if idx < 1 or idx > len(self.transactions):
+                print(f"Invalid #: must be between 1 and {len(self.transactions)}")
+                continue
+
+            transaction = self.transactions[idx - 1]
+            new_cat_id = transh.get_trans_category_cli(transaction, mode=2)
+            if new_cat_id == -1:
+                print("Category edit cancelled for this transaction.")
+                continue
+
+            transaction.add_note("manually_edited")
+
     def categorize_ml(self, confidence_threshold=0.8):
         """
         Categorize uncategorized transactions using the trained ML model.
@@ -201,15 +230,20 @@ class Ledger:
 
         # NEW METHOD: using prettytable
         elif method == 1:
+            # "#" is the transaction's position in self.transactions (1-indexed), NOT its
+            # sql_key -- it's what edit_transaction_category_cli() uses to identify a row,
+            # since freshly-loaded (unsaved) transactions have no sql_key yet. Stays valid
+            # across re-prints as long as self.transactions isn't reordered in between.
             if include_sql_key:
-                headers = ["KEY", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
+                headers = ["#", "KEY", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
             else:
-                headers = ["DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
+                headers = ["#", "DATE", "AMOUNT", "DESC", "CATEGORY", "ACCOUNT", "NOTE"]
 
             values = []
-            for transaction in self.transactions:
+            for idx, transaction in enumerate(self.transactions, start=1):
                 if include_sql_key:
                     cur_values = [
+                        idx,
                         transaction.sql_key,
                         transaction.date,
                         transaction.value,
@@ -220,6 +254,7 @@ class Ledger:
                     ]
                 else:
                     cur_values = [
+                        idx,
                         transaction.date,
                         transaction.value,
                         transaction.description,

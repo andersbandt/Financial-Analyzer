@@ -43,7 +43,7 @@ class TabLoadData(SubMenu):
             Action("Load ALL data", self.a02_load_all_data),
             Action("Load single file", self.a03_load_single_file),
             Action("Add manual transaction", self.a04_add_manual_transaction),
-            Action("Check data status", self.a05_check_status),
+            Action("Perform data integrity audit", self.a05_check_status),
             Action("Manage recurring transactions", self.a11_manage_recurring_transactions),
             Action("Apply recurring transactions (paycheck deductions)", self.a12_apply_recurring_transactions),
         ]
@@ -478,6 +478,11 @@ class TabLoadData(SubMenu):
         else:
             print("Ok, leaving statement with just automatic categorization applied")
 
+        # give the user a quick chance to fix any miscategorized transaction (by its "#" row
+        # number) right here, instead of having to hunt for it in the menu afterward.
+        if clih.promptYesNo("Do you want to edit any transaction's category (by #) before moving on?"):
+            self.statement.edit_transaction_category_cli()
+
     # a05_save_statement_csv: saves the currently loaded statement to a .csv file
     def a07_save_statement_csv(self):
         print("... saving statement to .csv")
@@ -535,6 +540,15 @@ class TabLoadData(SubMenu):
         self.statement.print_statement()
         return True
 
+    # a13_edit_transaction_category: lets the user fix any transaction's category by its "#"
+    #   row number (printed alongside every statement table), rather than only being able to
+    #   re-run full (auto/ml/manual) categorization. Available any time after a statement is
+    #   loaded -- not just right after "Categorize statement" -- so it also covers cases like
+    #   spotting a miscategorized transaction while sorting/printing later.
+    def a13_edit_transaction_category(self):
+        print("\n... editing transaction categor(ies) by row number ...")
+        return self.statement.edit_transaction_category_cli()
+
     def a10_save_statement_db(self):
         print("... saving statement to .db file ...")
         res = clih.promptYesNo("Are you sure you want to save the statement?")
@@ -561,7 +575,7 @@ class TabLoadData(SubMenu):
             for month in range(1, 12 + 1):
                 # Get list of files in that directory
                 month_year_dir = loadh.get_year_month_files(self.basefilepath, year, month)
-                tmp_month_status = [f"{year}-{month}"]  # Populate first column with year-month
+                tmp_month_status = [f"{year}-{month:02d}"]  # zero-padded so it sorts/reads correctly
 
                 for acc_id in acc_id_arr:
                     def find_account_match(aid):
@@ -587,21 +601,28 @@ class TabLoadData(SubMenu):
                 if account_status[i - 1] == "1" and account_status[i] == "0":
                     bad_months[acc_id].append(acc_data_status[i][0])  # Log the bad month (year-month)
 
-        # Logging and displaying results
+        # keep the full 0/1 grid available at DEBUG level, but it's unreadable as a printed
+        # table once there are more than a handful of accounts (columns wrap into garbage) --
+        # the per-account summary below is the actual actionable output.
         field_names = ["Month"] + [dbh.account.get_account_name_from_id(acc_id) for acc_id in acc_id_arr]
         logger.debug(field_names)
         logger.debug(acc_data_status)
-        clip.print_variable_table(field_names, acc_data_status, min_width=5, max_width=5, max_width_column=5)
 
-        # Log BAD months
-        for acc_id, months in bad_months.items():
-            if months:
-                logger.warning(f"Account ID {acch.account_id_to_name(acc_id)} has BAD months: {', '.join(months)}")
-            else:
-                logger.info(f"Account ID {acch.account_id_to_name(acc_id)} has no BAD months.")
+        # summary table: one row per account, worst offenders (most gaps) first
+        summary_rows = [
+            [acch.account_id_to_name(acc_id), len(months), ", ".join(months) if months else "-"]
+            for acc_id, months in bad_months.items()
+        ]
+        summary_rows.sort(key=lambda r: -r[1])
+        clip.print_variable_table(
+            ["Account", "# Gaps", "Gap months (file present, then missing)"],
+            summary_rows,
+            min_width=12, max_width=60, max_width_column="Gap months (file present, then missing)",
+            title="Data integrity check -- Method 1 (file presence on disk)",
+        )
 
-        logger.info("CHECK PREVIOUS TABLE")
-        logger.info("Showcasing if file match exists in valid folders")
+        n_clean = sum(1 for r in summary_rows if r[1] == 0)
+        logger.info(f"{n_clean}/{len(acc_id_arr)} account(s) have no detected gaps.")
 
         return True
 
@@ -622,14 +643,19 @@ class TabLoadData(SubMenu):
         """
         # Initialize results dictionary
         integrity_results = {}
+        mismatch_rows = []
+        parse_errors = []  # (year, month, filepath, error_str) -- see get_month_year_statement_list
 
         # Loop through valid years
         for year in dateh.get_valid_years():
             # Loop through months in the year
             for month in range(1, 13):
-                # Get list of statement objects for the month/year
-                statements = loadh.get_month_year_statement_list(self.basefilepath, year, month, printmode=False)
-
+                # Get list of statement objects for the month/year. raise_on_error=False so a
+                # single old/malformed file (e.g. a stray '*' in an amount column) doesn't abort
+                # the whole scan -- it's recorded in parse_errors and reported below instead.
+                statements = loadh.get_month_year_statement_list(
+                    self.basefilepath, year, month, printmode=False,
+                    raise_on_error=False, error_log=parse_errors)
 
                 # loop through statements and compare to database
                 for statement in statements:
@@ -646,18 +672,33 @@ class TabLoadData(SubMenu):
                         "matches": statement_transaction_count == db_transaction_count,
                     }
 
-                    # Log comparison results
                     if statement_transaction_count != db_transaction_count:
-                        logger.warning(
-                            f"Mismatch for {year}-{month}, Account ID {acch.account_id_to_name(statement.account_id)}: "
-                            f"File = {statement_transaction_count}, DB = {db_transaction_count}"
-                        )
-                    else:
-                        logger.info(
-                            f"Match for {year}-{month}, Account ID {acch.account_id_to_name(statement.account_id)}: "
-                            f"File = {statement_transaction_count}, DB = {db_transaction_count}"
-                        )
+                        mismatch_rows.append([
+                            f"{year}-{month:02d}",
+                            acch.account_id_to_name(statement.account_id),
+                            statement_transaction_count,
+                            db_transaction_count,
+                        ])
 
+        # Report mismatches
+        if mismatch_rows:
+            clip.print_variable_table(
+                ["Month", "Account", "File count", "DB count"],
+                mismatch_rows,
+                title=f"Data integrity check -- Method 2 ({len(mismatch_rows)} count mismatch(es))",
+            )
+        else:
+            logger.info("Method 2: no file/DB transaction count mismatches found.")
+
+        # Report files that couldn't even be parsed, separately -- these are worth fixing
+        # regardless of what the count comparison says (the file just never got counted at all)
+        if parse_errors:
+            clip.print_variable_table(
+                ["Month", "Filepath", "Error"],
+                [[f"{y}-{m:02d}", f, e] for (y, m, f, e) in parse_errors],
+                min_width=12, max_width=60, max_width_column="Error",
+                title=f"Method 2: {len(parse_errors)} file(s) failed to parse (not counted above)",
+            )
 
         # Return results for further processing or debugging
         return True
@@ -670,6 +711,7 @@ class TabLoadData(SubMenu):
                 Action("Save to .csv", self.a07_save_statement_csv),
                 Action("Print new Ledger", self.a08_print_ledger),
                 Action("Sort ledger", self.a09_sort_ledger),
+                Action("Edit transaction category", self.a13_edit_transaction_category),
                 Action("Save to database", self.a10_save_statement_db),
             ]
             self.action_arr.extend(new_actions)
