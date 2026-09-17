@@ -626,12 +626,23 @@ class TabLoadData(SubMenu):
 
         return True
 
-    # NOTE: mismatches are expected and have two root causes — this method is unreliable as-is:
+    # NOTE: mismatches are expected and have three root causes — this method is unreliable as-is:
     #   1. DUPLICATE DETECTION: re-loading a file counts all transactions in it, but previously-flagged
     #      duplicates were never saved to DB, so file count > DB count for already-loaded months. This is
     #      correct behavior, not a bug, but it makes the comparison noisy.
     #   2. DATE BOUNDARIES: get_transaction_count() uses an exclusive upper bound (first day of next month)
     #      while statement files may contain transactions at month edges. Minor but adds more false mismatches.
+    #   3. BANK EXPORT FORMAT DRIFT (confirmed 2026-09-17, wells_CHECKING/SAVING/CREDIT/AUTOGRAPH): a
+    #      statement_parser row is a single static column mapping, but a bank can change its CSV layout
+    #      over time (Wells Fargo did, some time between 2026-03 and 2026-08 -- old files were headerless
+    #      "date,amount,*,,description"; new ones have a header and are "DATE,DESCRIPTION,AMOUNT,CHECK#,
+    #      STATUS", plus the filename itself changed from e.g. Checking1.csv to Checking.csv). The config
+    #      only matches ONE of the two formats (whichever is current), so re-parsing old files under
+    #      today's config throws (usually "could not convert string to float: '*'") even though that
+    #      month's data is already safely in the DB from when the config matched it. DO NOT "fix" this by
+    #      editing statement_parser for such an account -- that just breaks loading of *current* files.
+    #      This is audit noise, not a data problem, unless the failing file is actually a recent one you
+    #      haven't loaded yet.
     #   REAL FIX: the file_history table (in schema) was intended to track loaded files and would make this
     #   method reliable — but it was never implemented (no DB helper, never written to). To fix properly:
     #   write to file_history in save_statement(), add a db helper to query it, then method 2 can simply
