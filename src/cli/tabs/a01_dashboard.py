@@ -3,7 +3,9 @@
 # import needed packages
 import sqlite3
 import os
+import subprocess
 import sys
+import utils
 
 
 # import user defined modules
@@ -22,7 +24,8 @@ class TabMainDashboard(SubMenu):
                       Action("System configuration", self.a02_config),
                       Action("Execute RAW SQL statement", self.a03_execute_sql),
                       Action("TEST METHOD", self.a04_test_method),
-                      Action("Reboot program", self.a05_reboot)
+                      Action("Reboot program", self.a05_reboot),
+                      Action("Launch web dashboard", self.a06_launch_dashboard),
                       ]
 
         # call parent class __init__ method
@@ -95,4 +98,18 @@ class TabMainDashboard(SubMenu):
     # .... honestly I have some doubts this is even possible .....
     def a05_reboot(self):
         os.execv(sys.executable, ['python'] + sys.argv)
+
+    # a06_launch_dashboard: starts the read-only Dash web dashboard as its own process so the CLI
+    #   stays free to keep using -- dashboard.py opens its own browser tab once the server is up.
+    #   Safe to run alongside this CLI: the dashboard never takes a DB lock (see db_guard.py).
+    def a06_launch_dashboard(self):
+        dashboard_path = os.path.join(utils.BASEFILEPATH, "dashboard.py")
+        print("\nLaunching dashboard -> http://127.0.0.1:8050")
+        print("(opens in your browser in a moment; this CLI stays free to keep using)")
+
+        if sys.platform == "win32":
+            # own console window, so its Flask/loguru output doesn't interleave with this menu
+            subprocess.Popen([sys.executable, dashboard_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        else:
+            subprocess.Popen([sys.executable, dashboard_path])
 

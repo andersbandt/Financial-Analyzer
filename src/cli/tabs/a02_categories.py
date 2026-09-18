@@ -6,7 +6,10 @@
 
 # import user defined modules
 import db.helpers as dbh
+from db import DATABASE_DIRECTORY, db_guard
 from categories import categories_helper as cath
+from analysis.data_recall import transaction_recall as transr
+from statement_types import Ledger
 import cli.cli_helper as clih
 import cli.cli_printer as clip
 from cli.cli_class import SubMenu
@@ -205,18 +208,77 @@ class TabCategory(SubMenu):
             table_values
         )
 
+    # a05_delete_category: a plain DELETE FROM category orphans any children (their parent_id
+    #   dangles) and any transactions still tagged with the deleted id -- create_Tree() then
+    #   silently fails to attach them to any node, so they vanish from every report with zero
+    #   error or warning. This does the safe version instead: transactions -> NA (uncategorized,
+    #   with an offer to categorize them right now), children -> promoted to this category's own
+    #   parent, keywords -> deleted outright, and a local backup taken first.
     def a05_delete_category(self):
-        # print out all categories
         self.a02_print_category()
-
         print("Infinite loop started to delete categories. Enter 'q' or 'quit' at anytime to exit")
-        status = True
-        while status:
-            category_id = clih.spinput("What is the category ID you want to DROP?", inp_type="int")
+
+        while True:
+            category_id = clih.spinput("What is the category ID you want to DELETE?", inp_type="int")
             if category_id is False:
                 return None
-            dbh.category.delete_category(category_id)
-            print("Ok deleted category with ID: " + str(category_id))
+
+            category_name = cath.category_id_to_name(category_id)
+            if category_name is None or category_name == "NA":
+                print(f"No category found with ID {category_id}.")
+                continue
+
+            parent_id = dbh.category.get_category_parent_id(category_id)
+            children = cath.get_category_children(category_id)
+            txn_count = len(dbh.transactions.get_transactions_by_category_id(category_id))
+            kw_count = sum(1 for kw in dbh.keywords.get_keyword_ledger_data() if kw[1] == category_id)
+
+            print(f"\n--- Delete Preview ---")
+            print(f"  Category: {category_name} (ID={category_id})")
+            print(f"  Transactions currently in this category: {txn_count} -> will become NA (uncategorized)")
+            if children:
+                child_names = ", ".join(cath.category_id_to_name(c) for c in children)
+                print(f"  Subcategories: {child_names} -> will be promoted to "
+                      f"{cath.category_id_to_name(parent_id)} (this category's own parent)")
+            if kw_count:
+                print(f"  Keywords: {kw_count} -> will be deleted (no longer point anywhere useful)")
+            print(f"----------------------")
+
+            if not clih.promptYesNo(f"Confirm delete '{category_name}'?"):
+                print("Aborted.")
+                continue
+
+            backup_path = db_guard.backup_database(DATABASE_DIRECTORY, label="pre-delete-category")
+            if backup_path:
+                print(f"  Backup saved: {backup_path}")
+
+            result = dbh.category.safe_delete_category(category_id)
+            print(f"\n✓ Deleted '{category_name}'.")
+            print(f"  Transactions moved to NA:  {result['transactions']}")
+            print(f"  Subcategories promoted:    {result['children_reparented']}")
+            print(f"  Keywords removed:          {result['keywords_deleted']}")
+
+            if result["affected_sql_keys"]:
+                if clih.promptYesNo(
+                        f"\n{len(result['affected_sql_keys'])} transaction(s) are now uncategorized. "
+                        f"Categorize them now?"):
+                    self._manual_categorize_sql_keys(result["affected_sql_keys"])
+                else:
+                    print("Ok, leaving them uncategorized -- find them later via "
+                          "'Categorize Transactions' or a category search for NA.")
+
+    # _manual_categorize_sql_keys: wraps a list of already-persisted sql_keys in a throwaway
+    #   Ledger so Ledger.categorize_manual() (same prompt flow used during statement load) can
+    #   run against them, then persists each result back to the DB by sql_key.
+    def _manual_categorize_sql_keys(self, sql_keys):
+        transactions = [transr.get_transaction(k) for k in sql_keys]
+        tmp_ledger = Ledger.Ledger("Uncategorized after category delete")
+        tmp_ledger.set_statement_data(transactions)
+
+        _, manually_categorized = tmp_ledger.categorize_manual()
+        for t in manually_categorized:
+            dbh.transactions.update_transaction_category(t)
+        print(f"\n{len(manually_categorized)}/{len(sql_keys)} transaction(s) categorized.")
 
     def a06_move_parent(self):
         print("... moving parent category for ID ...")
@@ -301,6 +363,8 @@ class TabCategory(SubMenu):
         print(f"  Merge:  {source_name} (ID={source_id})")
         print(f"  Into:   {target_name} (ID={target_id})")
         print(f"  All transactions, keywords, and child categories will move to {target_name}.")
+        print(f"  Each moved transaction's note gets a tag recording this merge "
+              f"(e.g. 'category_merge: {source_name} -> {target_name}').")
         print(f"  {source_name} will be deleted.")
         print(f"---------------------")
 
@@ -308,6 +372,10 @@ class TabCategory(SubMenu):
         if not confirm:
             print("Aborted.")
             return False
+
+        backup_path = db_guard.backup_database(DATABASE_DIRECTORY, label="pre-merge")
+        if backup_path:
+            print(f"  Backup saved: {backup_path}")
 
         result = dbh.category.merge_categories(source_id, target_id)
         print(f"\n✓ Merge complete:")

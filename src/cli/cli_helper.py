@@ -260,11 +260,16 @@ def category_prompt_all(prompt_str, display):
                        disp_options=display,
                        exact_match=True)
 
-    if cat_inp == -1:
-        print("category_prompt_all received bad response.")
+    # inp_auto() returns False on q/quit/exit (see esc_cmd) and -1 on a typed name that didn't
+    # match any category -- both mean "nothing selected." Previously only -1 was checked here,
+    # so a plain "q" fell through to category_name_to_id(False): a real DB lookup for a category
+    # literally named "False", which failed and printed a scary ERROR SQL/"Something went wrong"
+    # cascade before landing on the same cancelled outcome anyway. Bail out cleanly for both.
+    if cat_inp is False or cat_inp == -1:
+        if cat_inp == -1:
+            print("category_prompt_all received bad response.")
         return False
-    else:
-        return cath.category_name_to_id(cat_inp)
+    return cath.category_name_to_id(cat_inp)
 
 
 # category_prompt: walks the user through selecting a Category from given array input

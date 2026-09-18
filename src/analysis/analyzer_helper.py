@@ -1,6 +1,7 @@
 
 
 # import needed modules
+import statistics
 from datetime import datetime
 from pprint import pprint
 from collections import defaultdict
@@ -443,6 +444,97 @@ def gen_Bx_matrix(date_range_end, days_prev, N):
         spl_Bx.append(a_A)
 
     return spl_Bx, edge_code_date
+
+
+# get_category_deltas: compares a target month's top-level category spending against its trailing
+#   `months_prev`-month baseline (mean + stddev), for every top-level expense category. Unfiltered --
+#   callers apply their own significance/sort criteria. See `get_category_anomalies` for a
+#   z-score-filtered view of the same data.
+#   @param   months_prev       size of the baseline window, in months before the target month
+#   @param   target_year/month if omitted, walks back from the current month to the most recent
+#                               month that actually has transaction data (same pattern used by
+#                               `charts.build_mom_comparison` / `exec_summary_02`)
+#   @param   min_data_months   categories with fewer than this many non-zero baseline months are
+#                               skipped (not enough history to judge)
+#   @return  list of dicts, one per category with data: category, current, baseline_mean,
+#            baseline_stddev, z_score, delta_pct, delta_abs
+def get_category_deltas(months_prev=6, target_year=None, target_month=None, min_data_months=3):
+    if target_year is None or target_month is None:
+        # Start from LAST month, not the current one -- the current month is still in
+        # progress, so its partial totals would look like a false "spent way less than
+        # usual" anomaly in every category. Same convention as build_mom_comparison/
+        # exec_summary_02.
+        year, month, _ = dateh.get_date_int_array()
+        year, month = dateh.get_previous_month(year, month)
+        for _ in range(12):
+            if transaction_recall.recall_transaction_month_bin(year, month):
+                break
+            year, month = dateh.get_previous_month(year, month)
+        target_year, target_month = year, month
+
+    # Build the month list oldest-to-newest: `months_prev` baseline months, then the target month
+    oldest_month = target_month - months_prev
+    oldest_year = target_year
+    while oldest_month < 1:
+        oldest_month += 12
+        oldest_year -= 1
+
+    pairs = []
+    y, m = oldest_year, oldest_month
+    for _ in range(months_prev + 1):
+        pairs.append((y, m))
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+
+    date_bin_trans = [transaction_recall.recall_transaction_month_bin(y, m) for y, m in pairs]
+    bin_dicts = gen_bin_analysis_dict(date_bin_trans)
+    if not bin_dicts:
+        return []
+
+    categories = bin_dicts[0]["categories"]
+    baseline_bins, current_bin = bin_dicts[:-1], bin_dicts[-1]
+
+    deltas = []
+    for i, cat in enumerate(categories):
+        baseline_vals = [abs(b["amounts"][i]) for b in baseline_bins]
+        current_val = abs(current_bin["amounts"][i])
+
+        if sum(1 for v in baseline_vals if v != 0) < min_data_months:
+            continue
+
+        mean = statistics.mean(baseline_vals)
+        stddev = statistics.pstdev(baseline_vals)
+
+        if stddev == 0:
+            z_score = 0.0 if current_val == mean else (float("inf") if current_val > mean else float("-inf"))
+        else:
+            z_score = (current_val - mean) / stddev
+
+        delta_pct = ((current_val - mean) / mean * 100) if mean else (100.0 if current_val else 0.0)
+
+        deltas.append({
+            "category": cat,
+            "current": current_val,
+            "baseline_mean": mean,
+            "baseline_stddev": stddev,
+            "z_score": z_score,
+            "delta_pct": delta_pct,
+            "delta_abs": current_val - mean,
+        })
+
+    return deltas
+
+
+# get_category_anomalies: `get_category_deltas`, filtered to categories whose current-month spend
+#   deviates by at least `stddev_threshold` standard deviations from its baseline, sorted worst first.
+def get_category_anomalies(months_prev=6, stddev_threshold=2.0, min_data_months=3,
+                           target_year=None, target_month=None):
+    deltas = get_category_deltas(months_prev, target_year, target_month, min_data_months=min_data_months)
+    anomalies = [d for d in deltas if abs(d["z_score"]) >= stddev_threshold]
+    anomalies.sort(key=lambda d: -abs(d["z_score"]))
+    return anomalies
 
 
 # gen_bin_analysis_dict: takes in an array of binned transactions and returns an array of dictionaries with a summary

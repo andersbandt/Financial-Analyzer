@@ -6,6 +6,7 @@
 
 
 # import needed modules
+import shutil
 from pprint import pprint
 from prettytable.colortable import ColorTable, Theme
 
@@ -44,14 +45,27 @@ def print_variable_table(variable_names, values, min_width=15, max_width=40, for
     # table = CustomColorTable()
     table = ColorTable(theme=my_custom_theme)  # green text with blue outline
 
-    # if we want to set a width limit
-    if max_width_column is not None:
-        table._max_width = {max_width_column: 90}
+    # Size to the ACTUAL terminal, not a fixed guess. A budget wider than the real terminal
+    # doesn't just overflow cleanly -- PrettyTable pads columns out to fill it, so the rendered
+    # table ends up wider than the terminal and gets soft-wrapped mid-cell by the terminal
+    # itself, breaking the box-drawing into the "||" fragments strewn across separate lines.
+    # Piping to a file/non-tty has no real width, so fall back to something generous.
+    #
+    # The theme's vertical_char is "||" (2 chars), but PrettyTable's width budgeting assumes a
+    # 1-char separator -- with N columns there are N+1 separators, so the actual rendered width
+    # comes out N+1 chars OVER whatever budget we give it. Subtract that back out, or a table
+    # sized "exactly" to the terminal still overflows it by a handful of columns every time.
+    term_width = shutil.get_terminal_size(fallback=(200, 24)).columns
+    table._max_table_width = max(term_width - (len(variable_names) + 1), 20)
 
-    # set MIN column width for EVERY column
-    table._max_table_width = 200
+    # set MIN/MAX column width for EVERY column
     table._min_width = {col: min_width for col in variable_names}
     table._max_width = {col: max_width for col in variable_names}
+
+    # Give one column extra room (e.g. a long Description/Note column) -- must happen AFTER
+    # the uniform per-column pass above, which otherwise immediately clobbers this.
+    if max_width_column is not None:
+        table._max_width[max_width_column] = 90
 
     # if we want to format into finance
     if format_finance_col is not None:

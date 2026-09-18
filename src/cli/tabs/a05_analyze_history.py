@@ -5,6 +5,8 @@
 """
 
 # import needed packages
+import os
+import subprocess
 import utils
 
 # import user defined CLI modules
@@ -21,6 +23,7 @@ from analysis import transaction_helper as transh
 from analysis.graphing import graphing_analyzer as grapa
 from analysis.graphing import graphing_helper as grah
 from analysis.data_recall import transaction_recall as transr
+from analysis.reporting import monthly_digest
 from tools import date_helper as dateh
 from utils import log_helper as logh
 import utils
@@ -247,6 +250,7 @@ class TabSpendingHistory(SubMenu):
               Action("Add note to transaction", self.a07_add_note),
               Action("Largest transactions", self.a08_largest_transactions),
               Action("Spending pie chart", self.a09_spending_pie),
+              Action("Generate monthly digest (HTML)", self.a10_monthly_digest),
                       ]
 
         # call parent class __init__ method
@@ -550,6 +554,29 @@ class TabSpendingHistory(SubMenu):
             title=f"Spending breakdown — last {months_prev} months",
         )
         grapa.show_plots()
+        return True
+
+    # a10_monthly_digest: generates the HTML monthly digest (income/expenses/savings rate,
+    #   category anomalies vs a trailing baseline, full category breakdown) for the most
+    #   recently loaded month, and opens it -- no PDF, no email, just a file to look at.
+    def a10_monthly_digest(self):
+        baseline_months = clih.spinput(
+            "How many months should the anomaly baseline use? (enter q for default of 6)", inp_type="int")
+        if baseline_months is False or baseline_months <= 0:
+            baseline_months = 6
+
+        data = monthly_digest.build_digest_data(baseline_months=baseline_months)
+        html_body = monthly_digest.render_digest_html(data)
+
+        tmp_dir = os.path.join(utils.BASEFILEPATH, "tmp")
+        os.makedirs(tmp_dir, exist_ok=True)
+        digest_path = os.path.join(tmp_dir, "monthly_digest.html")
+        with open(digest_path, "w", encoding="utf-8") as f:
+            f.write(html_body)
+
+        print(f"\nGenerated digest for {data['period_label']} -- {len(data['anomalies'])} anomaly(ies) flagged.")
+        print(f"Saved to: {digest_path}")
+        subprocess.Popen(digest_path, shell=True)
         return True
 
 

@@ -299,8 +299,10 @@ def _prune_backups(directory, stem):
             pass
 
 
-def backup_database(db_path):
-    """Copy the DB to a local, non-synced folder. Best-effort: never raises."""
+def backup_database(db_path, label="startup"):
+    """Copy the DB to a local, non-synced folder. Best-effort: never raises.
+    `label` only affects the printed message (e.g. "pre-merge", "pre-delete-category") --
+    callers outside the startup guard (CLI category edit flows, etc.) can reuse this directly."""
     try:
         if not os.path.isfile(db_path) or os.path.getsize(db_path) == 0:
             return None
@@ -310,10 +312,10 @@ def backup_database(db_path):
         dest = os.path.join(directory, f"{stem}-{stamp}.db")
         shutil.copy2(db_path, dest)
         _prune_backups(directory, stem)
-        print(f"  [db_guard] startup backup -> {dest}")
+        print(f"  [db_guard] {label} backup -> {dest}")
         return dest
     except Exception as e:
-        print(f"  [db_guard] WARNING: startup backup failed: {e}")
+        print(f"  [db_guard] WARNING: {label} backup failed: {e}")
         return None
 
 

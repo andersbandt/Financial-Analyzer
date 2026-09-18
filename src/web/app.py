@@ -179,6 +179,19 @@ def _labeled(label_text, control):
     ])
 
 
+def _collapsible(section_id, title, children, default_open=True):
+    """
+    Collapsible section using native <details>/<summary> -- matches the "What If: Unsold
+    Positions" pattern already used on the Investments tab. No callback needed; expand/collapse
+    state lives entirely in the browser (and, unlike a callback-driven toggle, degrades gracefully
+    with JS disabled). `default_open` controls the initial state via the native `open` attribute.
+    """
+    return html.Details(id=section_id, open=default_open, style={"marginBottom": "20px"}, children=[
+        html.Summary(title, style={**SECTION_HEADER, "cursor": "pointer", "userSelect": "none"}),
+        *children,
+    ])
+
+
 # ─── Tab content builders ─────────────────────────────────────────────────────
 
 
@@ -201,106 +214,110 @@ def _spending_tab(category_options):
         ]),
 
         # Month-over-month vs baseline
-        html.Div("Month-over-month vs baseline average", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Baseline window", _dropdown("dd-baseline", PERIOD_OPTIONS, 6)),
-        ),
-        html.Div(style=ROW, children=[_graph("chart-mom")]),
+        _collapsible("spending-mom", "Month-over-month vs baseline average", [
+            _control_bar(
+                _labeled("Baseline window", _dropdown("dd-baseline", PERIOD_OPTIONS, 6)),
+            ),
+            html.Div(style=ROW, children=[_graph("chart-mom")]),
+        ]),
 
         # Category drill-down
-        html.Div("Category drill-down", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Category", _dropdown("dd-category", category_options, None, width="260px",
-                                           placeholder="Select a category…")),
-            _labeled("Window", _dropdown("dd-drilldown-months", PERIOD_OPTIONS, 12)),
-            _labeled("",
-                dcc.Checklist(
-                    id="chk-drilldown-trendline",
-                    options=[{"label": "  Show trendline", "value": "trend"}],
-                    value=[],
-                    inputStyle={"marginRight": "6px"},
-                    labelStyle={"fontSize": "14px"},
+        _collapsible("spending-drilldown", "Category drill-down", [
+            _control_bar(
+                _labeled("Category", _dropdown("dd-category", category_options, None, width="260px",
+                                               placeholder="Select a category…")),
+                _labeled("Window", _dropdown("dd-drilldown-months", PERIOD_OPTIONS, 12)),
+                _labeled("",
+                    dcc.Checklist(
+                        id="chk-drilldown-trendline",
+                        options=[{"label": "  Show trendline", "value": "trend"}],
+                        value=[],
+                        inputStyle={"marginRight": "6px"},
+                        labelStyle={"fontSize": "14px"},
+                    ),
                 ),
             ),
-        ),
-        html.Div(style=ROW, children=[_graph("chart-drilldown")]),
+            html.Div(style=ROW, children=[_graph("chart-drilldown")]),
+        ]),
 
         # Top merchants
-        html.Div("Top merchants by spending", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Period", _dropdown("dd-merchants-period", PERIOD_OPTIONS, 12, width="180px")),
-        ),
-        html.Div(style=ROW, children=[_graph("chart-top-merchants")]),
+        _collapsible("spending-merchants", "Top merchants by spending", [
+            _control_bar(
+                _labeled("Period", _dropdown("dd-merchants-period", PERIOD_OPTIONS, 12, width="180px")),
+            ),
+            html.Div(style=ROW, children=[_graph("chart-top-merchants")]),
+        ]),
 
         # Sankey — with explicit date range
-        html.Div("Spending flow (Sankey)", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Date range",
-                dcc.DatePickerRange(
-                    id="sankey-date-range",
-                    start_date=sankey_start,
-                    end_date=sankey_end,
-                    display_format="YYYY-MM-DD",
-                    style={"fontSize": "13px"},
-                )),
-            _labeled("Quick set", _dropdown("dd-sankey-quickset", [
-                {"label": "— pick —", "value": "none"},
-                {"label": "Last 3 months",  "value": "3m"},
-                {"label": "Last 6 months",  "value": "6m"},
-                {"label": "Last 12 months", "value": "12m"},
-                {"label": "Last 24 months", "value": "24m"},
-                {"label": "Last 5 years",   "value": "5y"},
-                {"label": "Year to date",   "value": "ytd"},
-                {"label": "All time",       "value": "all"},
-            ], "none", width="180px")),
-            html.Div([
-                html.Label("View", style={**KPI_LABEL, "marginBottom": "6px", "display": "block"}),
-                dcc.RadioItems(
-                    id="radio-sankey-mode",
-                    options=[
-                        {"label": "  Top-level", "value": "top_level"},
-                        {"label": "  Hierarchical", "value": "hierarchical"},
+        _collapsible("spending-sankey", "Spending flow (Sankey)", [
+            _control_bar(
+                _labeled("Date range",
+                    dcc.DatePickerRange(
+                        id="sankey-date-range",
+                        start_date=sankey_start,
+                        end_date=sankey_end,
+                        display_format="YYYY-MM-DD",
+                        style={"fontSize": "13px"},
+                    )),
+                _labeled("Quick set", _dropdown("dd-sankey-quickset", [
+                    {"label": "— pick —", "value": "none"},
+                    {"label": "Last 3 months",  "value": "3m"},
+                    {"label": "Last 6 months",  "value": "6m"},
+                    {"label": "Last 12 months", "value": "12m"},
+                    {"label": "Last 24 months", "value": "24m"},
+                    {"label": "Last 5 years",   "value": "5y"},
+                    {"label": "Year to date",   "value": "ytd"},
+                    {"label": "All time",       "value": "all"},
+                ], "none", width="180px")),
+                html.Div([
+                    html.Label("View", style={**KPI_LABEL, "marginBottom": "6px", "display": "block"}),
+                    dcc.RadioItems(
+                        id="radio-sankey-mode",
+                        options=[
+                            {"label": "  Top-level", "value": "top_level"},
+                            {"label": "  Hierarchical", "value": "hierarchical"},
+                        ],
+                        value="top_level",
+                        inputStyle={"marginRight": "6px"},
+                        labelStyle={"marginRight": "16px", "fontSize": "14px"},
+                    ),
+                ]),
+            ),
+            dcc.Store(id="sankey-drill-root", data=None),
+            dcc.Store(id="sankey-last-click", data=None),
+            html.Div(style={"marginBottom": "8px", "display": "flex",
+                            "alignItems": "center", "gap": "10px"}, children=[
+                html.Button("◀ Back to full view", id="sankey-back-btn", n_clicks=0,
+                            style={"padding": "6px 14px", "fontSize": "13px", "fontWeight": "600",
+                                   "background": "#1a2940", "color": "#fff", "border": "none",
+                                   "borderRadius": "6px", "cursor": "pointer", "display": "none"}),
+                html.Span(id="sankey-breadcrumb-text",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
+            html.Div(style=ROW, children=[_graph("chart-sankey")]),
+
+            # Click-through: transactions behind whichever node/link was clicked
+            html.Div(id="sankey-click-info", style={
+                "marginTop": "12px", "marginBottom": "8px", "color": "#6b7a90", "fontSize": "13px",
+            }, children="Click a node in the Sankey above to see its transactions here."),
+            html.Div(style=CARD, children=[
+                dash_table.DataTable(
+                    id="sankey-click-table",
+                    columns=[
+                        {"name": "Date",        "id": "date",        "type": "text"},
+                        {"name": "Description", "id": "description", "type": "text"},
+                        {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Category",    "id": "category",    "type": "text"},
+                        {"name": "Account",     "id": "account",     "type": "text"},
+                        {"name": "Note",        "id": "note",        "type": "text"},
                     ],
-                    value="top_level",
-                    inputStyle={"marginRight": "6px"},
-                    labelStyle={"marginRight": "16px", "fontSize": "14px"},
+                    data=[],
+                    style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                    style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
+                    **{**_TABLE_STYLE, "page_size": 20},
                 ),
             ]),
-        ),
-        dcc.Store(id="sankey-drill-root", data=None),
-        dcc.Store(id="sankey-last-click", data=None),
-        html.Div(style={"marginBottom": "8px", "display": "flex",
-                        "alignItems": "center", "gap": "10px"}, children=[
-            html.Button("◀ Back to full view", id="sankey-back-btn", n_clicks=0,
-                        style={"padding": "6px 14px", "fontSize": "13px", "fontWeight": "600",
-                               "background": "#1a2940", "color": "#fff", "border": "none",
-                               "borderRadius": "6px", "cursor": "pointer", "display": "none"}),
-            html.Span(id="sankey-breadcrumb-text",
-                      style={"color": "#6b7a90", "fontSize": "13px"}),
-        ]),
-        html.Div(style=ROW, children=[_graph("chart-sankey")]),
-
-        # Click-through: transactions behind whichever node/link was clicked
-        html.Div(id="sankey-click-info", style={
-            "marginTop": "12px", "marginBottom": "8px", "color": "#6b7a90", "fontSize": "13px",
-        }, children="Click a node in the Sankey above to see its transactions here."),
-        html.Div(style=CARD, children=[
-            dash_table.DataTable(
-                id="sankey-click-table",
-                columns=[
-                    {"name": "Date",        "id": "date",        "type": "text"},
-                    {"name": "Description", "id": "description", "type": "text"},
-                    {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Category",    "id": "category",    "type": "text"},
-                    {"name": "Account",     "id": "account",     "type": "text"},
-                    {"name": "Note",        "id": "note",        "type": "text"},
-                ],
-                data=[],
-                style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
-                style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
-                **{**_TABLE_STYLE, "page_size": 20},
-            ),
         ]),
     ])
 
@@ -318,8 +335,9 @@ def _income_tab():
             _kpi_card("kpi-period-txns",     "Transaction Count"),
         ]),
         html.Div(style=ROW, children=[_graph("chart-income-expenses")]),
-        html.Div("Net savings per month", style=SECTION_HEADER),
-        html.Div(style=ROW, children=[_graph("chart-net-savings")]),
+        _collapsible("income-net-savings", "Net savings per month", [
+            html.Div(style=ROW, children=[_graph("chart-net-savings")]),
+        ]),
     ])
 
 
@@ -329,19 +347,87 @@ def _wealth_tab(account_options):
             _kpi_card("kpi-net-worth", "Net Worth (recorded balances)"),
         ]),
         # Asset allocation + wealth breakdown
-        html.Div("Asset allocation & current balances", style=SECTION_HEADER),
-        html.Div(style=ROW, children=[
-            _graph("chart-asset-allocation"),
-            html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
-                html.Div("Wealth Breakdown", style={**KPI_LABEL, "marginBottom": "8px"}),
+        _collapsible("bal-allocation", "Asset allocation & current balances", [
+            html.Div(style=ROW, children=[
+                _graph("chart-asset-allocation"),
+                html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
+                    html.Div("Wealth Breakdown", style={**KPI_LABEL, "marginBottom": "8px"}),
+                    dash_table.DataTable(
+                        id="wealth-table",
+                        columns=[
+                            {"name": "Account",  "id": "account", "type": "text"},
+                            {"name": "Type",     "id": "type",    "type": "text"},
+                            {"name": "Balance",  "id": "balance", "type": "numeric",
+                             "format": {"specifier": ",.2f"}},
+                            {"name": "Updated",  "id": "updated", "type": "text"},
+                        ],
+                        data=[],
+                        style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                        style_data_conditional=[
+                            {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                        ],
+                        **_TABLE_STYLE,
+                    ),
+                ]),
+            ]),
+        ]),
+
+        # Balance over time
+        _collapsible("bal-over-time", "Balances over time", [
+            _control_bar(
+                _labeled("Look back", _dropdown("dd-balance-days", BALANCE_DAYS_OPTIONS, 365)),
+                _labeled("Bins (snapshots)", _dropdown("dd-balance-bins", [
+                    {"label": "5",  "value": 5},
+                    {"label": "8",  "value": 8},
+                    {"label": "12", "value": 12},
+                    {"label": "24", "value": 24},
+                ], 5)),
+                _labeled("Account filter",
+                    dcc.Dropdown(
+                        id="dd-balance-account-filter",
+                        options=account_options,
+                        value=None,
+                        multi=True,
+                        placeholder="All accounts…",
+                        clearable=True,
+                        maxHeight=400,
+                        style={"width": "360px", "minWidth": "200px"},
+                    ),
+                ),
+                _labeled("",
+                    dcc.Checklist(
+                        id="chk-balance-portfolio-only",
+                        options=[{"label": "  Investment accounts only", "value": "portfolio"}],
+                        value=[],
+                        inputStyle={"marginRight": "6px"},
+                        labelStyle={"fontSize": "14px"},
+                    ),
+                ),
+            ),
+            html.Div(style=ROW, children=[_graph("chart-balance-by-account")]),
+            html.Div(style=ROW, children=[_graph("chart-balance-by-type")]),
+        ]),
+
+        # Single account
+        _collapsible("bal-single-account", "Single account — day-by-day modeled balance", [
+            _control_bar(
+                _labeled("Account", _dropdown("dd-single-account", account_options, None, width="280px",
+                                              placeholder="Select an account…")),
+            ),
+            html.Div(style=ROW, children=[_graph("chart-single-account")]),
+        ]),
+
+        # Balance ledger
+        _collapsible("bal-ledger", "Recorded balance snapshots", [
+            html.Div(style=CARD, children=[
                 dash_table.DataTable(
-                    id="wealth-table",
+                    id="balance-ledger-table",
                     columns=[
-                        {"name": "Account",  "id": "account", "type": "text"},
-                        {"name": "Type",     "id": "type",    "type": "text"},
-                        {"name": "Balance",  "id": "balance", "type": "numeric",
+                        {"name": "SQL Key", "id": "sql_key", "type": "numeric"},
+                        {"name": "Account", "id": "account", "type": "text"},
+                        {"name": "Balance", "id": "balance", "type": "numeric",
                          "format": {"specifier": ",.2f"}},
-                        {"name": "Updated",  "id": "updated", "type": "text"},
+                        {"name": "Date",    "id": "date",    "type": "text"},
                     ],
                     data=[],
                     style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
@@ -351,70 +437,6 @@ def _wealth_tab(account_options):
                     **_TABLE_STYLE,
                 ),
             ]),
-        ]),
-
-        # Balance over time
-        html.Div("Balances over time", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Look back", _dropdown("dd-balance-days", BALANCE_DAYS_OPTIONS, 365)),
-            _labeled("Bins (snapshots)", _dropdown("dd-balance-bins", [
-                {"label": "5",  "value": 5},
-                {"label": "8",  "value": 8},
-                {"label": "12", "value": 12},
-                {"label": "24", "value": 24},
-            ], 5)),
-            _labeled("Account filter",
-                dcc.Dropdown(
-                    id="dd-balance-account-filter",
-                    options=account_options,
-                    value=None,
-                    multi=True,
-                    placeholder="All accounts…",
-                    clearable=True,
-                    maxHeight=400,
-                    style={"width": "360px", "minWidth": "200px"},
-                ),
-            ),
-            _labeled("",
-                dcc.Checklist(
-                    id="chk-balance-portfolio-only",
-                    options=[{"label": "  Investment accounts only", "value": "portfolio"}],
-                    value=[],
-                    inputStyle={"marginRight": "6px"},
-                    labelStyle={"fontSize": "14px"},
-                ),
-            ),
-        ),
-        html.Div(style=ROW, children=[_graph("chart-balance-by-account")]),
-        html.Div(style=ROW, children=[_graph("chart-balance-by-type")]),
-
-        # Single account
-        html.Div("Single account — day-by-day modeled balance", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Account", _dropdown("dd-single-account", account_options, None, width="280px",
-                                          placeholder="Select an account…")),
-        ),
-        html.Div(style=ROW, children=[_graph("chart-single-account")]),
-
-        # Balance ledger
-        html.Div("Recorded balance snapshots", style=SECTION_HEADER),
-        html.Div(style=CARD, children=[
-            dash_table.DataTable(
-                id="balance-ledger-table",
-                columns=[
-                    {"name": "SQL Key", "id": "sql_key", "type": "numeric"},
-                    {"name": "Account", "id": "account", "type": "text"},
-                    {"name": "Balance", "id": "balance", "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Date",    "id": "date",    "type": "text"},
-                ],
-                data=[],
-                style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
-                style_data_conditional=[
-                    {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                ],
-                **_TABLE_STYLE,
-            ),
         ]),
     ])
 
@@ -473,8 +495,16 @@ def _categories_tab():
     }
     return html.Div(style=TAB_CONTENT_STYLE, children=[
 
+        # ── Treemap ───────────────────────────────────────────────────────────
+        _collapsible("cat-treemap", "Category hierarchy (treemap)", [
+            html.P("Each tile is a category; nested tiles are children. "
+                   "Hover for the id -> parent_id mapping and keyword count.",
+                   style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+            html.Div(style=ROW, children=[_graph("chart-category-treemap")]),
+        ]),
+
         # ── Category editor ───────────────────────────────────────────────────
-        html.Div("Category Editor", style=SECTION_HEADER),
+        _collapsible("cat-editor", "Category Editor", [
         dcc.Store(id="cat-selected-id", data=None),
 
         html.Div(style={"display": "flex", "gap": "20px", "marginBottom": "20px",
@@ -596,28 +626,23 @@ def _categories_tab():
                 ]),
             ]),
         ]),
+        ]),
 
-        # ── Treemap ───────────────────────────────────────────────────────────
-        html.Div("Category hierarchy (treemap)", style=SECTION_HEADER),
-        html.P("Each tile is a category; nested tiles are children. "
-               "Hover for the id -> parent_id mapping and keyword count.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
-        html.Div(style=ROW, children=[_graph("chart-category-treemap")]),
-
-        html.Div("Full tree printout", style=SECTION_HEADER),
-        html.P("Indented hierarchy showing each category, its database id, parent_id, and keywords.",
-               style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
-        html.Div(style={**CARD, "marginBottom": "16px"}, children=[
-            dcc.Markdown(
-                id="category-tree-text",
-                children="",
-                style={
-                    "fontSize": "13px",
-                    "fontFamily": "Menlo, Consolas, monospace",
-                    "whiteSpace": "pre",
-                    "overflowX": "auto",
-                },
-            ),
+        _collapsible("cat-tree-printout", "Full tree printout", [
+            html.P("Indented hierarchy showing each category, its database id, parent_id, and keywords.",
+                   style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
+            html.Div(style={**CARD, "marginBottom": "16px"}, children=[
+                dcc.Markdown(
+                    id="category-tree-text",
+                    children="",
+                    style={
+                        "fontSize": "13px",
+                        "fontFamily": "Menlo, Consolas, monospace",
+                        "whiteSpace": "pre",
+                        "overflowX": "auto",
+                    },
+                ),
+            ]),
         ]),
     ])
 
@@ -692,7 +717,7 @@ def _investments_tab():
     return html.Div(style=TAB_CONTENT_STYLE, children=[
 
         # ── Account holdings summary ─────────────────────────────────────────
-        html.Div("Account Holdings Summary", style=SECTION_HEADER),
+        _collapsible("inv-holdings", "Account Holdings Summary", [
         _control_bar(
             _labeled("Account", _dropdown(
                 "inv-account-filter",
@@ -755,9 +780,10 @@ def _investments_tab():
                 filter_action="none",
             ),
         ]),
+        ]),
 
         # ── Asset allocation pies ────────────────────────────────────────────
-        html.Div("Asset Allocation", style=SECTION_HEADER),
+        _collapsible("inv-allocation", "Asset Allocation", [
         html.P("Breakdown by market value using cached prices. Click 'Refresh (Live Prices)' in the Portfolio Positions section to fetch live prices.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
         # Row 1: high-level allocation + equity type breakdown
@@ -803,9 +829,10 @@ def _investments_tab():
                 ),
             ]),
         ]),
+        ]),
 
         # ── Portfolio positions ───────────────────────────────────────────────
-        html.Div("Portfolio Positions", style=SECTION_HEADER),
+        _collapsible("inv-positions", "Portfolio Positions", [
         html.P("Active holdings (net shares > 0). Click Refresh to fetch live prices "
                "— prices are cached for the session so repeat clicks are instant.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
@@ -868,9 +895,10 @@ def _investments_tab():
                 **_TABLE_STYLE,
             ),
         ]),
+        ]),
 
         # ── Investment transactions ───────────────────────────────────────────
-        html.Div("Investment Transactions", style=SECTION_HEADER),
+        _collapsible("inv-transactions", "Investment Transactions", [
         _control_bar(
             _labeled("Type filter",
                 dcc.Checklist(
@@ -922,9 +950,10 @@ def _investments_tab():
                 **{**_TABLE_STYLE, "page_size": 25},
             ),
         ]),
+        ]),
 
         # ── Record Dividend ───────────────────────────────────────────────────
-        html.Div("Record Dividend (Share-based)", style=SECTION_HEADER),
+        _collapsible("inv-dividend", "Record Dividend (Share-based)", [
         html.P("Enter the total shares you currently hold. "
                "The delta vs your recorded total is recorded as a DIV transaction.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
@@ -985,9 +1014,10 @@ def _investments_tab():
                       style={"fontSize": "12px", "color": "#6b7a90",
                              "display": "block", "marginTop": "8px"}),
         ]),
+        ]),
 
         # ── Ticker type manager ───────────────────────────────────────────────
-        html.Div("Ticker Type Manager", style=SECTION_HEADER),
+        _collapsible("inv-ticker-types", "Ticker Type Manager", [
         html.P("Set the asset type for each holding. Changes are saved to the database and "
                "immediately reflected in the allocation charts above.",
                style={"color": "#6b7a90", "fontSize": "13px", "margin": "0 0 12px 0"}),
@@ -1003,9 +1033,10 @@ def _investments_tab():
                           style={"color": "#6b7a90", "fontSize": "13px"}),
             ]),
         ]),
+        ]),
 
         # ── Manual price overrides ────────────────────────────────────────────
-        html.Div("Manual Price Overrides", style=SECTION_HEADER),
+        _collapsible("inv-price-overrides", "Manual Price Overrides", [
         html.P("Set a manual price for any ticker (useful for mutual funds or when API data is unavailable). "
                "Override rows are highlighted in yellow in the positions table. "
                "Use the ✕ next to a row below to delete an override.",
@@ -1056,12 +1087,10 @@ def _investments_tab():
                 style_table={"maxHeight": "200px", "overflowY": "auto"},
             ),
         ]),
+        ]),
 
-        # ── What If: Unsold Positions (collapsible) ───────────────────────────
-        html.Details(style={"marginBottom": "20px"}, children=[
-            html.Summary("What If: Unsold Positions",
-                         style={**SECTION_HEADER, "cursor": "pointer", "userSelect": "none",
-                                "marginTop": "20px"}),
+        # ── What If: Unsold Positions ──────────────────────────────────────────
+        _collapsible("inv-whatif", "What If: Unsold Positions", [
             html.P("For each SELL transaction, shows what those shares would be worth today. "
                    "Positive delta = stock rose after sale. Negative delta = good call to sell.",
                    style={"color": "#6b7a90", "fontSize": "13px", "margin": "8px 0 12px 0"}),
@@ -1125,7 +1154,7 @@ def _investments_tab():
                     **{**_TABLE_STYLE, "page_size": 25},
                 ),
             ]),
-        ]),
+        ], default_open=False),
     ])
 
 
@@ -1142,131 +1171,101 @@ def _transactions_tab(year_options, cur_year, cur_month, category_options, accou
 
     return html.Div(style=TAB_CONTENT_STYLE, children=[
         # Transaction search — multi-filter
-        html.Div("Search transactions", style=SECTION_HEADER),
-        html.Div(style={**CARD, "marginBottom": "16px"}, children=[
-            html.Div(style={"display": "grid",
-                            "gridTemplateColumns": "repeat(auto-fit, minmax(220px, 1fr))",
-                            "gap": "16px"}, children=[
-                _labeled("Description keyword",
-                    dcc.Input(id="txn-keyword", type="text",
-                              placeholder="e.g. amazon, starbucks…",
-                              debounce=True, style=text_input_style)),
-                _labeled("Period (overridden by date range below)",
-                    _dropdown("dd-txn-period", PERIOD_OPTIONS, 6, width="100%")),
-                _labeled("Specific date range",
-                    dcc.DatePickerRange(
-                        id="txn-date-range",
-                        start_date=None, end_date=None,
-                        display_format="YYYY-MM-DD",
-                        clearable=True,
-                        style={"fontSize": "13px"},
-                    )),
-                _labeled("Category",
-                    _dropdown("txn-category", category_options, None, width="100%",
-                              placeholder="Any category…",
-                              clearable=True)),
-                _labeled("Include subcategories",
-                    dcc.Checklist(
-                        id="txn-include-descendants",
-                        options=[{"label": "  Match descendants of the selected category", "value": "yes"}],
-                        value=[],
-                        inputStyle={"marginRight": "6px"},
-                        labelStyle={"fontSize": "13px"},
-                    )),
-                _labeled("Account",
-                    _dropdown("txn-account", account_options, None, width="100%",
-                              placeholder="Any account…",
-                              clearable=True)),
-                _labeled("Amount min ($)",
-                    dcc.Input(id="txn-amount-min", type="number", debounce=True,
-                              placeholder="-9999", style=num_input_style)),
-                _labeled("Amount max ($)",
-                    dcc.Input(id="txn-amount-max", type="number", debounce=True,
-                              placeholder="9999", style=num_input_style)),
+        _collapsible("txn-search", "Search transactions", [
+            html.Div(style={**CARD, "marginBottom": "16px"}, children=[
+                html.Div(style={"display": "grid",
+                                "gridTemplateColumns": "repeat(auto-fit, minmax(220px, 1fr))",
+                                "gap": "16px"}, children=[
+                    _labeled("Description keyword",
+                        dcc.Input(id="txn-keyword", type="text",
+                                  placeholder="e.g. amazon, starbucks…",
+                                  debounce=True, style=text_input_style)),
+                    _labeled("Period (overridden by date range below)",
+                        _dropdown("dd-txn-period", PERIOD_OPTIONS, 6, width="100%")),
+                    _labeled("Specific date range",
+                        dcc.DatePickerRange(
+                            id="txn-date-range",
+                            start_date=None, end_date=None,
+                            display_format="YYYY-MM-DD",
+                            clearable=True,
+                            style={"fontSize": "13px"},
+                        )),
+                    _labeled("Category",
+                        _dropdown("txn-category", category_options, None, width="100%",
+                                  placeholder="Any category…",
+                                  clearable=True)),
+                    _labeled("Include subcategories",
+                        dcc.Checklist(
+                            id="txn-include-descendants",
+                            options=[{"label": "  Match descendants of the selected category", "value": "yes"}],
+                            value=[],
+                            inputStyle={"marginRight": "6px"},
+                            labelStyle={"fontSize": "13px"},
+                        )),
+                    _labeled("Account",
+                        _dropdown("txn-account", account_options, None, width="100%",
+                                  placeholder="Any account…",
+                                  clearable=True)),
+                    _labeled("Amount min ($)",
+                        dcc.Input(id="txn-amount-min", type="number", debounce=True,
+                                  placeholder="-9999", style=num_input_style)),
+                    _labeled("Amount max ($)",
+                        dcc.Input(id="txn-amount-max", type="number", debounce=True,
+                                  placeholder="9999", style=num_input_style)),
+                ]),
+                html.Div(id="txn-count", style={
+                    "marginTop": "12px", "color": "#6b7a90", "fontSize": "13px",
+                }),
             ]),
-            html.Div(id="txn-count", style={
-                "marginTop": "12px", "color": "#6b7a90", "fontSize": "13px",
-            }),
-        ]),
-        html.Div(style=CARD, children=[
-            dash_table.DataTable(
-                id="txn-table",
-                columns=[
-                    {"name": "Date",        "id": "date",        "type": "text"},
-                    {"name": "Description", "id": "description", "type": "text"},
-                    {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Category",    "id": "category",    "type": "text"},
-                    {"name": "Account",     "id": "account",     "type": "text"},
-                    {"name": "Note",        "id": "note",        "type": "text"},
-                ],
-                data=[],
-                style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
-                style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
-                **{**_TABLE_STYLE, "page_size": 30},
-            ),
+            html.Div(style=CARD, children=[
+                dash_table.DataTable(
+                    id="txn-table",
+                    columns=[
+                        {"name": "Date",        "id": "date",        "type": "text"},
+                        {"name": "Description", "id": "description", "type": "text"},
+                        {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
+                         "format": {"specifier": ",.2f"}},
+                        {"name": "Category",    "id": "category",    "type": "text"},
+                        {"name": "Account",     "id": "account",     "type": "text"},
+                        {"name": "Note",        "id": "note",        "type": "text"},
+                    ],
+                    data=[],
+                    row_selectable="multi",
+                    selected_rows=[],
+                    style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                    style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
+                    **{**_TABLE_STYLE, "page_size": 30},
+                ),
+            ]),
+
+            # Bulk category assign -- select rows above (checkboxes respect whatever
+            # search/filter is currently applied), pick a category, apply to just those.
+            html.Div(style={**CARD, "display": "flex", "gap": "16px", "alignItems": "flex-end",
+                            "flexWrap": "wrap", "marginTop": "12px"}, children=[
+                _labeled("Set category for selected rows to…",
+                    _dropdown("txn-bulk-category", category_options, None, width="260px",
+                              placeholder="Choose a category…", clearable=True)),
+                html.Button("Apply to Selected", id="txn-bulk-apply-btn", n_clicks=0,
+                            style=_BTN_STYLE),
+                html.Span(id="txn-bulk-status",
+                          style={"color": "#6b7a90", "fontSize": "13px"}),
+            ]),
         ]),
 
         # Largest transactions
-        html.Div("Largest transactions", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Top N", _dropdown("dd-largest-n", [
-                {"label": "10",  "value": 10},
-                {"label": "25",  "value": 25},
-                {"label": "50",  "value": 50},
-                {"label": "100", "value": 100},
-            ], 25)),
-            _labeled("Window", _dropdown("dd-largest-months", PERIOD_OPTIONS, 12)),
-        ),
-        html.Div(style=CARD, children=[
-            dash_table.DataTable(
-                id="largest-table",
-                columns=[
-                    {"name": "Date",        "id": "date",        "type": "text"},
-                    {"name": "Description", "id": "description", "type": "text"},
-                    {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
-                     "format": {"specifier": ",.2f"}},
-                    {"name": "Category",    "id": "category",    "type": "text"},
-                    {"name": "Account",     "id": "account",     "type": "text"},
-                ],
-                data=[],
-                style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
-                style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
-                **_TABLE_STYLE,
+        _collapsible("largest-txns", "Largest transactions", [
+            _control_bar(
+                _labeled("Top N", _dropdown("dd-largest-n", [
+                    {"label": "10",  "value": 10},
+                    {"label": "25",  "value": 25},
+                    {"label": "50",  "value": 50},
+                    {"label": "100", "value": 100},
+                ], 25)),
+                _labeled("Window", _dropdown("dd-largest-months", PERIOD_OPTIONS, 12)),
             ),
-        ]),
-
-        # Month review
-        html.Div("Month review", style=SECTION_HEADER),
-        _control_bar(
-            _labeled("Year",  _dropdown("dd-review-year",  year_options, cur_year, width="120px")),
-            _labeled("Month", _dropdown("dd-review-month",
-                [{"label": f"{m:02d}", "value": m} for m in range(1, 13)],
-                cur_month, width="100px")),
-            html.Div(id="review-count", style={"color": "#6b7a90", "fontSize": "13px", "alignSelf": "flex-end"}),
-        ),
-        html.Div(style=ROW, children=[
-            html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
-                html.Div("Category Summary", style={**KPI_LABEL, "marginBottom": "8px"}),
+            html.Div(style=CARD, children=[
                 dash_table.DataTable(
-                    id="review-category-table",
-                    columns=[
-                        {"name": "Category", "id": "category", "type": "text"},
-                        {"name": "Amount",   "id": "amount",   "type": "numeric",
-                         "format": {"specifier": ",.2f"}},
-                    ],
-                    data=[],
-                    style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
-                    style_data_conditional=[
-                        {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
-                    ],
-                    **{**_TABLE_STYLE, "page_size": 20},
-                ),
-            ]),
-            html.Div(style={**CARD, "flex": "2 1 0", "minWidth": "0"}, children=[
-                html.Div("Transactions", style={**KPI_LABEL, "marginBottom": "8px"}),
-                dash_table.DataTable(
-                    id="review-txn-table",
+                    id="largest-table",
                     columns=[
                         {"name": "Date",        "id": "date",        "type": "text"},
                         {"name": "Description", "id": "description", "type": "text"},
@@ -1282,7 +1281,93 @@ def _transactions_tab(year_options, cur_year, cur_month, category_options, accou
                 ),
             ]),
         ]),
+
+        # Month review
+        _collapsible("txn-month-review", "Month review", [
+            _control_bar(
+                _labeled("Year",  _dropdown("dd-review-year",  year_options, cur_year, width="120px")),
+                _labeled("Month", _dropdown("dd-review-month",
+                    [{"label": f"{m:02d}", "value": m} for m in range(1, 13)],
+                    cur_month, width="100px")),
+                html.Div(id="review-count", style={"color": "#6b7a90", "fontSize": "13px", "alignSelf": "flex-end"}),
+            ),
+            html.Div(style=ROW, children=[
+                html.Div(style={**CARD, "flex": "1 1 0", "minWidth": "0"}, children=[
+                    html.Div("Category Summary", style={**KPI_LABEL, "marginBottom": "8px"}),
+                    dash_table.DataTable(
+                        id="review-category-table",
+                        columns=[
+                            {"name": "Category", "id": "category", "type": "text"},
+                            {"name": "Amount",   "id": "amount",   "type": "numeric",
+                             "format": {"specifier": ",.2f"}},
+                        ],
+                        data=[],
+                        style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                        style_data_conditional=[
+                            {"if": {"row_index": "odd"}, "backgroundColor": "#fafbfc"},
+                        ],
+                        **{**_TABLE_STYLE, "page_size": 20},
+                    ),
+                ]),
+                html.Div(style={**CARD, "flex": "2 1 0", "minWidth": "0"}, children=[
+                    html.Div("Transactions", style={**KPI_LABEL, "marginBottom": "8px"}),
+                    dash_table.DataTable(
+                        id="review-txn-table",
+                        columns=[
+                            {"name": "Date",        "id": "date",        "type": "text"},
+                            {"name": "Description", "id": "description", "type": "text"},
+                            {"name": "Amount ($)",  "id": "amount",      "type": "numeric",
+                             "format": {"specifier": ",.2f"}},
+                            {"name": "Category",    "id": "category",    "type": "text"},
+                            {"name": "Account",     "id": "account",     "type": "text"},
+                        ],
+                        data=[],
+                        style_cell_conditional=_AMOUNT_CELL_CONDITIONAL,
+                        style_data_conditional=_AMOUNT_DATA_CONDITIONAL,
+                        **_TABLE_STYLE,
+                    ),
+                ]),
+            ]),
+        ]),
     ])
+
+
+# ─── Shared callback helpers ──────────────────────────────────────────────────
+
+def _txn_search_rows_and_label(months_prev, keyword, date_start, date_end, category_id,
+                               include_descendants_list, account_id, amount_min, amount_max):
+    """
+    Runs the Transactions tab's multi-filter search and builds the "N transactions ·
+    filters: ..." label. Shared by the filter-driven table refresh and the bulk category
+    apply (which re-runs the same search after writing, so the table reflects the update).
+    """
+    include_descendants = bool(include_descendants_list and "yes" in include_descendants_list)
+    rows = charts.get_transaction_rows(
+        months_prev=months_prev,
+        keyword=keyword or "",
+        date_start=date_start,
+        date_end=date_end,
+        category_id=category_id,
+        include_descendants=include_descendants,
+        account_id=account_id,
+        amount_min=amount_min,
+        amount_max=amount_max,
+    )
+    active = []
+    if keyword: active.append(f"keyword '{keyword}'")
+    if date_start and date_end: active.append(f"dates {date_start}→{date_end}")
+    elif months_prev == 0: active.append("all time")
+    else: active.append(f"last {months_prev}mo")
+    if category_id is not None:
+        active.append(f"category={cath.category_id_to_name(category_id)}"
+                      + (" (+children)" if include_descendants else ""))
+    if account_id is not None:
+        active.append(f"account={dbh.account.get_account_name_from_id(account_id)}")
+    if amount_min is not None: active.append(f"min ${amount_min}")
+    if amount_max is not None: active.append(f"max ${amount_max}")
+    count_label = (f"{len(rows):,} transaction{'s' if len(rows) != 1 else ''}"
+                   f"  ·  filters: {' · '.join(active) if active else '(none)'}")
+    return rows, count_label
 
 
 # ─── App factory ─────────────────────────────────────────────────────────────
@@ -1584,33 +1669,55 @@ def create_app() -> Dash:
     def update_txn_table(months_prev, keyword, date_start, date_end,
                          category_id, include_descendants_list, account_id,
                          amount_min, amount_max):
-        include_descendants = bool(include_descendants_list and "yes" in include_descendants_list)
-        rows = charts.get_transaction_rows(
-            months_prev=months_prev,
-            keyword=keyword or "",
-            date_start=date_start,
-            date_end=date_end,
-            category_id=category_id,
-            include_descendants=include_descendants,
-            account_id=account_id,
-            amount_min=amount_min,
-            amount_max=amount_max,
+        return _txn_search_rows_and_label(
+            months_prev, keyword, date_start, date_end, category_id,
+            include_descendants_list, account_id, amount_min, amount_max,
         )
-        active = []
-        if keyword: active.append(f"keyword '{keyword}'")
-        if date_start and date_end: active.append(f"dates {date_start}→{date_end}")
-        elif months_prev == 0: active.append("all time")
-        else: active.append(f"last {months_prev}mo")
-        if category_id is not None:
-            active.append(f"category={cath.category_id_to_name(category_id)}"
-                          + (" (+children)" if include_descendants else ""))
-        if account_id is not None:
-            active.append(f"account={dbh.account.get_account_name_from_id(account_id)}")
-        if amount_min is not None: active.append(f"min ${amount_min}")
-        if amount_max is not None: active.append(f"max ${amount_max}")
-        count_label = (f"{len(rows):,} transaction{'s' if len(rows) != 1 else ''}"
-                       f"  ·  filters: {' · '.join(active) if active else '(none)'}")
-        return rows, count_label
+
+    # ── Transaction bulk category assign — apply one category to every row ────
+    # currently checked in txn-table (checkboxes respect whatever native filter/sort is
+    # active, via derived_virtual_data/derived_virtual_selected_rows, not the raw
+    # unfiltered `data` prop -- selecting under a filter must map back to the right rows).
+    @app.callback(
+        Output("txn-bulk-status",       "children"),
+        Output("txn-table",             "data",          allow_duplicate=True),
+        Output("txn-count",             "children",      allow_duplicate=True),
+        Output("txn-table",             "selected_rows", allow_duplicate=True),
+        Input("txn-bulk-apply-btn",     "n_clicks"),
+        State("txn-table",              "derived_virtual_data"),
+        State("txn-table",              "derived_virtual_selected_rows"),
+        State("txn-bulk-category",      "value"),
+        State("dd-txn-period",          "value"),
+        State("txn-keyword",            "value"),
+        State("txn-date-range",         "start_date"),
+        State("txn-date-range",         "end_date"),
+        State("txn-category",           "value"),
+        State("txn-include-descendants", "value"),
+        State("txn-account",            "value"),
+        State("txn-amount-min",         "value"),
+        State("txn-amount-max",         "value"),
+        prevent_initial_call=True,
+    )
+    def apply_bulk_category(_n_clicks, virtual_data, selected_idx, new_category_id,
+                            months_prev, keyword, date_start, date_end, category_id,
+                            include_descendants_list, account_id, amount_min, amount_max):
+        if new_category_id is None:
+            return "Pick a category first.", no_update, no_update, no_update
+        if not selected_idx:
+            return "Select at least one transaction first (checkboxes on the left).", \
+                   no_update, no_update, no_update
+
+        selected = [virtual_data[i] for i in selected_idx]
+        for row in selected:
+            dbh.transactions.update_transaction_category_k(row["sql_key"], new_category_id)
+
+        rows, count_label = _txn_search_rows_and_label(
+            months_prev, keyword, date_start, date_end, category_id,
+            include_descendants_list, account_id, amount_min, amount_max,
+        )
+        new_cat_name = cath.category_id_to_name(new_category_id)
+        status = f"✓ Updated {len(selected)} transaction(s) to {new_cat_name}."
+        return status, rows, count_label, []
 
     # ── Income & Savings KPIs — driven by dd-income-period ───────────────────
     @app.callback(

@@ -676,6 +676,7 @@ def get_transaction_rows(
     rows = []
     for t in sorted(transactions, key=lambda x: x.date, reverse=True):
         rows.append({
+            "sql_key":     t.sql_key,  # not shown as a column -- carried through for bulk actions
             "date":        t.date,
             "description": t.description or "",
             "amount":      round(t.value, 2),

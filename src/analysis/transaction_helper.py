@@ -39,6 +39,8 @@ def get_trans_category_cli(transaction, mode=2):
     elif mode == 2:
         cat_id = clih.category_prompt_all(trans_prompt,
                                           False)  # second param controls if I print all the categories each transaction or not
+        if cat_id is False:  # cancelled (q/quit/exit) -- category_prompt_all's convention is
+            cat_id = -1      # False, but this function's own contract below (and its callers') is -1
     else:
         print("Uh oh, invalid category selection mode!")
         return None

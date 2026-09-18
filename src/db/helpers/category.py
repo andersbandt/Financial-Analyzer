@@ -155,14 +155,35 @@ def update_category_name(category_id, new_name: str) -> bool:
     return True
 
 
-def merge_categories(source_id, target_id) -> dict:
+def merge_categories(source_id, target_id, tag_note=True) -> dict:
     """Move all transactions, keywords, and child categories from source to target, then delete source.
+    If tag_note (default), each reassigned transaction's note gets a short audit tag appended
+    (e.g. "category_merge: EYECARE -> VISION"), preserving whatever note was already there --
+    same append-don't-clobber convention as the ml_classified/recurring_transaction/BACKFILL note tags
+    elsewhere in this app -- so the merge is traceable later without a separate audit table.
     Returns a dict with counts of affected rows."""
     with sqlite3.connect(DATABASE_DIRECTORY) as conn:
         cur = conn.cursor()
 
-        cur.execute("UPDATE transactions SET category_id=? WHERE category_id=?", (target_id, source_id))
-        txn_count = cur.rowcount
+        if tag_note:
+            cur.execute("SELECT name FROM category WHERE category_id=?", (source_id,))
+            row = cur.fetchone()
+            source_name = row[0] if row else str(source_id)
+            cur.execute("SELECT name FROM category WHERE category_id=?", (target_id,))
+            row = cur.fetchone()
+            target_name = row[0] if row else str(target_id)
+            tag = f"category_merge: {source_name} -> {target_name}"
+
+            cur.execute("SELECT id, note FROM transactions WHERE category_id=?", (source_id,))
+            affected = cur.fetchall()
+            for sql_key, note in affected:
+                new_note = f"{note}; {tag}" if note else tag
+                cur.execute("UPDATE transactions SET category_id=?, note=? WHERE id=?",
+                            (target_id, new_note, sql_key))
+            txn_count = len(affected)
+        else:
+            cur.execute("UPDATE transactions SET category_id=? WHERE category_id=?", (target_id, source_id))
+            txn_count = cur.rowcount
 
         cur.execute("UPDATE keywords SET category_id=? WHERE category_id=?", (target_id, source_id))
         kw_count = cur.rowcount
@@ -173,6 +194,58 @@ def merge_categories(source_id, target_id) -> dict:
         cur.execute("DELETE FROM category WHERE category_id=?", (source_id,))
 
     return {"transactions": txn_count, "keywords": kw_count, "children": child_count}
+
+
+def safe_delete_category(category_id, reassign_to=0, tag_note=True) -> dict:
+    """Deletes a category without the silent data-loss the plain DELETE has (see
+    categories_helper.create_Tree(): a child whose parent was deleted never attaches to any
+    tree node again, so its transactions vanish from every report with no error). Instead:
+      1. Transactions in this category -> reassigned to `reassign_to` (default 0 = NA), each with
+         a short audit note tag appended (e.g. "category_delete: HOBBIES -> NA"), same
+         append-don't-clobber convention as merge_categories.
+      2. Child categories -> reparented to THIS category's own parent, so a subtree survives
+         (just promoted up one level) instead of being silently orphaned.
+      3. Keywords tied to this category -> deleted (pointless once the category is gone).
+      4. The category row itself -> deleted.
+    Returns a dict with counts plus `affected_sql_keys` (the transactions moved to `reassign_to`),
+    so the caller can offer manual re-categorization on exactly those rows."""
+    with sqlite3.connect(DATABASE_DIRECTORY) as conn:
+        cur = conn.cursor()
+
+        cur.execute("SELECT parent_id, name FROM category WHERE category_id=?", (category_id,))
+        row = cur.fetchone()
+        own_parent_id, category_name = (row[0], row[1]) if row else (1, str(category_id))
+
+        cur.execute("SELECT id, note FROM transactions WHERE category_id=?", (category_id,))
+        affected = cur.fetchall()
+        affected_sql_keys = [sql_key for sql_key, _ in affected]
+
+        if tag_note:
+            tag = f"category_delete: {category_name} -> NA" if reassign_to == 0 \
+                else f"category_delete: {category_name} -> {reassign_to}"
+            for sql_key, note in affected:
+                new_note = f"{note}; {tag}" if note else tag
+                cur.execute("UPDATE transactions SET category_id=?, note=? WHERE id=?",
+                            (reassign_to, new_note, sql_key))
+        else:
+            cur.execute("UPDATE transactions SET category_id=? WHERE category_id=?",
+                        (reassign_to, category_id))
+        txn_count = len(affected)
+
+        cur.execute("UPDATE category SET parent_id=? WHERE parent_id=?", (own_parent_id, category_id))
+        children_reparented = cur.rowcount
+
+        cur.execute("DELETE FROM keywords WHERE category_id=?", (category_id,))
+        keywords_deleted = cur.rowcount
+
+        cur.execute("DELETE FROM category WHERE category_id=?", (category_id,))
+
+    return {
+        "transactions": txn_count,
+        "affected_sql_keys": affected_sql_keys,
+        "children_reparented": children_reparented,
+        "keywords_deleted": keywords_deleted,
+    }
 
 
 
